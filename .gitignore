@@ -33,3 +33,4 @@ coverage/
 
 # Prisma
 server/prisma/*.db
+server/generated/
