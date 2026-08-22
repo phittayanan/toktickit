@@ -12,7 +12,11 @@
 
 | PR Link | Issue | Outcome |
 |---------|-------|---------|
-| [#5](https://github.com/phittayanan/toktickit/pull/5) | #1 Set up the TokTickIT project foundation | Approved, merged into `lab1-staging` |
+| [#5](https://github.com/phittayanan/toktickit/pull/5) | #1 Set up the TokTickIT project foundation | Approved ("well done, it okay to merge"), merged into `lab1-staging` |
+| [#6](https://github.com/phittayanan/toktickit/pull/6) | docs: record peer review evidence in reviewer.md | Approved ("it look work and nice, can merge"), merged into `lab1-staging` |
+| [#7](https://github.com/phittayanan/toktickit/pull/7) | #3 Create and seed IT request categories | Approved ("Looks good, setup works on my machine"), merged into `lab1-staging` |
+| [#8](https://github.com/phittayanan/toktickit/pull/8) | #2 Implement the API health check | Approved ("check it look good can merge now."), merged into `lab1-staging` |
+| [#9](https://github.com/phittayanan/toktickit/pull/9) | #4 Display the IT request category list | Approved ("UI look good it work."), merged into `lab1-staging` |
 
 ### Reviews I gave my partner (on [`projectnewy/tocktickit`](https://github.com/projectnewy/tocktickit))
 
@@ -35,6 +39,46 @@
 > "Thanks for the quick review! Merging now." — [reply](https://github.com/phittayanan/toktickit/pull/5#issuecomment-5380933742)
 
 **Outcome:** Approved by [@projectnewy](https://github.com/projectnewy), merged into `lab1-staging`.
+
+### PR #6 (my repo) — docs: record peer review evidence
+
+**Comment my partner gave me:**
+> "it look work and nice, can merge" — [projectnewy](https://github.com/phittayanan/toktickit/pull/6#issuecomment-5380980101)
+
+**My response:**
+> "Thanks! Merging now." — [reply](https://github.com/phittayanan/toktickit/pull/6#issuecomment-5380983762)
+
+**Outcome:** Approved by [@projectnewy](https://github.com/projectnewy), merged into `lab1-staging` by [@projectnewy](https://github.com/projectnewy).
+
+### PR #7 (my repo) — Create and seed IT request categories
+
+**Comment my partner gave me:**
+> "Looks good, setup works on my machine" — [projectnewy](https://github.com/phittayanan/toktickit/pull/7#issuecomment-5381054758)
+
+**My response:**
+> "Thanks! Merging now." — [reply](https://github.com/phittayanan/toktickit/pull/7#issuecomment-5381054758)
+
+**Outcome:** Approved by [@projectnewy](https://github.com/projectnewy), merged into `lab1-staging` by [@projectnewy](https://github.com/projectnewy).
+
+### PR #8 (my repo) — Implement the API health check
+
+**Comment my partner gave me:**
+> "check it look good can merge now." — [projectnewy](https://github.com/phittayanan/toktickit/pull/8#issuecomment-5381054857)
+
+**My response:**
+> "Thanks! Merging now." — [reply](https://github.com/phittayanan/toktickit/pull/8#issuecomment-5381054857)
+
+**Outcome:** Approved by [@projectnewy](https://github.com/projectnewy), merged into `lab1-staging` by [@projectnewy](https://github.com/projectnewy).
+
+### PR #9 (my repo) — Display the IT request category list
+
+**Comment my partner gave me:**
+> "UI look good it work." — [projectnewy](https://github.com/phittayanan/toktickit/pull/9#issuecomment-5381098703)
+
+**My response:**
+> "Thanks! This closes out all four Lab 1 Issues. Merging now." — [reply](https://github.com/phittayanan/toktickit/pull/9#issuecomment-5381098703)
+
+**Outcome:** Approved by [@projectnewy](https://github.com/projectnewy), merged into `lab1-staging` by [@projectnewy](https://github.com/projectnewy). This closed out all four Lab 1 Issues.
 
 ### Reviews I gave on [`projectnewy/tocktickit`](https://github.com/projectnewy/tocktickit)
 
@@ -90,7 +134,8 @@ conflict directly, etc.). Comments given, by PR:
   having happened by that point. **Phuttipong's response:** filled in both
   names/student IDs and backfilled the missing review rows before merging.
 
-_This Lab 1 cycle's review record — Issues 1–4 above happened before this
-repository (`phittayanan/toktickit`) was recreated from scratch; the review
-loop for this repository's own Issues 2–4 will be appended here as each one
-reaches `PR Review`._
+_Note: the "Reviews I gave on `projectnewy/tocktickit`" section above records
+an earlier full pass of this same Lab 1 assignment, completed before this
+repository (`phittayanan/toktickit`) was recreated from scratch. All four
+Issues in **this** repository (PR #5, #7, #8, #9) have now also gone through
+peer review and merge, recorded above under "Reviews my partner gave me"._
