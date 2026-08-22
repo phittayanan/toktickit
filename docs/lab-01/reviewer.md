@@ -2,17 +2,95 @@
 
 ## Reviewer Details
 
-- **Reviewer name:**
-- **Student ID:**
-- **GitHub username:**
+- **Reviewer name:** Phuttipong Phankitnirund0rn
+- **Student ID:** 67070503430
+- **GitHub username:** [projectnewy](https://github.com/projectnewy)
 
 ## Reviewed Pull Requests
 
+### Reviews my partner gave me (on `phittayanan/toktickit`)
+
 | PR Link | Issue | Outcome |
 |---------|-------|---------|
-|         |       |         |
+| [#5](https://github.com/phittayanan/toktickit/pull/5) | #1 Set up the TokTickIT project foundation | Approved, merged into `lab1-staging` |
+
+### Reviews I gave my partner (on [`projectnewy/tocktickit`](https://github.com/projectnewy/tocktickit))
+
+| PR Link | Issue | Outcome |
+|---------|-------|---------|
+| [#5](https://github.com/projectnewy/tocktickit/pull/5) | Issue 1: Set up the TokTickIT project foundation | Approved, merged |
+| [#6](https://github.com/projectnewy/tocktickit/pull/6) | Issue 2: Implement the API health check | Approved, merged |
+| [#7](https://github.com/projectnewy/tocktickit/pull/7) | Issue 3: Create and seed IT request categories | Approved, merged |
+| [#8](https://github.com/projectnewy/tocktickit/pull/8) | Issue 4: Display the IT request category list | Approved, merged |
+| [#9](https://github.com/projectnewy/tocktickit/pull/9) | Lab 1 release | Approved, merged |
 
 ## Review Notes
 
-_To be filled in as PRs are reviewed: comments given/received and how each
-was resolved._
+### PR #5 (my repo) — Set up the TokTickIT project foundation
+
+**Comment my partner gave me:**
+> "well done, it okay to merge" — [projectnewy](https://github.com/phittayanan/toktickit/pull/5#issuecomment-5380928400)
+
+**My response:**
+> "Thanks for the quick review! Merging now." — [reply](https://github.com/phittayanan/toktickit/pull/5#issuecomment-5380933742)
+
+**Outcome:** Approved by [@projectnewy](https://github.com/projectnewy), merged into `lab1-staging`.
+
+### Reviews I gave on [`projectnewy/tocktickit`](https://github.com/projectnewy/tocktickit)
+
+I reviewed all four of Phuttipong's feature-issue PRs plus the Lab 1 release
+PR, checking against the branch itself rather than just the PR description
+(re-ran `tsc`, grepped git history for leaked secrets, tested a claimed merge
+conflict directly, etc.). Comments given, by PR:
+
+- **[#5 — Issue 1](https://github.com/projectnewy/tocktickit/pull/5):**
+  Approved. Verified every Issue 1 acceptance criterion against the branch.
+  Flagged that `npm run build && npm start` was broken (`tsconfig.json`
+  `include` made `rootDir` infer as `server/`, so `dist/index.js` never
+  existed) — non-blocking, folded into the Issue 2 branch. Also flagged
+  `ai_use.md` one row short of the required 6–10, and that `reviewer.md`
+  was still the empty template — his side of the two-way review evidence.
+  **Phuttipong's response:** fixed the build path issue in PR #6, added the
+  missing prompt row, and started filling in `reviewer.md`.
+
+- **[#6 — Issue 2](https://github.com/projectnewy/tocktickit/pull/6):**
+  Approved. Verified the `npm start` fix by re-running `tsc` directly.
+  Flagged that narrowing `tsconfig.json`'s `include` to `src` silently
+  stopped type-checking `prisma/` and `tests/`, that the error message
+  thrown in `api.ts` was dead code (never rendered), and that
+  "Unable to connect" would mislabel a 500 from a live server as the server
+  being down. **Phuttipong's response:** addressed the dead-code message
+  and reconfirmed the tsconfig tradeoff would be revisited in Issue 3/4.
+
+- **[#7 — Issue 3](https://github.com/projectnewy/tocktickit/pull/7):**
+  Approved. Verified all five Issue 3 criteria. The one real blocker: the
+  PR description claimed PR #6 and #7 would "combine naturally" — I tested
+  the merge directly and it conflicted in `ai_use.md` and `tests.md`.
+  Gave a concrete merge order (merge #6 first, rebase, resolve keeping both
+  sides' content) and flagged the seed's idempotency log printing a
+  constant instead of an actual before/after count.
+  **Phuttipong's response:** merged in the suggested order and resolved
+  both doc conflicts by keeping both sides' content.
+
+- **[#8 — Issue 4](https://github.com/projectnewy/tocktickit/pull/8):**
+  Approved. Verified all six criteria and the `curl` transcript against a
+  live seeded DB. Flagged that both the health-check and categories fetch
+  failure paths threw the identical error message, erasing the distinction
+  between "API is down" and "API is up but the DB failed" — the case my
+  PR #6 review had predicted would become real once Issue 4 shipped a
+  route that could fail server-side. **Phuttipong's response:** acknowledged
+  and split the two error messages.
+
+- **[#9 — Lab 1 release](https://github.com/projectnewy/tocktickit/pull/9):**
+  Approved. Confirmed the four Issues were all in, the merge history kept
+  real (non-flattened) merge commits, and `tests.md` showed all five tests
+  passing with the `curl` transcript attached. Flagged that `reviewer.md`
+  was about to ship on `main` with two literal placeholder names and an
+  empty "PRs I reviewed for my partner" section despite four real reviews
+  having happened by that point. **Phuttipong's response:** filled in both
+  names/student IDs and backfilled the missing review rows before merging.
+
+_This Lab 1 cycle's review record — Issues 1–4 above happened before this
+repository (`phittayanan/toktickit`) was recreated from scratch; the review
+loop for this repository's own Issues 2–4 will be appended here as each one
+reaches `PR Review`._
