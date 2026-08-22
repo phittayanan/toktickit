@@ -10,8 +10,17 @@ export interface Category {
   name: string
 }
 
-export async function checkHealth(): Promise<HealthResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/health`)
+// Wraps fetch() so any failure — the API responding with a non-2xx status,
+// or the request never reaching the API at all (server down, DNS failure,
+// CORS) — surfaces as the same useful message instead of the browser's raw
+// "Failed to fetch" / "NetworkError" text.
+async function getJson<T>(path: string): Promise<T> {
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`)
+  } catch {
+    throw new Error('Unable to connect to TokTickIT API')
+  }
 
   if (!res.ok) {
     throw new Error('Unable to connect to TokTickIT API')
@@ -20,12 +29,10 @@ export async function checkHealth(): Promise<HealthResponse> {
   return res.json()
 }
 
-export async function fetchCategories(): Promise<Category[]> {
-  const res = await fetch(`${API_BASE_URL}/api/categories`)
+export function checkHealth(): Promise<HealthResponse> {
+  return getJson<HealthResponse>('/api/health')
+}
 
-  if (!res.ok) {
-    throw new Error('Unable to connect to TokTickIT API')
-  }
-
-  return res.json()
+export function fetchCategories(): Promise<Category[]> {
+  return getJson<Category[]>('/api/categories')
 }
