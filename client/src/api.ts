@@ -5,8 +5,23 @@ export interface HealthResponse {
   service: string
 }
 
+export interface Category {
+  id: number
+  name: string
+}
+
 export async function checkHealth(): Promise<HealthResponse> {
   const res = await fetch(`${API_BASE_URL}/api/health`)
+
+  if (!res.ok) {
+    throw new Error('Unable to connect to TokTickIT API')
+  }
+
+  return res.json()
+}
+
+export async function fetchCategories(): Promise<Category[]> {
+  const res = await fetch(`${API_BASE_URL}/api/categories`)
 
   if (!res.ok) {
     throw new Error('Unable to connect to TokTickIT API')
