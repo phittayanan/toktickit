@@ -7,8 +7,13 @@ return 404 for both "Ticket doesn't exist" and "Ticket belongs to a
 different Requester."
 
 Per §6.3, `api-spec.md` documents ownership-failure and missing-resource as
-two distinct scenario rows (each traceable to its own AC, e.g. AC-03) that
-deliberately share the same status/body shape.
+one merged scenario row per endpoint (e.g. GET /api/tickets/:id's
+"Missing or not-owned `404`"), deliberately sharing the same status/body
+shape rather than being distinguishable — that indistinguishability is the
+point (§4.4). `tests.md` still verifies both cases separately at the test
+level (e.g. API-18 for not-owned, API-19 for missing), traced to the same
+Acceptance Criterion (AC-03), since the criterion is exactly "both cases
+produce the same outcome."
 
 Depends on [ADR-0001](./0001-requesteruser-temporary-auth.md).
 
