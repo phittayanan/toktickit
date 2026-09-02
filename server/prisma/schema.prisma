@@ -12,8 +12,89 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketStatus {
+  NEW
+}
+
 model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+
+  tickets Ticket[]
+}
+
+model RequesterUser {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tickets            Ticket[]     @relation("TicketRequester")
+  uploadedAttachments Attachment[] @relation("AttachmentUploadedBy")
+  removedAttachments  Attachment[] @relation("AttachmentRemovedBy")
+}
+
+model RelatedSystem {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tickets Ticket[]
+}
+
+model Ticket {
+  id                Int          @id @default(autoincrement())
+  ticketNumber      String       @unique
+  requesterId       Int
+  categoryId        Int
+  relatedSystemId   Int
+  summary           String
+  description       String
+  requestedPriority Priority
+  itPriority        Priority?
+  currentStatus     TicketStatus @default(NEW)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  requester     RequesterUser @relation("TicketRequester", fields: [requesterId], references: [id])
+  category      Category      @relation(fields: [categoryId], references: [id])
+  relatedSystem RelatedSystem @relation(fields: [relatedSystemId], references: [id])
+  attachments   Attachment[]
+
+  @@index([requesterId])
+}
+
+model Attachment {
+  id                     Int       @id @default(autoincrement())
+  ticketId               Int
+  uploadedByRequesterId  Int
+  originalFilename       String
+  storedFilename         String    @unique
+  mimeType               String
+  sizeBytes              Int
+  createdAt              DateTime  @default(now())
+  removedAt              DateTime?
+  removedByRequesterId   Int?
+  removalReason          String?
+
+  ticket             Ticket        @relation(fields: [ticketId], references: [id])
+  uploadedByRequester RequesterUser @relation("AttachmentUploadedBy", fields: [uploadedByRequesterId], references: [id])
+  removedByRequester  RequesterUser? @relation("AttachmentRemovedBy", fields: [removedByRequesterId], references: [id])
+
+  @@index([ticketId])
+}
+
+model TicketCounter {
+  year       Int @id
+  lastNumber Int @default(0)
 }
