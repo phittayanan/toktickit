@@ -41,7 +41,7 @@ describe('MyTickets', () => {
   it('renders the returned Tickets', async () => {
     vi.spyOn(api, 'fetchTickets').mockResolvedValue(listResponse([ticket()]))
 
-    render(<MyTickets onCreateTicket={vi.fn()} />)
+    render(<MyTickets onCreateTicket={vi.fn()} onOpenTicket={vi.fn()} />)
 
     await waitFor(() => {
       expect(screen.getAllByText('TKT-2026-000001').length).toBeGreaterThan(0)
@@ -52,7 +52,7 @@ describe('MyTickets', () => {
   it('shows an empty-account message when the Requester has no Tickets at all', async () => {
     vi.spyOn(api, 'fetchTickets').mockResolvedValue(listResponse([]))
 
-    render(<MyTickets onCreateTicket={vi.fn()} />)
+    render(<MyTickets onCreateTicket={vi.fn()} onOpenTicket={vi.fn()} />)
 
     await waitFor(() => {
       expect(screen.getByText(/haven't submitted any tickets yet/i)).toBeInTheDocument()
@@ -68,7 +68,7 @@ describe('MyTickets', () => {
       .mockResolvedValueOnce(listResponse([ticket()]))
       .mockResolvedValueOnce(listResponse([]))
 
-    render(<MyTickets onCreateTicket={vi.fn()} />)
+    render(<MyTickets onCreateTicket={vi.fn()} onOpenTicket={vi.fn()} />)
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1))
 
     fireEvent.change(screen.getByPlaceholderText(/search by ticket number or summary/i), {
@@ -85,7 +85,7 @@ describe('MyTickets', () => {
   it('re-fetches with the clicked sort column', async () => {
     const fetchSpy = vi.spyOn(api, 'fetchTickets').mockResolvedValue(listResponse([ticket()]))
 
-    render(<MyTickets onCreateTicket={vi.fn()} />)
+    render(<MyTickets onCreateTicket={vi.fn()} onOpenTicket={vi.fn()} />)
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1))
 
     fireEvent.click(screen.getByText(/ticket no\./i))
@@ -103,7 +103,7 @@ describe('MyTickets', () => {
       .spyOn(api, 'fetchTickets')
       .mockResolvedValue(listResponse([ticket()], { totalItems: 15, totalPages: 2 }))
 
-    render(<MyTickets onCreateTicket={vi.fn()} />)
+    render(<MyTickets onCreateTicket={vi.fn()} onOpenTicket={vi.fn()} />)
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1))
 
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
@@ -118,10 +118,22 @@ describe('MyTickets', () => {
     vi.spyOn(api, 'fetchTickets').mockResolvedValue(listResponse([ticket()]))
     const onCreateTicket = vi.fn()
 
-    render(<MyTickets onCreateTicket={onCreateTicket} />)
+    render(<MyTickets onCreateTicket={onCreateTicket} onOpenTicket={vi.fn()} />)
     await waitFor(() => screen.getAllByText('TKT-2026-000001'))
 
     fireEvent.click(screen.getByRole('button', { name: /^create ticket$/i }))
     expect(onCreateTicket).toHaveBeenCalled()
+  })
+
+  // Row click opens Ticket Detail (ui-spec.md §8: "row click opens Ticket Detail")
+  it('calls onOpenTicket with the Ticket id when a row is clicked', async () => {
+    vi.spyOn(api, 'fetchTickets').mockResolvedValue(listResponse([ticket({ id: 42 })]))
+    const onOpenTicket = vi.fn()
+
+    render(<MyTickets onCreateTicket={vi.fn()} onOpenTicket={onOpenTicket} />)
+    await waitFor(() => screen.getAllByText('TKT-2026-000001'))
+
+    fireEvent.click(screen.getAllByRole('button', { name: /TKT-2026-000001/i })[0])
+    expect(onOpenTicket).toHaveBeenCalledWith(42)
   })
 })
