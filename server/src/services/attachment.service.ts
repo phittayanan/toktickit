@@ -65,8 +65,12 @@ export async function uploadAttachment(ticketId: number, requesterId: number, fi
 // Attachments are keyed at /api/attachments/:id, not nested under a Ticket,
 // so ownership is checked by joining through the Attachment's Ticket
 // (BR-21) rather than via the Ticket route's own ownership check.
-async function findOwnedActiveAttachment(attachmentId: number, requesterId: number) {
-  const attachment = await prisma.attachment.findUnique({
+async function findOwnedActiveAttachment(
+  attachmentId: number,
+  requesterId: number,
+  client: Pick<typeof prisma, 'attachment'> = prisma,
+) {
+  const attachment = await client.attachment.findUnique({
     where: { id: attachmentId },
     include: { ticket: true },
   })
@@ -84,16 +88,24 @@ export async function getDownloadableAttachment(attachmentId: number, requesterI
 }
 
 // POST /api/attachments/:id/remove — BR-18/BR-19: soft removal only, and
-// only of an Attachment that is currently active.
+// only of an Attachment that is currently active. Runs the check-then-write
+// inside one transaction with a row lock (same pattern as uploadAttachment)
+// so two concurrent removals of the same Attachment can't both pass the
+// active check and silently overwrite each other's removal metadata — the
+// second blocks on the lock, then re-reads and correctly 404s.
 export async function removeAttachment(attachmentId: number, requesterId: number, removalReason: string) {
-  await findOwnedActiveAttachment(attachmentId, requesterId)
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Attachment" WHERE id = ${attachmentId} FOR UPDATE`
 
-  return prisma.attachment.update({
-    where: { id: attachmentId },
-    data: {
-      removedAt: new Date(),
-      removedByRequesterId: requesterId,
-      removalReason,
-    },
+    await findOwnedActiveAttachment(attachmentId, requesterId, tx)
+
+    return tx.attachment.update({
+      where: { id: attachmentId },
+      data: {
+        removedAt: new Date(),
+        removedByRequesterId: requesterId,
+        removalReason,
+      },
+    })
   })
 }

@@ -84,6 +84,13 @@ router.get('/attachments/:id/download', requireRequester, async (req: RequesterR
     res.download(path.join(UPLOAD_DIR, attachment.storedFilename), attachment.originalFilename, (err) => {
       if (err) {
         console.error('GET /api/attachments/:id/download failed', err)
+        // res.download only invokes this callback on failure and never
+        // itself writes a response — without an explicit response here the
+        // client hangs (e.g. the stored file is missing from disk) instead
+        // of getting a 500.
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Unable to download attachment' })
+        }
       }
     })
   } catch (serviceErr) {

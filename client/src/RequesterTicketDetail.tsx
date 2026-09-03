@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
+import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
 import {
   downloadAttachment,
   fetchCategories,
@@ -11,6 +11,7 @@ import {
   type TicketAttachment,
   type TicketDetail,
 } from './api'
+import { MAX_ACTIVE_ATTACHMENTS, validateAttachmentFile } from './attachmentRules'
 import { useRequester } from './useRequester'
 import { PriorityBadge, StatusBadge } from './badges'
 
@@ -19,22 +20,6 @@ type DetailState =
   | { status: 'success'; ticket: TicketDetail }
   | { status: 'not-found' }
   | { status: 'error'; message: string }
-
-// BR-13/BR-14/BR-15 mirrored client-side, same as CreateTicket.tsx — the
-// server independently re-validates (api-spec.md).
-const ALLOWED_ATTACHMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024
-const MAX_ACTIVE_ATTACHMENTS = 5
-
-function validateFile(file: File): string | null {
-  if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
-    return `${file.name}: unsupported file type. Allowed types are JPG, PNG, WEBP, and PDF.`
-  }
-  if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
-    return `${file.name}: exceeds the 5 MB limit.`
-  }
-  return null
-}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
@@ -78,7 +63,6 @@ function AttachmentsSection({
   const [removalReason, setRemovalReason] = useState('')
   const [removalError, setRemovalError] = useState<string | null>(null)
   const [removing, setRemoving] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const active = attachments.filter((a) => a.removedAt === null)
   const removed = attachments.filter((a) => a.removedAt !== null)
@@ -89,7 +73,7 @@ function AttachmentsSection({
 
     if (!file) return
 
-    const fileError = validateFile(file)
+    const fileError = validateAttachmentFile(file)
     if (fileError) {
       setPickError(fileError)
       return
@@ -248,7 +232,6 @@ function AttachmentsSection({
         </label>
         <input
           id="add-attachment"
-          ref={fileInputRef}
           type="file"
           className="form-control"
           accept="image/jpeg,image/png,image/webp,application/pdf"
