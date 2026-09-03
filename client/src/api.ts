@@ -48,6 +48,44 @@ export interface Ticket {
   updatedAt: string
 }
 
+export type SortBy = 'createdAt' | 'updatedAt' | 'ticketNumber'
+export type SortDir = 'asc' | 'desc'
+
+export type TicketListItem = Pick<
+  Ticket,
+  | 'id'
+  | 'ticketNumber'
+  | 'summary'
+  | 'categoryId'
+  | 'requestedPriority'
+  | 'itPriority'
+  | 'currentStatus'
+  | 'createdAt'
+  | 'updatedAt'
+>
+
+export interface TicketListParams {
+  page?: number
+  pageSize?: 10 | 25 | 50
+  search?: string
+  categoryId?: number
+  requestedPriority?: Priority
+  itPriority?: Priority
+  currentStatus?: string
+  sortBy?: SortBy
+  sortDir?: SortDir
+}
+
+export interface TicketListResponse {
+  data: TicketListItem[]
+  meta: {
+    page: number
+    pageSize: number
+    totalItems: number
+    totalPages: number
+  }
+}
+
 export interface Attachment {
   id: number
   ticketId: number
@@ -139,6 +177,22 @@ export function fetchRequesters(): Promise<Requester[]> {
 
 export function createTicket(input: CreateTicketInput): Promise<Ticket> {
   return postJson<Ticket>('/api/tickets', input)
+}
+
+// Only defined (non-empty-string) params are sent — omitting a param is how
+// the server applies its own default (api-spec.md), rather than the client
+// re-encoding those defaults itself.
+function toQueryString(params: TicketListParams): string {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') search.set(key, String(value))
+  }
+  const query = search.toString()
+  return query ? `?${query}` : ''
+}
+
+export function fetchTickets(params: TicketListParams = {}): Promise<TicketListResponse> {
+  return getJson<TicketListResponse>(`/api/tickets${toQueryString(params)}`)
 }
 
 // Unlike postJson, this sends a multipart body — Content-Type (with its
