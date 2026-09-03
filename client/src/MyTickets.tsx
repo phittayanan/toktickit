@@ -9,6 +9,7 @@ import {
   type TicketListItem,
   type TicketListResponse,
 } from './api'
+import { PriorityBadge, StatusBadge } from './badges'
 
 const PAGE_SIZES = [10, 25, 50] as const
 type PageSize = (typeof PAGE_SIZES)[number]
@@ -36,32 +37,19 @@ type ListState =
   | { status: 'success'; response: TicketListResponse }
   | { status: 'error'; message: string }
 
-// ui-spec.md §10: Requested/IT Priority badges, reinforced by their text
-// label (not color alone).
-function PriorityBadge({ priority }: { priority: Priority | null }) {
-  if (!priority) return <span className="text-muted small">Not yet set</span>
-
-  const classByPriority: Record<Priority, string> = {
-    LOW: 'text-bg-success-subtle text-success-emphasis',
-    MEDIUM: 'text-bg-warning-subtle text-warning-emphasis',
-    HIGH: 'text-bg-danger-subtle text-danger-emphasis',
-  }
-  const labelByPriority: Record<Priority, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' }
-
-  return <span className={`badge rounded-pill ${classByPriority[priority]}`}>{labelByPriority[priority]}</span>
-}
-
-function StatusBadge({ status }: { status: string }) {
-  return <span className="badge rounded-pill text-bg-success">{status === 'NEW' ? 'New' : status}</span>
-}
-
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 // The My Tickets list (ui-spec.md §8, ticket #20): paginated, searchable,
 // filterable, sortable list of the selected Requester's own Tickets.
-function MyTickets({ onCreateTicket }: { onCreateTicket: () => void }) {
+function MyTickets({
+  onCreateTicket,
+  onOpenTicket,
+}: {
+  onCreateTicket: () => void
+  onOpenTicket: (ticketId: number) => void
+}) {
   const [categories, setCategories] = useState<Category[]>([])
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
   const [sortBy, setSortBy] = useState<SortBy>('updatedAt')
@@ -293,7 +281,18 @@ function MyTickets({ onCreateTicket }: { onCreateTicket: () => void }) {
               </thead>
               <tbody>
                 {list.response.data.map((ticket: TicketListItem) => (
-                  <tr key={ticket.id} role="button">
+                  <tr
+                    key={ticket.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onOpenTicket(ticket.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onOpenTicket(ticket.id)
+                      }
+                    }}
+                  >
                     <td>{ticket.ticketNumber}</td>
                     <td>{formatDate(ticket.createdAt)}</td>
                     <td>{ticket.summary}</td>
@@ -317,7 +316,19 @@ function MyTickets({ onCreateTicket }: { onCreateTicket: () => void }) {
           {/* Mobile cards (ui-spec.md §8) */}
           <ul className="list-unstyled d-flex flex-column gap-2 d-md-none">
             {list.response.data.map((ticket: TicketListItem) => (
-              <li key={ticket.id} role="button" className="border rounded p-3">
+              <li
+                key={ticket.id}
+                role="button"
+                tabIndex={0}
+                className="border rounded p-3"
+                onClick={() => onOpenTicket(ticket.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onOpenTicket(ticket.id)
+                  }
+                }}
+              >
                 <div className="d-flex justify-content-between align-items-center mb-1">
                   <span className="fw-semibold">{ticket.ticketNumber}</span>
                   <StatusBadge status={ticket.currentStatus} />

@@ -15,6 +15,14 @@ export class TicketValidationError extends Error {
   }
 }
 
+// Missing or not-owned Ticket — indistinguishable 404 per ADR-0004/BR-21.
+// Shared by every route that looks a Ticket up by id (detail, attachments).
+export class TicketNotFoundError extends Error {
+  constructor() {
+    super('Ticket not found')
+  }
+}
+
 export async function createTicket(input: CreateTicketInput, requesterId: number) {
   const [category, relatedSystem] = await Promise.all([
     prisma.category.findUnique({ where: { id: input.categoryId } }),
@@ -94,4 +102,22 @@ export async function listTickets(query: ListTicketsQuery, requesterId: number) 
       totalPages: Math.ceil(totalItems / query.pageSize),
     },
   }
+}
+
+// GET /api/tickets/:id — one Ticket owned by the requesting Requester,
+// including every Attachment (active and soft-removed alike, per
+// BR-20/AC-29 — the client splits them for display, ui-spec.md §9).
+export async function getTicketById(ticketId: number, requesterId: number) {
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: { attachments: { orderBy: { createdAt: 'desc' } } },
+  })
+
+  // Nonexistent and not-owned are indistinguishable 404s (ADR-0004/BR-21) —
+  // never reveal to the caller which case it was.
+  if (!ticket || ticket.requesterId !== requesterId) {
+    throw new TicketNotFoundError()
+  }
+
+  return ticket
 }

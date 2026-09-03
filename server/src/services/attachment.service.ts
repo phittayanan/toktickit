@@ -1,12 +1,8 @@
 import prisma from '../prisma'
 import { MAX_ACTIVE_ATTACHMENTS_PER_TICKET } from '../schemas/attachment.schema'
+import { TicketNotFoundError } from './ticket.service'
 
-// Missing or not-owned Ticket — indistinguishable 404 per ADR-0004/BR-21.
-export class TicketNotFoundError extends Error {
-  constructor() {
-    super('Ticket not found')
-  }
-}
+export { TicketNotFoundError }
 
 // BR-15: the 5-active-attachments cap was reached for this Ticket.
 export class AttachmentLimitReachedError extends Error {

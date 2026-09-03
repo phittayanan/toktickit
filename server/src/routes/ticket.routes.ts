@@ -1,7 +1,13 @@
 import { Router } from 'express'
 import { requireRequester, type RequesterRequest } from '../middleware/requireRequester'
 import { createTicketSchema, listTicketsQuerySchema } from '../schemas/ticket.schema'
-import { createTicket, listTickets, TicketValidationError } from '../services/ticket.service'
+import {
+  createTicket,
+  getTicketById,
+  listTickets,
+  TicketNotFoundError,
+  TicketValidationError,
+} from '../services/ticket.service'
 
 const router = Router()
 
@@ -40,6 +46,28 @@ router.get('/tickets', requireRequester, async (req: RequesterRequest, res) => {
   } catch (err) {
     console.error('GET /api/tickets failed', err)
     res.status(500).json({ error: 'Unable to retrieve tickets' })
+  }
+})
+
+router.get('/tickets/:id', requireRequester, async (req: RequesterRequest, res) => {
+  const ticketId = Number(req.params.id)
+  if (!Number.isInteger(ticketId) || ticketId <= 0) {
+    // A malformed id can never resolve to a row — same 404 shape as a
+    // well-formed-but-missing/not-owned one (ADR-0004).
+    res.status(404).json({ error: 'Ticket not found' })
+    return
+  }
+
+  try {
+    const ticket = await getTicketById(ticketId, req.requesterId!)
+    res.status(200).json(ticket)
+  } catch (err) {
+    if (err instanceof TicketNotFoundError) {
+      res.status(404).json({ error: err.message })
+      return
+    }
+    console.error('GET /api/tickets/:id failed', err)
+    res.status(500).json({ error: 'Unable to retrieve ticket' })
   }
 })
 

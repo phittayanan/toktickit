@@ -95,6 +95,19 @@ export interface Attachment {
   createdAt: string
 }
 
+// GET /api/tickets/:id's shape of an Attachment additionally carries the
+// soft-removal fields (ADR-0005) — active vs. removed is `removedAt: null`
+// vs. non-null.
+export interface TicketAttachment extends Attachment {
+  removedAt: string | null
+  removedByRequesterId: number | null
+  removalReason: string | null
+}
+
+export interface TicketDetail extends Ticket {
+  attachments: TicketAttachment[]
+}
+
 function requesterHeaders(): Record<string, string> {
   const requester = getRequester()
   return requester ? { 'X-Requester-Id': String(requester.id) } : {}
@@ -120,6 +133,19 @@ async function getJson<T>(path: string): Promise<T> {
   return res.json()
 }
 
+// The request did reach the API (unlike a fetch()-level throw, which means
+// it never did) — a non-JSON error body still deserves its own message,
+// not the generic connectivity one.
+async function extractErrorMessage(res: Response): Promise<string> {
+  try {
+    const data = (await res.json()) as { error?: string }
+    if (data?.error) return data.error
+  } catch {
+    // Response wasn't JSON — fall through to the generic message.
+  }
+  return 'The server was unable to process this request'
+}
+
 // Like getJson, but for a POST with a JSON body. On a 4xx, prefers the
 // server's own field-specific `{ error }` message over the generic
 // connectivity message, since the request *did* reach the API.
@@ -141,17 +167,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   }
 
   if (!res.ok) {
-    // The request did reach the API here (unlike the catch above, which
-    // means it never did) — a non-JSON error body still deserves its own
-    // message, not the network-failure one.
-    let message = 'The server was unable to process this request'
-    try {
-      const data = (await res.json()) as { error?: string }
-      if (data?.error) message = data.error
-    } catch {
-      // Response wasn't JSON — keep the generic server-error message.
-    }
-    throw new Error(message)
+    throw new Error(await extractErrorMessage(res))
   }
 
   return res.json()
@@ -195,6 +211,25 @@ export function fetchTickets(params: TicketListParams = {}): Promise<TicketListR
   return getJson<TicketListResponse>(`/api/tickets${toQueryString(params)}`)
 }
 
+// Ticket Detail needs to tell "not found" (404, api-spec.md's `{ error }`
+// body) apart from a generic connectivity failure — unlike getJson, which
+// collapses every non-2xx into the same message — so this uses the same
+// error-message extraction as postJson/uploadAttachment instead.
+export async function fetchTicketById(id: number): Promise<TicketDetail> {
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE_URL}/api/tickets/${id}`, { headers: requesterHeaders() })
+  } catch {
+    throw new Error('Unable to connect to TokTickIT API')
+  }
+
+  if (!res.ok) {
+    throw new Error(await extractErrorMessage(res))
+  }
+
+  return res.json()
+}
+
 // Unlike postJson, this sends a multipart body — Content-Type (with its
 // boundary) is left for the browser to set, never hardcoded. Used for one
 // file per call; the Create Ticket flow awaits each call in turn (BR-16 /
@@ -215,14 +250,7 @@ export async function uploadAttachment(ticketId: number, file: File): Promise<At
   }
 
   if (!res.ok) {
-    let message = 'The server was unable to process this request'
-    try {
-      const data = (await res.json()) as { error?: string }
-      if (data?.error) message = data.error
-    } catch {
-      // Response wasn't JSON — keep the generic server-error message.
-    }
-    throw new Error(message)
+    throw new Error(await extractErrorMessage(res))
   }
 
   return res.json()
