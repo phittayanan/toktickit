@@ -48,6 +48,15 @@ export interface Ticket {
   updatedAt: string
 }
 
+export interface Attachment {
+  id: number
+  ticketId: number
+  originalFilename: string
+  mimeType: string
+  sizeBytes: number
+  createdAt: string
+}
+
 function requesterHeaders(): Record<string, string> {
   const requester = getRequester()
   return requester ? { 'X-Requester-Id': String(requester.id) } : {}
@@ -130,4 +139,37 @@ export function fetchRequesters(): Promise<Requester[]> {
 
 export function createTicket(input: CreateTicketInput): Promise<Ticket> {
   return postJson<Ticket>('/api/tickets', input)
+}
+
+// Unlike postJson, this sends a multipart body — Content-Type (with its
+// boundary) is left for the browser to set, never hardcoded. Used for one
+// file per call; the Create Ticket flow awaits each call in turn (BR-16 /
+// ADR-0003) rather than firing them in parallel.
+export async function uploadAttachment(ticketId: number, file: File): Promise<Attachment> {
+  const body = new FormData()
+  body.append('file', file)
+
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}/attachments`, {
+      method: 'POST',
+      headers: requesterHeaders(),
+      body,
+    })
+  } catch {
+    throw new Error('Unable to connect to TokTickIT API')
+  }
+
+  if (!res.ok) {
+    let message = 'The server was unable to process this request'
+    try {
+      const data = (await res.json()) as { error?: string }
+      if (data?.error) message = data.error
+    } catch {
+      // Response wasn't JSON — keep the generic server-error message.
+    }
+    throw new Error(message)
+  }
+
+  return res.json()
 }

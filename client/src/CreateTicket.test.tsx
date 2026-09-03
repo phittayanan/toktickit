@@ -116,4 +116,112 @@ describe('CreateTicket', () => {
     })
     expect(screen.getByRole('button', { name: /create another/i })).toBeInTheDocument()
   })
+
+  // Attachment picker rejects an unsupported type before any upload is attempted.
+  it('rejects an unsupported attachment type at selection time', async () => {
+    const uploadSpy = vi.spyOn(api, 'uploadAttachment')
+    await renderForm()
+
+    const file = new File(['plain text'], 'notes.txt', { type: 'text/plain' })
+    fireEvent.change(screen.getByLabelText(/attachments/i), { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect(screen.getByText(/unsupported file type/i)).toBeInTheDocument()
+    })
+    expect(uploadSpy).not.toHaveBeenCalled()
+  })
+
+  // BR-16/ADR-0003: selected attachments upload sequentially after Ticket
+  // creation succeeds, one call awaited before the next starts.
+  it('uploads selected attachments sequentially after the Ticket is created', async () => {
+    vi.spyOn(api, 'createTicket').mockResolvedValue(VALID_TICKET)
+    const callOrder: string[] = []
+    let resolveFirst!: (attachment: unknown) => void
+    vi.spyOn(api, 'uploadAttachment').mockImplementation((_ticketId, file: File) => {
+      callOrder.push(`start:${file.name}`)
+      if (file.name === 'a.png') {
+        return new Promise((resolve) => {
+          resolveFirst = () => {
+            callOrder.push('end:a.png')
+            resolve({
+              id: 1,
+              ticketId: VALID_TICKET.id,
+              originalFilename: 'a.png',
+              mimeType: 'image/png',
+              sizeBytes: 10,
+              createdAt: '2026-08-23T10:16:00.000Z',
+            })
+          }
+        })
+      }
+      callOrder.push('end:b.png')
+      return Promise.resolve({
+        id: 2,
+        ticketId: VALID_TICKET.id,
+        originalFilename: 'b.png',
+        mimeType: 'image/png',
+        sizeBytes: 10,
+        createdAt: '2026-08-23T10:16:05.000Z',
+      })
+    })
+
+    await renderForm()
+    await fillValidForm()
+
+    const fileA = new File(['a'], 'a.png', { type: 'image/png' })
+    const fileB = new File(['b'], 'b.png', { type: 'image/png' })
+    fireEvent.change(screen.getByLabelText(/attachments/i), { target: { files: [fileA, fileB] } })
+    await waitFor(() => expect(screen.getByText('a.png')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }))
+
+    await waitFor(() => expect(callOrder).toEqual(['start:a.png']))
+    resolveFirst(undefined)
+
+    await waitFor(() => expect(screen.getByText(/2 of 2 attachments uploaded/i)).toBeInTheDocument())
+    expect(callOrder).toEqual(['start:a.png', 'end:a.png', 'start:b.png', 'end:b.png'])
+  })
+
+  // BR-17/AC: one failed upload doesn't affect the Ticket or the other
+  // upload; the confirmation view offers a per-file Retry that reuses the
+  // same upload endpoint.
+  it('shows a partial-success state with a working Retry when one attachment upload fails', async () => {
+    vi.spyOn(api, 'createTicket').mockResolvedValue(VALID_TICKET)
+    vi.spyOn(api, 'uploadAttachment').mockImplementation((_ticketId, file: File) => {
+      if (file.name === 'bad.png') return Promise.reject(new Error('Server rejected this file'))
+      return Promise.resolve({
+        id: 1,
+        ticketId: VALID_TICKET.id,
+        originalFilename: file.name,
+        mimeType: 'image/png',
+        sizeBytes: 10,
+        createdAt: '2026-08-23T10:16:00.000Z',
+      })
+    })
+
+    await renderForm()
+    await fillValidForm()
+
+    const good = new File(['a'], 'good.png', { type: 'image/png' })
+    const bad = new File(['b'], 'bad.png', { type: 'image/png' })
+    fireEvent.change(screen.getByLabelText(/attachments/i), { target: { files: [good, bad] } })
+    await waitFor(() => expect(screen.getByText('bad.png')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }))
+
+    await waitFor(() => expect(screen.getByText(/1 of 2 attachments uploaded/i)).toBeInTheDocument())
+    expect(screen.getByText(/server rejected this file/i)).toBeInTheDocument()
+
+    vi.mocked(api.uploadAttachment).mockResolvedValueOnce({
+      id: 2,
+      ticketId: VALID_TICKET.id,
+      originalFilename: 'bad.png',
+      mimeType: 'image/png',
+      sizeBytes: 10,
+      createdAt: '2026-08-23T10:16:10.000Z',
+    })
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }))
+
+    await waitFor(() => expect(screen.getByText(/2 of 2 attachments uploaded/i)).toBeInTheDocument())
+  })
 })
