@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { requireRequester, type RequesterRequest } from '../middleware/requireRequester'
-import { createTicketSchema } from '../schemas/ticket.schema'
-import { createTicket, TicketValidationError } from '../services/ticket.service'
+import { createTicketSchema, listTicketsQuerySchema } from '../schemas/ticket.schema'
+import { createTicket, listTickets, TicketValidationError } from '../services/ticket.service'
 
 const router = Router()
 
@@ -23,6 +23,23 @@ router.post('/tickets', requireRequester, async (req: RequesterRequest, res) => 
     }
     console.error('POST /api/tickets failed', err)
     res.status(500).json({ error: 'Unable to create ticket' })
+  }
+})
+
+router.get('/tickets', requireRequester, async (req: RequesterRequest, res) => {
+  const parsed = listTicketsQuerySchema.safeParse(req.query)
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    res.status(400).json({ error: issue.message, field: String(issue.path[0]) })
+    return
+  }
+
+  try {
+    const result = await listTickets(parsed.data, req.requesterId!)
+    res.status(200).json(result)
+  } catch (err) {
+    console.error('GET /api/tickets failed', err)
+    res.status(500).json({ error: 'Unable to retrieve tickets' })
   }
 })
 
