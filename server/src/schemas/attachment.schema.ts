@@ -11,3 +11,11 @@ export const MAX_ACTIVE_ATTACHMENTS_PER_TICKET = 5 // BR-15
 export function isAllowedMimeType(mimeType: string): boolean {
   return ALLOWED_MIME_TYPES.includes(mimeType)
 }
+
+// BR-19: a required removal reason, 5-500 characters after trimming.
+export function validateRemovalReason(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (trimmed.length < 5 || trimmed.length > 500) return null
+  return trimmed
+}

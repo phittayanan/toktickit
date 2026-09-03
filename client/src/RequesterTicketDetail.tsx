@@ -1,5 +1,16 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { fetchCategories, fetchRelatedSystems, fetchTicketById, type Category, type RelatedSystem, type TicketDetail } from './api'
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
+import {
+  downloadAttachment,
+  fetchCategories,
+  fetchRelatedSystems,
+  fetchTicketById,
+  removeAttachment,
+  uploadAttachment,
+  type Category,
+  type RelatedSystem,
+  type TicketAttachment,
+  type TicketDetail,
+} from './api'
 import { useRequester } from './useRequester'
 import { PriorityBadge, StatusBadge } from './badges'
 
@@ -9,8 +20,29 @@ type DetailState =
   | { status: 'not-found' }
   | { status: 'error'; message: string }
 
+// BR-13/BR-14/BR-15 mirrored client-side, same as CreateTicket.tsx — the
+// server independently re-validates (api-spec.md).
+const ALLOWED_ATTACHMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024
+const MAX_ACTIVE_ATTACHMENTS = 5
+
+function validateFile(file: File): string | null {
+  if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
+    return `${file.name}: unsupported file type. Allowed types are JPG, PNG, WEBP, and PDF.`
+  }
+  if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+    return `${file.name}: exceeds the 5 MB limit.`
+  }
+  return null
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  return `${(bytes / 1024).toFixed(1)} KB`
 }
 
 function ReadOnlyField({ label, value }: { label: string; value: ReactNode }) {
@@ -24,9 +56,246 @@ function ReadOnlyField({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
+// Attachments section (ui-spec.md §9/§3, ticket #22): active attachments
+// (download + remove), a removed sub-list (muted, metadata only), and an
+// "Add Attachment" control reusing the same upload endpoint/limits as
+// Create Ticket (#19).
+function AttachmentsSection({
+  ticketId,
+  attachments,
+  onAdded,
+  onRemoved,
+}: {
+  ticketId: number
+  attachments: TicketAttachment[]
+  onAdded: (attachment: TicketAttachment) => void
+  onRemoved: (attachment: TicketAttachment) => void
+}) {
+  const [pickError, setPickError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [downloadErrors, setDownloadErrors] = useState<Record<number, string>>({})
+  const [removingId, setRemovingId] = useState<number | null>(null)
+  const [removalReason, setRemovalReason] = useState('')
+  const [removalError, setRemovalError] = useState<string | null>(null)
+  const [removing, setRemoving] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const active = attachments.filter((a) => a.removedAt === null)
+  const removed = attachments.filter((a) => a.removedAt !== null)
+
+  const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = '' // allow re-selecting the same file later
+
+    if (!file) return
+
+    const fileError = validateFile(file)
+    if (fileError) {
+      setPickError(fileError)
+      return
+    }
+    if (active.length >= MAX_ACTIVE_ATTACHMENTS) {
+      setPickError(`You can attach up to ${MAX_ACTIVE_ATTACHMENTS} files per Ticket.`)
+      return
+    }
+
+    setPickError(null)
+    setUploading(true)
+    try {
+      const attachment = await uploadAttachment(ticketId, file)
+      onAdded({ ...attachment, removedAt: null, removedByRequesterId: null, removalReason: null })
+    } catch (err) {
+      setPickError(err instanceof Error ? err.message : 'Unable to upload attachment')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleDownload = async (attachment: TicketAttachment) => {
+    setDownloadErrors((prev) => {
+      const next = { ...prev }
+      delete next[attachment.id]
+      return next
+    })
+    try {
+      await downloadAttachment(attachment.id, attachment.originalFilename)
+    } catch (err) {
+      setDownloadErrors((prev) => ({
+        ...prev,
+        [attachment.id]: err instanceof Error ? err.message : 'Unable to download attachment',
+      }))
+    }
+  }
+
+  const openRemoveConfirm = (attachmentId: number) => {
+    setRemovingId(attachmentId)
+    setRemovalReason('')
+    setRemovalError(null)
+  }
+
+  const cancelRemoveConfirm = () => {
+    setRemovingId(null)
+    setRemovalReason('')
+    setRemovalError(null)
+  }
+
+  const confirmRemove = async () => {
+    if (removingId === null) return
+
+    // BR-19 mirrored client-side; the server independently re-validates.
+    const reason = removalReason.trim()
+    if (reason.length < 5 || reason.length > 500) {
+      setRemovalError('A removal reason (5-500 characters) is required.')
+      return
+    }
+
+    setRemoving(true)
+    setRemovalError(null)
+    try {
+      const updated = await removeAttachment(removingId, reason)
+      onRemoved(updated)
+      setRemovingId(null)
+      setRemovalReason('')
+    } catch (err) {
+      setRemovalError(err instanceof Error ? err.message : 'Unable to remove attachment')
+    } finally {
+      setRemoving(false)
+    }
+  }
+
+  return (
+    <div className="mb-4 border-top pt-4">
+      <h2 className="h5 mb-3">Attachments</h2>
+
+      {active.length === 0 && <p className="text-muted small mb-3">No active attachments.</p>}
+
+      {active.length > 0 && (
+        <ul className="list-unstyled d-flex flex-column gap-2 mb-3">
+          {active.map((attachment) => (
+            <li key={attachment.id} className="d-flex align-items-center gap-2 p-2 rounded border border-secondary-subtle">
+              <span className="flex-grow-1 text-truncate" title={attachment.originalFilename}>
+                {attachment.originalFilename}
+              </span>
+              <span className="text-muted small">{formatSize(attachment.sizeBytes)}</span>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-primary"
+                aria-label={`Download ${attachment.originalFilename}`}
+                title="Download"
+                onClick={() => handleDownload(attachment)}
+              >
+                ⬇
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger"
+                aria-label={`Remove ${attachment.originalFilename}`}
+                title="Remove"
+                onClick={() => openRemoveConfirm(attachment.id)}
+              >
+                ✕
+              </button>
+              {downloadErrors[attachment.id] && (
+                <div className="text-danger small w-100" role="alert">
+                  {downloadErrors[attachment.id]}
+                </div>
+              )}
+              {removingId === attachment.id && (
+                <div className="w-100 mt-2 p-2 border rounded border-danger-subtle">
+                  <label htmlFor={`removal-reason-${attachment.id}`} className="form-label small mb-1">
+                    Reason for removal <span className="text-danger">*</span>
+                  </label>
+                  <textarea
+                    id={`removal-reason-${attachment.id}`}
+                    className="form-control form-control-sm mb-2"
+                    value={removalReason}
+                    onChange={(e) => setRemovalReason(e.target.value)}
+                    disabled={removing}
+                  />
+                  {removalError && (
+                    <div className="text-danger small mb-2" role="alert">
+                      {removalError}
+                    </div>
+                  )}
+                  <div className="d-flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-danger"
+                      onClick={confirmRemove}
+                      disabled={removing}
+                    >
+                      {removing ? 'Removing…' : 'Confirm Remove'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={cancelRemoveConfirm}
+                      disabled={removing}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mb-3">
+        <label htmlFor="add-attachment" className="form-label">
+          Add Attachment
+        </label>
+        <input
+          id="add-attachment"
+          ref={fileInputRef}
+          type="file"
+          className="form-control"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
+          onChange={handleFileSelected}
+          disabled={uploading || active.length >= MAX_ACTIVE_ATTACHMENTS}
+        />
+        <div className="form-text">JPG, PNG, WEBP, or PDF — up to 5 MB each, up to 5 active files.</div>
+        {uploading && (
+          <p role="status" className="text-muted small mt-1">
+            Uploading…
+          </p>
+        )}
+        {pickError && (
+          <div className="text-danger small mt-1" role="alert">
+            {pickError}
+          </div>
+        )}
+      </div>
+
+      {removed.length > 0 && (
+        <div>
+          <h3 className="h6 text-muted mb-2">Removed</h3>
+          <ul className="list-unstyled d-flex flex-column gap-2">
+            {removed.map((attachment) => (
+              <li
+                key={attachment.id}
+                className="d-flex flex-column gap-1 p-2 rounded border border-secondary-subtle text-muted"
+              >
+                <span className="text-decoration-line-through text-truncate" title={attachment.originalFilename}>
+                  {attachment.originalFilename}
+                </span>
+                <span className="small">
+                  {formatSize(attachment.sizeBytes)} · removed {attachment.removedAt && formatDate(attachment.removedAt)}
+                  {attachment.removalReason ? ` · ${attachment.removalReason}` : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Requester Ticket Detail, view mode (ui-spec.md §9, ticket #21): a
-// read-only field grid + Summary/Description. No Attachments section yet
-// (#22), and no Public Comments / Internal Notes / Actions Taken / status
+// read-only field grid + Summary/Description, plus Attachment management
+// (#22). No Public Comments / Internal Notes / Actions Taken / status
 // change — those are permanently out of scope for Lab 2.
 function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack: () => void }) {
   const { requester } = useRequester()
@@ -132,6 +401,33 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
               {detail.ticket.description}
             </div>
           </div>
+
+          <AttachmentsSection
+            ticketId={detail.ticket.id}
+            attachments={detail.ticket.attachments}
+            onAdded={(attachment) => {
+              setDetail((prev) =>
+                prev.status === 'success'
+                  ? { ...prev, ticket: { ...prev.ticket, attachments: [attachment, ...prev.ticket.attachments] } }
+                  : prev,
+              )
+            }}
+            onRemoved={(updated) => {
+              setDetail((prev) =>
+                prev.status === 'success'
+                  ? {
+                      ...prev,
+                      ticket: {
+                        ...prev.ticket,
+                        attachments: prev.ticket.attachments.map((a) =>
+                          a.id === updated.id ? { ...a, ...updated } : a,
+                        ),
+                      },
+                    }
+                  : prev,
+              )
+            }}
+          />
         </>
       )}
     </div>

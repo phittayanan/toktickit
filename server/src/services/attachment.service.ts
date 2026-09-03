@@ -11,6 +11,14 @@ export class AttachmentLimitReachedError extends Error {
   }
 }
 
+// BR-21: missing, not-owned (via the Ticket), or already-removed Attachment
+// — all indistinguishable 404s, mirroring TicketNotFoundError.
+export class AttachmentNotFoundError extends Error {
+  constructor() {
+    super('Attachment not found')
+  }
+}
+
 export interface UploadedFile {
   originalname: string
   filename: string
@@ -51,5 +59,41 @@ export async function uploadAttachment(ticketId: number, requesterId: number, fi
         sizeBytes: file.size,
       },
     })
+  })
+}
+
+// Attachments are keyed at /api/attachments/:id, not nested under a Ticket,
+// so ownership is checked by joining through the Attachment's Ticket
+// (BR-21) rather than via the Ticket route's own ownership check.
+async function findOwnedActiveAttachment(attachmentId: number, requesterId: number) {
+  const attachment = await prisma.attachment.findUnique({
+    where: { id: attachmentId },
+    include: { ticket: true },
+  })
+  if (!attachment || attachment.ticket.requesterId !== requesterId || attachment.removedAt) {
+    throw new AttachmentNotFoundError()
+  }
+  return attachment
+}
+
+// GET /api/attachments/:id/download — returns the active Attachment row so
+// the route can stream its file content; a removed or not-owned Attachment
+// is indistinguishable from a missing one (BR-20/BR-21).
+export async function getDownloadableAttachment(attachmentId: number, requesterId: number) {
+  return findOwnedActiveAttachment(attachmentId, requesterId)
+}
+
+// POST /api/attachments/:id/remove — BR-18/BR-19: soft removal only, and
+// only of an Attachment that is currently active.
+export async function removeAttachment(attachmentId: number, requesterId: number, removalReason: string) {
+  await findOwnedActiveAttachment(attachmentId, requesterId)
+
+  return prisma.attachment.update({
+    where: { id: attachmentId },
+    data: {
+      removedAt: new Date(),
+      removedByRequesterId: requesterId,
+      removalReason,
+    },
   })
 }

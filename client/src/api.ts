@@ -173,6 +173,39 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.json()
 }
 
+// Downloads an active Attachment's file content and triggers a browser save
+// under its original filename. A removed or not-owned Attachment 404s with
+// the shared { error } body (BR-20/BR-21).
+export async function downloadAttachment(attachmentId: number, originalFilename: string): Promise<void> {
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE_URL}/api/attachments/${attachmentId}/download`, {
+      headers: requesterHeaders(),
+    })
+  } catch {
+    throw new Error('Unable to connect to TokTickIT API')
+  }
+
+  if (!res.ok) {
+    throw new Error(await extractErrorMessage(res))
+  }
+
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = originalFilename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+// BR-18/BR-19: soft-removes an active Attachment given a required reason.
+export function removeAttachment(attachmentId: number, removalReason: string): Promise<TicketAttachment> {
+  return postJson<TicketAttachment>(`/api/attachments/${attachmentId}/remove`, { removalReason })
+}
+
 export function checkHealth(): Promise<HealthResponse> {
   return getJson<HealthResponse>('/api/health')
 }
