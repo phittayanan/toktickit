@@ -10,6 +10,7 @@ import {
   type RelatedSystem,
   type Ticket,
 } from './api'
+import { MAX_ACTIVE_ATTACHMENTS, validateAttachmentFile } from './attachmentRules'
 
 interface FormValues {
   categoryId: string
@@ -34,22 +35,6 @@ interface AttachmentEntry {
   status: 'pending' | 'uploading' | 'uploaded' | 'failed'
   error?: string
   attachment?: Attachment
-}
-
-// BR-13/BR-14/BR-15 mirrored client-side, same as the core fields above —
-// the server independently re-validates (api-spec.md).
-const ALLOWED_ATTACHMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024
-const MAX_ACTIVE_ATTACHMENTS = 5
-
-function validateFile(file: File): string | null {
-  if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
-    return `${file.name}: unsupported file type. Allowed types are JPG, PNG, WEBP, and PDF.`
-  }
-  if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
-    return `${file.name}: exceeds the 5 MB limit.`
-  }
-  return null
 }
 
 const EMPTY_FORM: FormValues = {
@@ -143,7 +128,7 @@ function CreateTicket() {
     let count = attachments.length
 
     for (const file of Array.from(fileList)) {
-      const fileError = validateFile(file)
+      const fileError = validateAttachmentFile(file)
       if (fileError) {
         errors.push(fileError)
         continue
