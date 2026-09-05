@@ -36,3 +36,7 @@ server/prisma/*.db
 server/generated/
 server/uploads/*
 !server/uploads/.gitkeep
+
+# Playwright
+/test-results/
+/playwright-report/
