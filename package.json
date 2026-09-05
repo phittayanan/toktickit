@@ -7,11 +7,14 @@
     "doc": "docs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1"
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.4.1",
+    "typescript": "^7.0.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
