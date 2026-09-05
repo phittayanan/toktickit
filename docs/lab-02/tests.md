@@ -81,8 +81,8 @@ row below.
 | VIS-01 | Visual | AC-31 | Playwright screenshots — Create Ticket at 3 breakpoints | Matches `ui-spec.md` §13 checklist, no clipping/overlap/scroll | `e2e/lab-02/visual-create-ticket.spec.ts` | Pass |
 | VIS-02 | Visual | AC-31 | Playwright screenshots — My Tickets at 3 breakpoints | Same checklist | `e2e/lab-02/visual-my-tickets.spec.ts` | Pass |
 | VIS-03 | Visual | AC-31 | Playwright screenshots — Ticket Detail at 3 breakpoints | Same checklist | `e2e/lab-02/visual-ticket-detail.spec.ts` | Pass |
-| E2E-01 | E2E | AC-01, AC-19 | Full flow: select Requester → create Ticket with an Attachment → find it in My Tickets | Confirmation shows official number; same Ticket appears in the list | `e2e/lab-02/requester-ticket-flow.spec.ts` | Pending |
-| E2E-02 | E2E | AC-03, AC-19 | Requester A creates a Ticket; switch to Requester B | B's My Tickets and direct Ticket-Detail URL for A's Ticket both show none/404 | `e2e/lab-02/requester-ownership.spec.ts` | Pending |
+| E2E-01 | E2E | AC-01, AC-19 | Full flow: select Requester → create Ticket with an Attachment → find it in My Tickets | Confirmation shows official number; same Ticket appears in the list | `e2e/lab-02/requester-ticket-flow.spec.ts` | Pass |
+| E2E-02 | E2E | AC-03, AC-19 | Requester A creates a Ticket; switch to Requester B | B's My Tickets and direct Ticket-Detail URL for A's Ticket both show none/404 | `e2e/lab-02/requester-ownership.spec.ts` | Pass |
 | E2E-03 | E2E | AC-32 | Keyboard-only pass over Create Ticket, My Tickets, Ticket Detail | Every control reachable via Tab, visible focus throughout | `e2e/lab-02/requester-accessibility.spec.ts` | Pending |
 
 ## 3. Acceptance-Criterion Traceability

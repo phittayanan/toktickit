@@ -118,16 +118,20 @@ function CreateTicket() {
   }
 
   const handleFilesSelected = (event: ChangeEvent<HTMLInputElement>) => {
-    const fileList = event.target.files
-    event.target.value = '' // allow re-selecting the same file after removing it
+    // `event.target.files` is a *live* FileList tied to the input — resetting
+    // `event.target.value` below (to allow re-selecting the same file after
+    // removing it) empties that live list in place, so it must be snapshotted
+    // into a real array first or every selection here is silently dropped.
+    const files = Array.from(event.target.files ?? [])
+    event.target.value = ''
 
-    if (!fileList || fileList.length === 0) return
+    if (files.length === 0) return
 
     const additions: AttachmentEntry[] = []
     const errors: string[] = []
     let count = attachments.length
 
-    for (const file of Array.from(fileList)) {
+    for (const file of files) {
       const fileError = validateAttachmentFile(file)
       if (fileError) {
         errors.push(fileError)
