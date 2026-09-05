@@ -1,0 +1,250 @@
+/*
+ * Zen Green theme (docs/lab-02/ui-spec.md).
+ *
+ * Applied as an override layer on top of Bootstrap so every screen
+ * (Selector, Create Ticket, My Tickets, Ticket Detail) shares one token
+ * set without re-implementing Bootstrap's components from scratch.
+ */
+
+:root {
+  --tk-primary-green: #006b3c;
+  --tk-secondary-green: #0b7a46;
+  --tk-pale-green: #eaf6ef;
+  --tk-page-bg: #f5f7f6;
+  --tk-surface: #ffffff;
+  --tk-surface-border: #e1e7e4;
+  --tk-text: #1a2e27;
+  --tk-field-border: #c9d3cf;
+  --tk-readonly-bg: #f1f3f1;
+  --tk-error: #b3261e;
+  --tk-warning-text: #b8860b;
+  --tk-warning-bg: #fff6e0;
+  --tk-success-text: #0b7a46;
+  --tk-success-bg: #eaf6ef;
+
+  --bs-font-sans-serif: -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --bs-body-font-family: var(--bs-font-sans-serif);
+  --bs-body-color: var(--tk-text);
+  --bs-body-bg: var(--tk-page-bg);
+  --bs-primary: var(--tk-primary-green);
+  --bs-primary-rgb: 0, 107, 60;
+  --bs-link-color: var(--tk-secondary-green);
+  --bs-link-hover-color: var(--tk-secondary-green);
+  --bs-border-color: var(--tk-surface-border);
+  --bs-danger: var(--tk-error);
+  --bs-danger-rgb: 179, 38, 30;
+}
+
+.text-danger {
+  color: var(--tk-error) !important;
+}
+
+body {
+  background: var(--tk-page-bg);
+  color: var(--tk-text);
+}
+
+/* ---- Application shell (ui-spec.md §5) ---- */
+
+.app-shell__header {
+  background: var(--tk-primary-green);
+  color: #fff;
+}
+
+.app-shell__brand {
+  font-size: 18px;
+  color: #fff;
+}
+
+.app-shell__nav-link {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.app-shell__nav-link.fw-semibold {
+  color: #fff !important;
+  text-decoration-color: var(--tk-pale-green) !important;
+  text-decoration-thickness: 2px !important;
+}
+
+.app-shell__requester {
+  color: #fff;
+}
+
+.app-shell__main {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+@media (max-width: 767px) {
+  .app-shell__main {
+    padding: 16px;
+  }
+}
+
+/* ---- Cards / surfaces ---- */
+
+.card {
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-surface-border);
+  box-shadow: 0 1px 2px rgba(26, 46, 39, 0.06);
+}
+
+/* ---- Buttons (ui-spec.md §3 hierarchy) ---- */
+
+.btn-primary {
+  background-color: var(--tk-primary-green);
+  border-color: var(--tk-primary-green);
+  color: #fff;
+}
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:disabled {
+  background-color: #00552f;
+  border-color: #00552f;
+}
+
+.btn-outline-primary,
+.btn-secondary,
+.btn-outline-secondary {
+  background: #fff;
+  border-color: var(--tk-primary-green);
+  color: var(--tk-primary-green);
+}
+.btn-outline-primary:hover,
+.btn-secondary:hover,
+.btn-outline-secondary:hover {
+  background: var(--tk-pale-green);
+  color: var(--tk-primary-green);
+  border-color: var(--tk-primary-green);
+}
+
+.btn-link {
+  color: var(--tk-secondary-green);
+}
+
+.btn-outline-danger {
+  border-color: var(--tk-error);
+  color: var(--tk-error);
+}
+.btn-outline-danger:hover {
+  background-color: var(--tk-error);
+  border-color: var(--tk-error);
+  color: #fff;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+}
+
+.btn:focus-visible,
+.form-control:focus,
+.form-select:focus,
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--tk-secondary-green);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+/* ---- Fields (ui-spec.md §3) ---- */
+
+.form-control,
+.form-select {
+  background: #fff;
+  border: 1px solid var(--tk-field-border);
+  color: var(--tk-text);
+}
+
+.form-control[readonly],
+.form-control:disabled,
+.form-select:disabled,
+.tk-field--readonly {
+  background: var(--tk-readonly-bg);
+  color: var(--tk-text);
+  opacity: 1;
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--tk-error);
+}
+
+.invalid-feedback {
+  color: var(--tk-error);
+  font-size: 13px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tk-required::after {
+  content: ' *';
+  color: var(--tk-error);
+}
+
+/* ---- Badges (ui-spec.md §10) ---- */
+
+.text-bg-success-subtle {
+  background-color: var(--tk-pale-green) !important;
+  color: var(--tk-secondary-green) !important;
+}
+.text-bg-warning-subtle {
+  background-color: var(--tk-warning-bg) !important;
+  color: var(--tk-warning-text) !important;
+}
+.text-bg-danger-subtle {
+  background-color: #fbe9e7 !important;
+  color: var(--tk-error) !important;
+}
+.text-bg-success {
+  background-color: var(--tk-secondary-green) !important;
+  color: #fff !important;
+}
+
+.badge {
+  padding: 4px 10px;
+  font-weight: 600;
+}
+
+/* ---- My Tickets table / mobile cards (ui-spec.md §8, §11) ---- */
+
+.table {
+  color: var(--tk-text);
+}
+.table thead th {
+  border-bottom: 2px solid var(--tk-surface-border);
+}
+
+/* ---- Attachment chips (ui-spec.md §3) ---- */
+
+.tk-attachment-chip {
+  background: var(--tk-readonly-bg);
+  border: 1px solid var(--tk-surface-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.tk-attachment-chip--error {
+  background: #fbe9e7;
+  border-color: var(--tk-error);
+  color: var(--tk-error);
+}
+.tk-attachment-chip--removed {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+.tk-attachment-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* No horizontal page scroll at any viewport (ui-spec.md §11). */
+html,
+body {
+  overflow-x: hidden;
+}

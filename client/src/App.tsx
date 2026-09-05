@@ -1,59 +1,52 @@
 import { useState } from 'react'
-import { checkHealth, fetchCategories, type Category } from './api'
+import { RequesterProvider } from './RequesterContext'
+import { useRequester } from './useRequester'
+import RequesterSelector from './RequesterSelector'
+import AppShell, { type Screen } from './AppShell'
+import CreateTicket from './CreateTicket'
+import MyTickets from './MyTickets'
+import RequesterTicketDetail from './RequesterTicketDetail'
 
-type CheckState =
-  | { status: 'idle' }
-  | { status: 'loading' }
-  | { status: 'success'; categories: Category[] }
-  | { status: 'error'; message: string }
+// Ticket Detail isn't a primary nav destination (it's reached by clicking a
+// row in My Tickets) — it's tracked as its own view rather than folded into
+// AppShell's `Screen` union, alongside which Ticket it's showing.
+type View = { screen: Screen } | { screen: 'ticketDetail'; ticketId: number }
 
-function App() {
-  const [check, setCheck] = useState<CheckState>({ status: 'idle' })
+// AC-02: no screen other than the Selector is usable until a Development
+// Requester is chosen.
+function AppContent() {
+  const { requester } = useRequester()
+  const [view, setView] = useState<View>({ screen: 'myTickets' })
 
-  const handleCheckSystem = async () => {
-    setCheck({ status: 'loading' })
-
-    try {
-      await checkHealth()
-      const categories = await fetchCategories()
-      setCheck({ status: 'success', categories })
-    } catch (err) {
-      setCheck({
-        status: 'error',
-        message: err instanceof Error ? err.message : 'Unable to connect to TokTickIT API',
-      })
-    }
+  if (!requester) {
+    return <RequesterSelector />
   }
 
+  // The nav highlights My Tickets while viewing a Ticket's detail — that's
+  // the screen a "Back" action returns to.
+  const activeScreen: Screen = view.screen === 'createTicket' ? 'createTicket' : 'myTickets'
+
   return (
-    <div className="container py-5">
-      <h1 className="mb-4">TokTickIT IT Service Desk</h1>
-
-      <button type="button" className="btn btn-primary mb-4" onClick={handleCheckSystem}>
-        Check System
-      </button>
-
-      {check.status === 'loading' && <p>⏳ Loading...</p>}
-
-      {check.status === 'success' && (
-        <div>
-          <p className="text-success">System Status: Online</p>
-          <h2 className="h5 mt-4">Supported Request Categories</h2>
-          <ul>
-            {check.categories.map((category) => (
-              <li key={category.id}>{category.name}</li>
-            ))}
-          </ul>
-        </div>
+    <AppShell activeScreen={activeScreen} onNavigate={(screen) => setView({ screen })}>
+      {view.screen === 'myTickets' && (
+        <MyTickets
+          onCreateTicket={() => setView({ screen: 'createTicket' })}
+          onOpenTicket={(ticketId) => setView({ screen: 'ticketDetail', ticketId })}
+        />
       )}
-
-      {check.status === 'error' && (
-        <div>
-          <p className="text-danger mb-1">System Status: Offline</p>
-          <p className="text-danger">{check.message}</p>
-        </div>
+      {view.screen === 'createTicket' && <CreateTicket />}
+      {view.screen === 'ticketDetail' && (
+        <RequesterTicketDetail ticketId={view.ticketId} onBack={() => setView({ screen: 'myTickets' })} />
       )}
-    </div>
+    </AppShell>
+  )
+}
+
+function App() {
+  return (
+    <RequesterProvider>
+      <AppContent />
+    </RequesterProvider>
   )
 }
 
