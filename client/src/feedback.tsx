@@ -34,6 +34,16 @@ export function SuccessNotice({ children }: { children: ReactNode }) {
   )
 }
 
+// Conflict notice: for a 409 caused by someone else's change. The screen
+// then reloads the Ticket and keeps any typed text.
+export function ConflictNotice() {
+  return (
+    <InlineAlert variant="warning">
+      This ticket was changed by someone else. The latest details are shown below.
+    </InlineAlert>
+  )
+}
+
 // Forbidden page: shown inside the shell for a path of another Role.
 export function ForbiddenPage({ role }: { role: Role }) {
   const navigate = useNavigate()
