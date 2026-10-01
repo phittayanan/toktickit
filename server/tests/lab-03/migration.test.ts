@@ -180,10 +180,8 @@ describe('Lab 3 migration over a Lab 2 database', () => {
     ).rejects.toThrow(/not-null constraint/)
   })
 
-  // MIG-04 (AC-48, BR-45). Pending #53
-  // (POST /api/admin/users/:id/initial-password); remove `.skip` when it
-  // has landed.
-  it.skip('refuses a migrated user until an Administrator sets an initial password', async () => {
+  // MIG-04 (AC-48, BR-45)
+  it('refuses a migrated user until an Administrator sets an initial password', async () => {
     const { app, signInAs } = await applicationOn(database.url)
     const migrated = { id: 11, email: 'fixture.one@example.com' }
 

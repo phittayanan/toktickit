@@ -62,8 +62,8 @@ export const ENDPOINTS: readonly Endpoint[] = [
   { method: 'GET', path: '/api/attachments/:id/download', roles: ANY_ROLE },
 
   // §7 User Management
-  { method: 'GET', path: '/api/admin/users', roles: ADMINISTRATOR, pendingIssue: 53 },
-  { method: 'POST', path: '/api/admin/users', roles: ADMINISTRATOR, pendingIssue: 53 },
-  { method: 'PATCH', path: '/api/admin/users/:id', roles: ADMINISTRATOR, pendingIssue: 53 },
-  { method: 'POST', path: '/api/admin/users/:id/initial-password', roles: ADMINISTRATOR, pendingIssue: 53 },
+  { method: 'GET', path: '/api/admin/users', roles: ADMINISTRATOR },
+  { method: 'POST', path: '/api/admin/users', roles: ADMINISTRATOR },
+  { method: 'PATCH', path: '/api/admin/users/:id', roles: ADMINISTRATOR },
+  { method: 'POST', path: '/api/admin/users/:id/initial-password', roles: ADMINISTRATOR },
 ]
