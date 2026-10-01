@@ -20,7 +20,8 @@ export function firstUnmetPasswordRule(password: string): PasswordRule | null {
   if (!/\p{Lu}/u.test(password)) return 'UPPER_CASE'
   if (!/\p{Ll}/u.test(password)) return 'LOWER_CASE'
   if (!/\p{Nd}/u.test(password)) return 'DIGIT'
-  // Special: any character that is not a letter, digit, or whitespace.
-  if (!/[^\p{L}\p{N}\s]/u.test(password)) return 'SPECIAL'
+  // Special: any character that is not a letter, digit, or whitespace,
+  // with "digit" meaning what the DIGIT rule above accepts.
+  if (!/[^\p{L}\p{Nd}\s]/u.test(password)) return 'SPECIAL'
   return null
 }

@@ -39,6 +39,12 @@ describe('firstUnmetPasswordRule', () => {
     expect(firstUnmetPasswordRule('Abcd\tef1')).toBe('SPECIAL')
   })
 
+  // '²' (U+00B2) is a number character but not a decimal digit, so under
+  // BR-08 it is "not a letter, digit, or whitespace": a special character.
+  it('counts a number character that is not a decimal digit as special', () => {
+    expect(firstUnmetPasswordRule('Abcdef1²')).toBeNull()
+  })
+
   it('names the first unmet rule when several are broken', () => {
     expect(firstUnmetPasswordRule('abc')).toBe('MIN_LENGTH')
     expect(firstUnmetPasswordRule('abcdefgh')).toBe('UPPER_CASE')
