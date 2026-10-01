@@ -218,9 +218,8 @@ describe('seed', () => {
     expect(await everyTable()).toEqual(before)
   }, 30_000)
 
-  // MIG-07 (AC-49). Pending #47 (POST /api/auth/login and
-  // POST /api/auth/change-password); remove `.skip` when it has landed.
-  it.skip('signs each seed account in with the documented password and keeps one that was changed', async () => {
+  // MIG-07 (AC-49)
+  it('signs each seed account in with the documented password and keeps one that was changed', async () => {
     const { app, signIn } = await applicationOn(database.url)
     const login = (email: string, password: string) =>
       request(app).post('/api/auth/login').send({ email, password })

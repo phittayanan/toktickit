@@ -30,28 +30,37 @@ interface NewUser {
   mustChangePassword: boolean
 }
 
-async function insertUser(user: NewUser, password: string): Promise<number> {
+async function insertUser(user: NewUser, password: string | null): Promise<number> {
   const created = await prisma.user.create({
-    data: { ...user, passwordHash: await hashPassword(password) },
+    data: { ...user, passwordHash: password === null ? null : await hashPassword(password) },
   })
 
   return created.id
 }
 
+export interface UserOptions {
+  // False leaves the user as the Lab 3 migration leaves a Lab 2 account:
+  // with no password at all (BR-45).
+  hasPassword?: boolean
+  isActive?: boolean
+  mustChangePassword?: boolean
+}
+
 // Creates a user of the given role with a known password, directly in the
-// test database. The user is active and need not change their password,
-// so they can use the application straight after signing in.
-export async function createUser(role: Role): Promise<TestUser> {
+// test database. Unless an option says otherwise the user is active and
+// need not change their password, so they can use the application straight
+// after signing in.
+export async function createUser(role: Role, options: UserOptions = {}): Promise<TestUser> {
   userCount += 1
   const user: NewUser = {
     name: `lab-03 test ${role} ${userCount}`,
     email: `lab03-${RUN_ID}-${userCount}@example.com`,
     role,
-    isActive: true,
-    mustChangePassword: false,
+    isActive: options.isActive ?? true,
+    mustChangePassword: options.mustChangePassword ?? false,
   }
 
-  const id = await insertUser(user, TEST_PASSWORD)
+  const id = await insertUser(user, options.hasPassword === false ? null : TEST_PASSWORD)
 
   return { id, name: user.name, email: user.email, role, password: TEST_PASSWORD }
 }
