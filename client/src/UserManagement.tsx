@@ -177,9 +177,6 @@ function confirmationFor(target: AdminUser, changes: Partial<AdminUserInput>): C
   return null
 }
 
-// The create and edit panel (ui-spec.md §10.2): beside the list on
-// desktop, a dialog over it below that. `target` is the User being edited,
-// or null to create one.
 // The refusals of PATCH /api/admin/users/:id that concern the change as a
 // whole rather than one field (api-spec.md §7.3), by `code`.
 const REFUSAL_ALERTS: Record<string, string> = {
@@ -187,6 +184,9 @@ const REFUSAL_ALERTS: Record<string, string> = {
   LAST_ADMINISTRATOR: 'This is the last active administrator. Make another user an administrator first.',
 }
 
+// The create and edit panel (ui-spec.md §10.2): beside the list on
+// desktop, a dialog over it below that. `target` is the User being edited,
+// or null to create one.
 function UserPanel({
   target,
   isSelf,
