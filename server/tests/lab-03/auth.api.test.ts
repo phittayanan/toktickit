@@ -489,6 +489,19 @@ describe('request body', () => {
   })
 })
 
+describe('request path', () => {
+  // api-spec.md §1.4: malformed input is the client's error, not a failure.
+  it('with a parameter that cannot be decoded is answered 400', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const res = await request(app).get('/api/tickets/%E0%A4%A')
+
+    expect(res.status).toBe(400)
+    expect(res.body).toEqual({ error: 'The request is malformed.', code: 'VALIDATION_ERROR' })
+    expect(logged).not.toHaveBeenCalled()
+  })
+})
+
 describe('POST /api/auth/change-password', () => {
   // API-07 (AC-09, BR-09)
   it('saves a valid new password, renews the session, and ends the other sessions', async () => {
