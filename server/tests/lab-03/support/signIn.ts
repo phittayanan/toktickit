@@ -20,13 +20,6 @@ export interface TestUser {
   password: string
 }
 
-export interface TestUserOptions {
-  name?: string
-  password?: string
-  isActive?: boolean
-  mustChangePassword?: boolean
-}
-
 interface NewUser {
   name: string
   email: string
@@ -43,22 +36,21 @@ async function insertUser(_user: NewUser, _password: string): Promise<number> {
 }
 
 // Creates a user of the given role with a known password, directly in the
-// test database. By default the user is active and need not change their
-// password, so they can use the application straight after signing in.
-export async function createUser(role: Role, options: TestUserOptions = {}): Promise<TestUser> {
+// test database. The user is active and need not change their password,
+// so they can use the application straight after signing in.
+export async function createUser(role: Role): Promise<TestUser> {
   userCount += 1
-  const password = options.password ?? TEST_PASSWORD
   const user: NewUser = {
-    name: options.name ?? `lab-03 test ${role} ${userCount}`,
+    name: `lab-03 test ${role} ${userCount}`,
     email: `lab03-${RUN_ID}-${userCount}@example.com`,
     role,
-    isActive: options.isActive ?? true,
-    mustChangePassword: options.mustChangePassword ?? false,
+    isActive: true,
+    mustChangePassword: false,
   }
 
-  const id = await insertUser(user, password)
+  const id = await insertUser(user, TEST_PASSWORD)
 
-  return { id, name: user.name, email: user.email, role, password }
+  return { id, name: user.name, email: user.email, role, password: TEST_PASSWORD }
 }
 
 // Signs in through POST /api/auth/login, the only way a test establishes
@@ -76,8 +68,8 @@ export async function signIn(email: string, password: string): Promise<string> {
 }
 
 // Creates a user of the given role and signs them in.
-export async function signInAs(role: Role, options: TestUserOptions = {}): Promise<{ user: TestUser; cookie: string }> {
-  const user = await createUser(role, options)
+export async function signInAs(role: Role): Promise<{ user: TestUser; cookie: string }> {
+  const user = await createUser(role)
   const cookie = await signIn(user.email, user.password)
 
   return { user, cookie }
