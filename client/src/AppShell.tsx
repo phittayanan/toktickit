@@ -42,12 +42,32 @@ function useLogout(onFailed: (failed: boolean) => void) {
   return { loggingOut, logOut }
 }
 
-// Where Change Password returns to: the screen it was opened from.
+// Where Change Password returns to: the screen it was opened from. Chosen
+// while it is already open, it stays as it is, with the return path it has.
 function useOpenChangePassword() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  return () => navigate('/change-password', { state: { from: location.pathname + location.search } })
+  return () => {
+    if (location.pathname === '/change-password') return
+    navigate('/change-password', { state: { from: location.pathname + location.search } })
+  }
+}
+
+// A Success notice handed over by the screen that navigated here. It shows
+// until the next navigation, and is taken out of the browser's history
+// entry (the router keeps location state there, under `usr`), so it shows
+// once: not after a reload, and not on coming back to the entry.
+function useHandedNotice(): string | undefined {
+  const location = useLocation()
+  const notice = (location.state as { notice?: string } | null)?.notice
+
+  useEffect(() => {
+    const entry = window.history.state
+    if (notice && entry?.usr?.notice === notice) window.history.replaceState({ ...entry, usr: null }, '')
+  }, [notice, location])
+
+  return notice
 }
 
 // Role navigation with the active entry underlined. A destination the
@@ -284,12 +304,9 @@ function MandatoryHeader({ onLogoutFailed }: { onLogoutFailed: (failed: boolean)
 // signed-in User's role navigation, and their user menu, reachable from
 // every screen. Screens themselves are passed in as children.
 function AppShell({ user, children }: { user: UserIdentity; children: ReactNode }) {
-  const location = useLocation()
   const isMobile = useIsMobile()
   const [logoutFailed, setLogoutFailed] = useState(false)
-
-  // A Success notice handed over by the screen that navigated here.
-  const notice = (location.state as { notice?: string } | null)?.notice
+  const notice = useHandedNotice()
 
   const Header = isMobile ? MobileHeader : DesktopHeader
 

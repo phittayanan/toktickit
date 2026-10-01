@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from './App'
 import * as api from './api'
 import { IT_STAFF, openPath, REQUESTER, signedInAs } from './test/session'
@@ -375,5 +375,94 @@ describe('Change Password, voluntary mode', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
     await waitFor(() => expect(window.location.pathname).toBe('/staff/queue'))
+  })
+
+  // Chosen again from the user menu while already open.
+  function openAgainFromUserMenu(name: RegExp) {
+    fireEvent.click(screen.getByRole('button', { name }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Change Password' }))
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(window.location.pathname).toBe('/change-password')
+  }
+
+  // The return path never names Change Password itself
+  it('still returns to the previous screen on Cancel after it is opened again from the user menu', async () => {
+    await openFromUserMenu()
+    openAgainFromUserMenu(/Somchai Jaidee/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    await waitFor(() => expect(window.location.pathname).toBe('/tickets/new'))
+    expect(await screen.findByLabelText(/^summary/i)).toBeInTheDocument()
+  })
+
+  it('still returns to the previous screen after a valid change when opened again from the user menu', async () => {
+    vi.spyOn(api, 'changePassword').mockResolvedValue(REQUESTER)
+    await openFromUserMenu()
+    openAgainFromUserMenu(/Somchai Jaidee/)
+
+    typePasswords(CURRENT, VALID_NEW, VALID_NEW)
+    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }))
+
+    expect(await screen.findByText('Password changed.')).toHaveAttribute('role', 'status')
+    expect(window.location.pathname).toBe('/tickets/new')
+    expect(screen.getByLabelText(/^summary/i)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Change Password' })).not.toBeInTheDocument()
+  })
+
+  it('still returns to the landing screen on Cancel when opened directly and then again from the user menu', async () => {
+    signedInAs(IT_STAFF)
+    openPath('/change-password')
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Change Password' })
+    openAgainFromUserMenu(/Wichai Phromma/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    await waitFor(() => expect(window.location.pathname).toBe('/staff/queue'))
+  })
+})
+
+describe('"Password changed." notice', () => {
+  // A valid voluntary change made from Create Ticket, which shows the notice.
+  async function changePasswordFromCreateTicket() {
+    vi.spyOn(api, 'changePassword').mockResolvedValue(REQUESTER)
+    signedInAs(REQUESTER)
+    openPath('/tickets/new')
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: /Somchai Jaidee/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Change Password' }))
+    await screen.findByRole('heading', { name: 'Change Password' })
+    typePasswords(CURRENT, VALID_NEW, VALID_NEW)
+    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }))
+    expect(await screen.findByText('Password changed.')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/tickets/new')
+  }
+
+  // The notice confirms the change just made, so a reload does not repeat it
+  it('is not shown again when the page is reloaded', async () => {
+    await changePasswordFromCreateTicket()
+
+    cleanup()
+    render(<App />)
+
+    expect(await screen.findByLabelText(/^summary/i)).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/tickets/new')
+    expect(screen.queryByText('Password changed.')).not.toBeInTheDocument()
+  })
+
+  // Nor does Back to the screen it was shown on
+  it('goes on leaving the screen and is not shown again on coming back to it', async () => {
+    await changePasswordFromCreateTicket()
+
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('button', { name: 'My Tickets' }))
+    expect(await screen.findByRole('heading', { name: 'My Tickets' })).toBeInTheDocument()
+    expect(screen.queryByText('Password changed.')).not.toBeInTheDocument()
+
+    window.history.back()
+
+    expect(await screen.findByLabelText(/^summary/i)).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/tickets/new')
+    expect(screen.queryByText('Password changed.')).not.toBeInTheDocument()
   })
 })

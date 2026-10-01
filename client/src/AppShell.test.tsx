@@ -168,6 +168,20 @@ describe('Mobile shell', () => {
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
   })
 
+  // Change Password chosen again while already open keeps its return path
+  it('still returns to the previous screen when Change Password is opened again from the menu', async () => {
+    await openMobileMenu()
+    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }))
+    await screen.findByRole('heading', { name: 'Change Password' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }))
+    fireEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: 'Change Password' }))
+    expect(screen.getByRole('button', { name: 'Menu' })).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    await waitFor(() => expect(window.location.pathname).toBe('/admin/users'))
+  })
+
   it('logs out from the menu', async () => {
     const logout = vi.spyOn(api, 'logout').mockResolvedValue()
     await openMobileMenu()
