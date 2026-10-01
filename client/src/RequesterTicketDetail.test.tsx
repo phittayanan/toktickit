@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import RequesterTicketDetail from './RequesterTicketDetail'
-import { RequesterProvider } from './RequesterContext'
-import { setRequester } from './requesterStore'
+import { SessionContext } from './sessionContextObject'
 import * as api from './api'
 import type { TicketDetail, TicketAttachment } from './api'
+import { REQUESTER } from './test/session'
 
+// The signed-in Requester is the acting identity (docs/lab-03 FR-09).
 function renderDetail(ticketId: number, onBack: () => void = vi.fn()) {
   return render(
-    <RequesterProvider>
+    <SessionContext.Provider value={{ user: REQUESTER, sessionEnded: false, signIn: vi.fn(), signOut: vi.fn() }}>
       <RequesterTicketDetail ticketId={ticketId} onBack={onBack} />
-    </RequesterProvider>,
+    </SessionContext.Provider>,
   )
 }
 
@@ -34,15 +35,12 @@ const TICKET: TicketDetail = {
 }
 
 beforeEach(() => {
-  window.localStorage.clear()
-  setRequester({ id: 7, name: 'Somchai Jaidee', email: 'a@b.com' })
   vi.spyOn(api, 'fetchCategories').mockResolvedValue(CATEGORIES)
   vi.spyOn(api, 'fetchRelatedSystems').mockResolvedValue(RELATED_SYSTEMS)
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
-  window.localStorage.clear()
 })
 
 describe('RequesterTicketDetail', () => {

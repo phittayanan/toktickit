@@ -1,9 +1,10 @@
 /*
- * Zen Green theme (docs/lab-02/ui-spec.md).
+ * Zen Green theme (docs/lab-02/ui-spec.md, continued in
+ * docs/lab-03/ui-spec.md).
  *
- * Applied as an override layer on top of Bootstrap so every screen
- * (Selector, Create Ticket, My Tickets, Ticket Detail) shares one token
- * set without re-implementing Bootstrap's components from scratch.
+ * Applied as an override layer on top of Bootstrap so every screen shares
+ * one token set without re-implementing Bootstrap's components from
+ * scratch.
  */
 
 :root {
@@ -21,6 +22,11 @@
   --tk-warning-bg: #fff6e0;
   --tk-success-text: #0b7a46;
   --tk-success-bg: #eaf6ef;
+  /* docs/lab-03/ui-spec.md §2.1 */
+  --tk-info-text: #1f5e99;
+  --tk-info-bg: #e7f0fa;
+  --tk-neutral-text: #4f5f59;
+  --tk-neutral-bg: #f1f3f1;
 
   --bs-font-sans-serif: -apple-system, 'Segoe UI', Roboto, sans-serif;
   --bs-body-font-family: var(--bs-font-sans-serif);
@@ -30,6 +36,9 @@
   --bs-primary-rgb: 0, 107, 60;
   --bs-link-color: var(--tk-secondary-green);
   --bs-link-hover-color: var(--tk-secondary-green);
+  /* Bootstrap colours a plain link from the -rgb pair. */
+  --bs-link-color-rgb: 11, 122, 70;
+  --bs-link-hover-color-rgb: 11, 122, 70;
   --bs-border-color: var(--tk-surface-border);
   --bs-danger: var(--tk-error);
   --bs-danger-rgb: 179, 38, 30;
@@ -66,8 +75,86 @@ body {
   text-decoration-thickness: 2px !important;
 }
 
-.app-shell__requester {
+a.app-shell__brand:hover,
+a.app-shell__brand:focus {
   color: #fff;
+}
+
+.app-shell__header .btn:focus-visible,
+.app-shell__header a:focus-visible {
+  outline-color: #fff;
+}
+
+/* User menu (docs/lab-03/ui-spec.md §4.1) */
+
+.app-shell__user-button {
+  color: #fff;
+  border-color: transparent;
+  max-width: 100%;
+}
+.app-shell__user-button:hover,
+.app-shell__user-button[aria-expanded='true'] {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.app-shell__user-name {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-shell__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  min-width: 200px;
+  padding: 4px;
+}
+
+.app-shell__menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: var(--tk-text);
+  border-color: transparent;
+}
+.app-shell__menu-item:hover {
+  background: var(--tk-pale-green);
+  color: var(--tk-primary-green);
+}
+
+/* Mobile header (docs/lab-03/ui-spec.md §4.4): 44px tap targets. */
+
+.app-shell__menu-toggle {
+  min-height: 44px;
+}
+
+.app-shell__mobile-panel {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.app-shell__mobile-panel .app-shell__nav-link {
+  min-height: 44px;
+  text-align: left;
+}
+
+.app-shell__mobile-user {
+  color: #fff;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 8px 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.app-shell__mobile-user .app-shell__user-name {
+  max-width: 100%;
 }
 
 .app-shell__main {
@@ -150,6 +237,13 @@ button:focus-visible {
 
 /* ---- Fields (ui-spec.md §3) ---- */
 
+/* Bootstrap paints a focused field with the page background, which here is
+   the read-only grey; an editable field stays white while focused. */
+.form-control:focus:not([readonly]),
+.form-select:focus {
+  background-color: #fff;
+}
+
 .form-control,
 .form-select {
   background: #fff;
@@ -208,6 +302,142 @@ button:focus-visible {
 .badge {
   padding: 4px 10px;
   font-weight: 600;
+}
+
+/* Role badges (docs/lab-03/ui-spec.md §2.2) */
+.tk-badge--neutral {
+  background-color: var(--tk-neutral-bg);
+  color: var(--tk-neutral-text);
+}
+.tk-badge--info {
+  background-color: var(--tk-info-bg);
+  color: var(--tk-info-text);
+}
+.tk-badge--outline {
+  background-color: var(--tk-surface);
+  color: var(--tk-primary-green);
+  box-shadow: inset 0 0 0 1px var(--tk-primary-green);
+}
+
+/* ---- Shared feedback (docs/lab-03/ui-spec.md §2.3) ---- */
+
+.tk-alert {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.tk-alert--error {
+  background: #fbe9e7;
+  color: var(--tk-error);
+}
+.tk-alert--warning {
+  background: var(--tk-warning-bg);
+  color: var(--tk-warning-text);
+}
+.tk-alert--info {
+  background: var(--tk-info-bg);
+  color: var(--tk-info-text);
+}
+.tk-alert--success {
+  background: var(--tk-success-bg);
+  color: var(--tk-success-text);
+}
+
+.tk-feedback-page {
+  max-width: 480px;
+  margin-top: 48px;
+}
+
+.tk-page-loading {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tk-neutral-text);
+}
+
+/* ---- Login (docs/lab-03/ui-spec.md §5) ---- */
+
+.tk-auth-page {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.tk-auth-page__wordmark {
+  margin-bottom: 16px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--tk-primary-green);
+}
+
+.tk-auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.tk-password-toggle {
+  display: flex;
+  align-items: center;
+  border-color: var(--tk-field-border);
+}
+
+@media (max-width: 767px) {
+  .tk-auth-card .btn,
+  .tk-auth-card .form-control,
+  .tk-change-password .btn,
+  .tk-change-password .form-control {
+    min-height: 44px;
+  }
+}
+
+/* ---- Change Password (docs/lab-03/ui-spec.md §6) ---- */
+
+.tk-change-password {
+  max-width: 480px;
+}
+
+.tk-checklist {
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--tk-pale-green);
+  font-size: 14px;
+}
+
+.tk-checklist__title {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.tk-checklist__rule {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--tk-neutral-text);
+}
+
+.tk-checklist__mark {
+  width: 16px;
+  flex: none;
+  text-align: center;
+}
+.tk-checklist__mark::before {
+  content: '•';
+}
+
+.tk-checklist__rule--met {
+  color: var(--tk-success-text);
+}
+.tk-checklist__rule--met .tk-checklist__mark::before {
+  content: '✓';
+  font-weight: 700;
 }
 
 /* ---- My Tickets table / mobile cards (ui-spec.md §8, §11) ---- */
