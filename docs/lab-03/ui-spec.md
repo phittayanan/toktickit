@@ -315,8 +315,9 @@ shares the Summary cell instead of taking a column. Seven columns fit at
   sortable column headers do the same and show the direction.
 - **Clear Filters** (Tertiary): returns every control to its default.
 - **Result caption**: "Showing X to Y of Z tickets".
-- **Pagination**: the My Tickets control, with a page-size select of 10,
-  25, 50.
+- **Pagination**: Previous, Next, and page numbers below the Ticket Queue,
+  with a page-size select of 10, 25, 50. It is the shared pagination
+  component named in §1.
 
 Changing the search, a filter, the sort, or the page size returns to
 page 1. The current search, filters, sort, and page are kept in the URL
