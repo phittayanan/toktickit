@@ -571,6 +571,42 @@ describe('User Management edit', () => {
     expect(next.getByRole('switch', { name: /Active/ })).toBeChecked()
   })
 
+  it('keeps what was typed when Edit is pressed again on the same unchanged row', async () => {
+    listReturns()
+    const panel = await openEditPanel('Wichai Phromma')
+    fill(panel, { name: 'Half Typed' })
+
+    fireEvent.click((await table()).getByRole('button', { name: 'Edit Wichai Phromma' }))
+
+    expect(within(screen.getByRole('region', { name: 'Edit User' })).getByLabelText(/Full Name/)).toHaveValue('Half Typed')
+  })
+
+  // The form starts from the row whose Edit was pressed, so a change made
+  // elsewhere is not taken for an edit made here.
+  it('starts again from the row when Edit is pressed on a user the reloaded list shows changed', async () => {
+    const fetchAdminUsers = listReturns()
+    const updateAdminUser = saved({ ...WICHAI, name: 'Wichai Renamed', role: 'REQUESTER', isActive: false })
+    const stale = await openEditPanel('Wichai Phromma')
+    fill(stale, { name: 'Half Typed' })
+    fetchAdminUsers.mockResolvedValue([SELF, { ...WICHAI, role: 'REQUESTER', isActive: false }])
+    fireEvent.change(screen.getByLabelText('Role', { selector: '#users-role' }), { target: { value: 'REQUESTER' } })
+    expect(await rowOf(await table(), 'Wichai Phromma').findByText('Inactive')).toBeInTheDocument()
+
+    fireEvent.click((await table()).getByRole('button', { name: 'Edit Wichai Phromma' }))
+
+    const panel = within(screen.getByRole('region', { name: 'Edit User' }))
+    expect(panel.getByLabelText(/Full Name/)).toHaveValue('Wichai Phromma')
+    expect(panel.getByLabelText(/Role/)).toHaveValue('REQUESTER')
+    expect(panel.getByRole('switch', { name: /Active/ })).not.toBeChecked()
+
+    fill(panel, { name: 'Wichai Renamed' })
+    fireEvent.click(panel.getByRole('button', { name: 'Save Changes' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(updateAdminUser).toHaveBeenCalledTimes(1)
+    expect(updateAdminUser).toHaveBeenCalledWith(12, { name: 'Wichai Renamed' })
+  })
+
   // UI-29 (AC-43): saved
   it('saves a changed name and email without a confirmation, closes, and reloads the list', async () => {
     const fetchAdminUsers = listReturns()

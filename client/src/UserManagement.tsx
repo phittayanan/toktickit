@@ -135,6 +135,13 @@ function changedFields(target: AdminUser, input: AdminUserInput): Partial<AdminU
   )
 }
 
+// Identifies the row a panel was opened with, by the values its form starts
+// from: a fresher row of the same User is another panel, so the form never
+// holds values older than the row it is compared with.
+function panelKey(target: AdminUser | null): string {
+  return target ? JSON.stringify([target.id, ...FIELD_ORDER.map((field) => target[field])]) : 'create'
+}
+
 // What saving `changes` to `target` does beyond changing the fields, which
 // the Administrator confirms first (ui-spec.md §10.2). Null when the
 // change needs no confirmation.
@@ -682,8 +689,8 @@ function UserManagement({
 
   const openPanelElement = panel && (
     <UserPanel
-      // A panel opened for another User starts from that User's values.
-      key={panel.target?.id ?? 'create'}
+      // A panel opened for another row starts from that row's values.
+      key={panelKey(panel.target)}
       target={panel.target}
       asDialog={compact}
       onClose={() => setPanel(null)}
