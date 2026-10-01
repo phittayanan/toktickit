@@ -266,11 +266,9 @@ function UserPanel({
       showFieldErrors({ [field]: refusal.message })
     } else if (refusal?.code && REFUSAL_ALERTS[refusal.code]) {
       setAlert(REFUSAL_ALERTS[refusal.code])
-    } else if (refusal?.status === 409) {
-      // Any other conflict: the API's own `error` text, which is safe to show.
-      setAlert(refusal.message)
     } else {
-      // A 500 or a lost connection: the fields keep their values.
+      // Any other refusal, a 500 or a lost connection: the fields keep
+      // their values.
       setAlert(SAFE_FAILURE_MESSAGE)
     }
   }

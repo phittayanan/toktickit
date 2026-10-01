@@ -508,6 +508,10 @@ describe('User Management validation', () => {
   it.each([
     { name: 'a 500', error: new api.ApiError(500, 'duplicate key value violates unique constraint', 'INTERNAL_ERROR') },
     { name: 'a lost connection', error: new Error('Unable to connect to TokTickIT API') },
+    {
+      name: 'a 409 the screen does not name',
+      error: new api.ApiError(409, 'Use Change Password for your own account.', 'SELF_INITIAL_PASSWORD'),
+    },
   ])('shows the safe failure in the panel after $name and keeps the fields', async ({ error }) => {
     listReturns()
     vi.spyOn(api, 'createAdminUser').mockRejectedValue(error)
@@ -517,7 +521,7 @@ describe('User Management validation', () => {
     fireEvent.click(panel.getByRole('button', { name: 'Save User' }))
 
     expect(await panel.findByRole('alert')).toHaveTextContent('Something went wrong. Please try again.')
-    expect(panel.queryByText(/duplicate key|Unable to connect/)).not.toBeInTheDocument()
+    expect(panel.queryByText(/duplicate key|Unable to connect|Use Change Password/)).not.toBeInTheDocument()
     expect(panel.getByLabelText(/Full Name/)).toHaveValue('Alex Thompson')
     expect(panel.getByLabelText(/Email Address/)).toHaveValue('alex.thompson@kmutt.ac.th')
     expect(panel.getByLabelText(/Role/)).toHaveValue('IT_STAFF')
