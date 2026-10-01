@@ -7,6 +7,7 @@ import { requirePasswordChanged, requireSession } from './middleware/requireSess
 import referenceDataRoutes from './routes/referenceData.routes'
 import ticketRoutes from './routes/ticket.routes'
 import attachmentRoutes from './routes/attachment.routes'
+import commentRoutes from './routes/comment.routes'
 import authRoutes from './routes/auth.routes'
 
 const app = express()
@@ -34,6 +35,7 @@ app.use('/api/admin', requireRole('ADMINISTRATOR'))
 app.use('/api', referenceDataRoutes)
 app.use('/api', ticketRoutes)
 app.use('/api', attachmentRoutes)
+app.use('/api', commentRoutes)
 
 // api-spec.md §1.4: an /api path, or a method, that nothing above defines
 // is answered after the session checks, so it says nothing to a visitor

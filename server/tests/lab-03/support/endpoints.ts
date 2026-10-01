@@ -43,8 +43,8 @@ export const ENDPOINTS: readonly Endpoint[] = [
   { method: 'GET', path: '/api/tickets/:id', roles: REQUESTER },
   { method: 'POST', path: '/api/tickets/:id/attachments', roles: REQUESTER },
   { method: 'POST', path: '/api/attachments/:id/remove', roles: REQUESTER },
-  { method: 'PUT', path: '/api/tickets/:id/resolution-indication', roles: REQUESTER, pendingIssue: 50 },
-  { method: 'DELETE', path: '/api/tickets/:id/resolution-indication', roles: REQUESTER, pendingIssue: 50 },
+  { method: 'PUT', path: '/api/tickets/:id/resolution-indication', roles: REQUESTER },
+  { method: 'DELETE', path: '/api/tickets/:id/resolution-indication', roles: REQUESTER },
 
   // §5 Staff Tickets
   { method: 'GET', path: '/api/staff/tickets', roles: STAFF, pendingIssue: 51 },
@@ -57,8 +57,8 @@ export const ENDPOINTS: readonly Endpoint[] = [
   { method: 'POST', path: '/api/staff/tickets/:id/notes', roles: STAFF, pendingIssue: 52 },
 
   // §6 Shared ticket resources
-  { method: 'GET', path: '/api/tickets/:id/comments', roles: ANY_ROLE, pendingIssue: 50 },
-  { method: 'POST', path: '/api/tickets/:id/comments', roles: ANY_ROLE, pendingIssue: 50 },
+  { method: 'GET', path: '/api/tickets/:id/comments', roles: ANY_ROLE },
+  { method: 'POST', path: '/api/tickets/:id/comments', roles: ANY_ROLE },
   { method: 'GET', path: '/api/attachments/:id/download', roles: ANY_ROLE },
 
   // §7 User Management

@@ -1,5 +1,7 @@
 import { Prisma } from '../../generated/prisma/client'
 import prisma from '../prisma'
+import { now } from '../clock'
+import { isFinished } from './statusTransitions.service'
 import { nextTicketNumber } from './ticketNumber.service'
 import type { CreateTicketInput, ListTicketsQuery } from '../schemas/ticket.schema'
 
@@ -20,6 +22,20 @@ export class TicketValidationError extends Error {
 export class TicketNotFoundError extends Error {
   constructor() {
     super('Ticket not found')
+  }
+}
+
+// BR-31: a change was asked of a Closed or Cancelled Ticket.
+export class TicketFinishedError extends Error {
+  constructor() {
+    super('This ticket is closed or cancelled and can no longer be changed.')
+  }
+}
+
+// BR-33: Problem Appears Resolved was asked of a Resolved Ticket.
+export class IndicationNotAvailableError extends Error {
+  constructor() {
+    super('This ticket is already resolved.')
   }
 }
 
@@ -127,7 +143,7 @@ export async function listTickets(query: ListTicketsQuery, requesterId: number) 
 export async function getTicketById(ticketId: number, requesterId: number) {
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },
-    include: { attachments: { orderBy: { createdAt: 'desc' } } },
+    include: { attachments: { orderBy: { createdAt: 'desc' } }, owner: { select: { name: true } } },
   })
 
   // Nonexistent and not-owned are indistinguishable 404s (ADR-0004/BR-21) —
@@ -136,5 +152,46 @@ export async function getTicketById(ticketId: number, requesterId: number) {
     throw new TicketNotFoundError()
   }
 
-  return ticket
+  // docs/lab-03/api-spec.md §4.1: the Lab 2 fields plus `ownerName`,
+  // `resolutionSummary`, `resolvedAt`, and `requesterResolvedAt`. The
+  // Requester is told who the Ticket Owner is by name only.
+  const { owner, ownerId: _ownerId, ownerChangedAt: _ownerChangedAt, ...fields } = ticket
+
+  return { ...fields, ownerName: owner?.name ?? null }
+}
+
+// PUT and DELETE /api/tickets/:id/resolution-indication (BR-33): sets or
+// withdraws the Requester's "Problem Appears Resolved" flag on their own
+// Ticket. The status is never touched. The Ticket row is locked while it is
+// checked and written, so a Ticket that staff finish or resolve at the same
+// moment is refused rather than flagged.
+export async function setResolutionIndication(ticketId: number, requesterId: number, indicated: boolean) {
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = ${ticketId} FOR UPDATE`
+
+    const ticket = await tx.ticket.findUnique({ where: { id: ticketId } })
+    if (!ticket || ticket.requesterId !== requesterId) {
+      throw new TicketNotFoundError()
+    }
+    if (isFinished(ticket.currentStatus)) {
+      throw new TicketFinishedError()
+    }
+    if (indicated && ticket.currentStatus === 'RESOLVED') {
+      throw new IndicationNotAvailableError()
+    }
+
+    // Repeating either request changes nothing: an indication keeps its
+    // original time (api-spec.md §4.2).
+    if (indicated === (ticket.requesterResolvedAt !== null)) {
+      return { requesterResolvedAt: ticket.requesterResolvedAt }
+    }
+
+    const time = now()
+    const updated = await tx.ticket.update({
+      where: { id: ticketId },
+      data: { requesterResolvedAt: indicated ? time : null, updatedAt: time },
+    })
+
+    return { requesterResolvedAt: updated.requesterResolvedAt }
+  })
 }

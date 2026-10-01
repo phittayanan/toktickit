@@ -1,8 +1,9 @@
 import prisma from '../prisma'
 import { MAX_ACTIVE_ATTACHMENTS_PER_TICKET } from '../schemas/attachment.schema'
-import { TicketNotFoundError } from './ticket.service'
+import { isFinished } from './statusTransitions.service'
+import { TicketFinishedError, TicketNotFoundError } from './ticket.service'
 
-export { TicketNotFoundError }
+export { TicketFinishedError, TicketNotFoundError }
 
 // BR-15: the 5-active-attachments cap was reached for this Ticket.
 export class AttachmentLimitReachedError extends Error {
@@ -26,6 +27,29 @@ export interface UploadedFile {
   size: number
 }
 
+// docs/lab-03/api-spec.md §1.5: on the two Attachment endpoints a finished
+// Ticket is refused directly after the lookup, before the input is
+// validated. These two answer whether the caller's own Ticket, or the Ticket
+// of their own active Attachment, is finished (BR-31); a Ticket or
+// Attachment the caller does not reach is not finished as far as they can
+// tell, and the request goes on to its Lab 2 answer.
+export async function isOwnTicketFinished(ticketId: number, requesterId: number): Promise<boolean> {
+  const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } })
+
+  return !!ticket && ticket.requesterId === requesterId && isFinished(ticket.currentStatus)
+}
+
+export async function isOwnAttachmentTicketFinished(attachmentId: number, requesterId: number): Promise<boolean> {
+  const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId }, include: { ticket: true } })
+
+  return (
+    !!attachment &&
+    attachment.ticket.requesterId === requesterId &&
+    !attachment.removedAt &&
+    isFinished(attachment.ticket.currentStatus)
+  )
+}
+
 export async function uploadAttachment(ticketId: number, requesterId: number, file: UploadedFile) {
   const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } })
   if (!ticket || ticket.requesterId !== requesterId) {
@@ -41,6 +65,13 @@ export async function uploadAttachment(ticketId: number, requesterId: number, fi
   // commits its insert, so it recounts to a value that already reflects it.
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = ${ticketId} FOR UPDATE`
+
+    // BR-31, read under the lock: the Ticket may have been finished since
+    // the route's own check.
+    const locked = await tx.ticket.findUniqueOrThrow({ where: { id: ticketId } })
+    if (isFinished(locked.currentStatus)) {
+      throw new TicketFinishedError()
+    }
 
     const activeCount = await tx.attachment.count({
       where: { ticketId, removedAt: null },
@@ -97,7 +128,11 @@ export async function removeAttachment(attachmentId: number, requesterId: number
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "Attachment" WHERE id = ${attachmentId} FOR UPDATE`
 
-    await findOwnedActiveAttachment(attachmentId, requesterId, tx)
+    const attachment = await findOwnedActiveAttachment(attachmentId, requesterId, tx)
+    // BR-31
+    if (isFinished(attachment.ticket.currentStatus)) {
+      throw new TicketFinishedError()
+    }
 
     return tx.attachment.update({
       where: { id: attachmentId },
