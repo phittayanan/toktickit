@@ -207,6 +207,17 @@ describe('Public Comments', () => {
       expect(res.body).toEqual(NOT_FOUND)
     }
 
+    // An id beyond the range of the id column names no Ticket either.
+    for (const outOfRange of [2147483648, 99999999999]) {
+      const listed = await comments(outOfRange, owner.cookie)
+      const posted = await postComment(outOfRange, owner.cookie, { body: 'Is anyone there?' })
+
+      for (const res of [listed, posted]) {
+        expect(res.status, `${outOfRange}`).toBe(404)
+        expect(res.body, `${outOfRange}`).toEqual(NOT_FOUND)
+      }
+    }
+
     // The caller's own finished Ticket, with an invalid body.
     const ownInvalid = await postComment(ticketId, owner.cookie, { body: '' })
     expect(ownInvalid.status).toBe(400)

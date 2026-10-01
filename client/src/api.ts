@@ -318,8 +318,14 @@ export async function downloadAttachment(attachmentId: number, originalFilename:
 }
 
 // BR-18/BR-19: soft-removes an active Attachment given a required reason.
-export function removeAttachment(attachmentId: number, removalReason: string): Promise<TicketAttachment> {
-  return postJson<TicketAttachment>(`/api/attachments/${attachmentId}/remove`, { removalReason })
+// A refusal is an ApiError; a 409 is TICKET_FINISHED (BR-31).
+export async function removeAttachment(attachmentId: number, removalReason: string): Promise<TicketAttachment> {
+  const res = await request(`/api/attachments/${attachmentId}/remove`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ removalReason }),
+  })
+  return res.json()
 }
 
 export function checkHealth(): Promise<HealthResponse> {
@@ -357,7 +363,7 @@ export function fetchTickets(params: TicketListParams = {}): Promise<TicketListR
 // Ticket Detail needs to tell "not found" (404, api-spec.md's `{ error }`
 // body) apart from a generic connectivity failure — unlike getJson, which
 // collapses every non-2xx into the same message — so this uses the same
-// error-message extraction as postJson/uploadAttachment instead.
+// error-message extraction as postJson instead.
 export async function fetchTicketById(id: number): Promise<TicketDetail> {
   const res = await send(`/api/tickets/${id}`)
 
@@ -376,11 +382,7 @@ export async function uploadAttachment(ticketId: number, file: File): Promise<At
   const body = new FormData()
   body.append('file', file)
 
-  const res = await send(`/api/tickets/${ticketId}/attachments`, { method: 'POST', body })
-
-  if (!res.ok) {
-    throw new Error(await extractErrorMessage(res))
-  }
+  const res = await request(`/api/tickets/${ticketId}/attachments`, { method: 'POST', body })
 
   return res.json()
 }

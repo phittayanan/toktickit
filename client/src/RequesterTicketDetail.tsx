@@ -68,6 +68,7 @@ function AttachmentsSection({
   readOnly,
   onAdded,
   onRemoved,
+  onConflict,
 }: {
   ticketId: number
   attachments: TicketAttachment[]
@@ -76,6 +77,8 @@ function AttachmentsSection({
   readOnly: boolean
   onAdded: (attachment: TicketAttachment) => void
   onRemoved: (attachment: TicketAttachment) => void
+  // The Ticket was finished meanwhile: load it again.
+  onConflict: () => void
 }) {
   const [pickError, setPickError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -84,6 +87,7 @@ function AttachmentsSection({
   const [removalReason, setRemovalReason] = useState('')
   const [removalError, setRemovalError] = useState<string | null>(null)
   const [removing, setRemoving] = useState(false)
+  const [conflict, setConflict] = useState(false)
 
   const active = attachments.filter((a) => a.removedAt === null)
   const removed = attachments.filter((a) => a.removedAt !== null)
@@ -105,12 +109,18 @@ function AttachmentsSection({
     }
 
     setPickError(null)
+    setConflict(false)
     setUploading(true)
     try {
       const attachment = await uploadAttachment(ticketId, file)
       onAdded({ ...attachment, removedAt: null, removedByRequesterId: null, removalReason: null })
     } catch (err) {
-      setPickError(err instanceof Error ? err.message : 'Unable to upload attachment')
+      if (isConflict(err)) {
+        setConflict(true)
+        onConflict()
+      } else {
+        setPickError(err instanceof Error ? err.message : 'Unable to upload attachment')
+      }
     } finally {
       setUploading(false)
     }
@@ -156,13 +166,19 @@ function AttachmentsSection({
 
     setRemoving(true)
     setRemovalError(null)
+    setConflict(false)
     try {
       const updated = await removeAttachment(removingId, reason)
       onRemoved(updated)
       setRemovingId(null)
       setRemovalReason('')
     } catch (err) {
-      setRemovalError(err instanceof Error ? err.message : 'Unable to remove attachment')
+      if (isConflict(err)) {
+        setConflict(true)
+        onConflict()
+      } else {
+        setRemovalError(err instanceof Error ? err.message : 'Unable to remove attachment')
+      }
     } finally {
       setRemoving(false)
     }
@@ -171,6 +187,8 @@ function AttachmentsSection({
   return (
     <div className="mb-4 border-top pt-4">
       <h2 className="h5 mb-3">Attachments</h2>
+
+      {conflict && <ConflictNotice />}
 
       {active.length === 0 && <p className="text-muted small mb-3">No active attachments.</p>}
 
@@ -543,6 +561,7 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
             ticketId={detail.ticket.id}
             attachments={detail.ticket.attachments}
             readOnly={isFinished(detail.ticket.currentStatus)}
+            onConflict={reloadTicket}
             onAdded={(attachment) => {
               setDetail((prev) =>
                 prev.status === 'success'

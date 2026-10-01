@@ -14,6 +14,7 @@ import {
   TicketNotFoundError,
   TicketValidationError,
 } from '../services/ticket.service'
+import { rowIdOf } from './rowId'
 
 const router = Router()
 
@@ -56,8 +57,8 @@ router.get('/tickets', requireRequesterRole, async (req: SessionRequest, res) =>
 })
 
 router.get('/tickets/:id', requireRequesterRole, async (req: SessionRequest, res) => {
-  const ticketId = Number(req.params.id)
-  if (!Number.isInteger(ticketId) || ticketId <= 0) {
+  const ticketId = rowIdOf(req.params.id)
+  if (ticketId === null) {
     // A malformed id can never resolve to a row — same 404 shape as a
     // well-formed-but-missing/not-owned one (ADR-0004).
     res.status(404).json({ error: 'Ticket not found' })
@@ -81,8 +82,8 @@ router.get('/tickets/:id', requireRequesterRole, async (req: SessionRequest, res
 // PUT and withdrawn by DELETE. Neither takes a body.
 function resolutionIndication(indicated: boolean) {
   return async (req: SessionRequest, res: Response) => {
-    const ticketId = Number(req.params.id)
-    if (!Number.isInteger(ticketId) || ticketId <= 0) {
+    const ticketId = rowIdOf(req.params.id)
+    if (ticketId === null) {
       res.status(404).json({ error: 'Ticket not found' })
       return
     }

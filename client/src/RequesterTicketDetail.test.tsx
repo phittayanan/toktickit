@@ -761,6 +761,95 @@ describe('RequesterTicketDetail on a finished Ticket', () => {
   })
 })
 
+// UI-13 (BR-31, ui-spec.md §2.3 and §7.4): the Ticket was finished while
+// this screen was open.
+describe('RequesterTicketDetail Attachments on a Ticket finished meanwhile', () => {
+  const answerTicketFinished = () =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: 'This ticket is closed or cancelled and can no longer be changed.',
+              code: 'TICKET_FINISHED',
+            }),
+            { status: 409, headers: { 'Content-Type': 'application/json' } },
+          ),
+      ),
+    )
+
+  // The Ticket as first loaded, then a reload that answers when told to.
+  function loadThenReload() {
+    const open = { ...TICKET, currentStatus: 'IN_PROGRESS', attachments: [ACTIVE_ATTACHMENT] }
+    let finish!: () => void
+    const fetchSpy = vi
+      .spyOn(api, 'fetchTicketById')
+      .mockResolvedValueOnce(open)
+      .mockReturnValueOnce(
+        new Promise((resolve) => (finish = () => resolve({ ...open, currentStatus: 'CLOSED' }))),
+      )
+
+    return { fetchSpy, finish: () => finish() }
+  }
+
+  async function expectFinishedAttachments() {
+    await waitFor(() => expect(fieldValue('Current Status')).toHaveTextContent('Closed'))
+    expect(screen.queryByLabelText(/add attachment/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /remove/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /download screenshot.png/i })).toBeInTheDocument()
+    // The notice outlives the reload.
+    expect(screen.getByRole('alert')).toHaveTextContent(CONFLICT_NOTICE)
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the Conflict notice and the latest Ticket when an upload is refused', async () => {
+    const { fetchSpy, finish } = loadThenReload()
+    answerTicketFinished()
+    renderDetail(42)
+    await screen.findByRole('heading', { name: 'TKT-2026-000123' })
+    fireEvent.change(screen.getByLabelText('Add a comment'), { target: { value: 'One more thing.' } })
+
+    const file = new File(['x'], 'new-photo.png', { type: 'image/png' })
+    fireEvent.change(screen.getByLabelText(/add attachment/i), { target: { files: [file] } })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(CONFLICT_NOTICE)
+    expect(screen.getAllByRole('alert')).toHaveLength(1)
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2))
+    // What was typed elsewhere on the screen is kept.
+    expect(screen.getByLabelText('Add a comment')).toHaveValue('One more thing.')
+
+    finish()
+
+    await expectFinishedAttachments()
+    expect(screen.queryByText('new-photo.png')).not.toBeInTheDocument()
+  })
+
+  it('shows the Conflict notice and the latest Ticket when a soft removal is refused', async () => {
+    const { fetchSpy, finish } = loadThenReload()
+    answerTicketFinished()
+    renderDetail(42)
+    await screen.findByRole('heading', { name: 'TKT-2026-000123' })
+
+    fireEvent.click(screen.getByRole('button', { name: /remove screenshot.png/i }))
+    fireEvent.change(screen.getByLabelText(/reason for removal/i), { target: { value: 'No longer needed' } })
+    fireEvent.click(screen.getByRole('button', { name: /confirm remove/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(CONFLICT_NOTICE)
+    expect(screen.getAllByRole('alert')).toHaveLength(1)
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2))
+    // The typed reason is kept.
+    expect(screen.getByLabelText(/reason for removal/i)).toHaveValue('No longer needed')
+
+    finish()
+
+    await expectFinishedAttachments()
+  })
+})
+
 // UI-14 (AC-39, BR-35)
 describe('RequesterTicketDetail comment markup', () => {
   it('renders a comment body containing markup as literal text, and injects no element', async () => {

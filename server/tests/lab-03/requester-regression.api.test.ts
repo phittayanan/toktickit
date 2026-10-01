@@ -304,6 +304,34 @@ describe('Requester Ticket Detail additions', () => {
     },
   )
 
+  // ADR-0004: an id beyond the range of the id column names no Ticket and
+  // no Attachment, as a malformed one does.
+  it.each([2147483648, 99999999999])('answers the out-of-range id %d as a missing Ticket or Attachment', async (id) => {
+    const { cookie } = await signInAs('REQUESTER')
+    const TICKET_NOT_FOUND = { error: 'Ticket not found' }
+    const ATTACHMENT_NOT_FOUND = { error: 'Attachment not found' }
+
+    const answers = [
+      [await request(app).get(`/api/tickets/${id}`).set('Cookie', cookie), TICKET_NOT_FOUND],
+      [await request(app).put(`/api/tickets/${id}/resolution-indication`).set('Cookie', cookie), TICKET_NOT_FOUND],
+      [await request(app).delete(`/api/tickets/${id}/resolution-indication`).set('Cookie', cookie), TICKET_NOT_FOUND],
+      [await upload(cookie, id), TICKET_NOT_FOUND],
+      [await request(app).get(`/api/attachments/${id}/download`).set('Cookie', cookie), ATTACHMENT_NOT_FOUND],
+      [
+        await request(app)
+          .post(`/api/attachments/${id}/remove`)
+          .set('Cookie', cookie)
+          .send({ removalReason: 'Uploaded the wrong screenshot' }),
+        ATTACHMENT_NOT_FOUND,
+      ],
+    ] as const
+
+    for (const [res, body] of answers) {
+      expect(res.status, `${res.request.method} ${res.request.url}`).toBe(404)
+      expect(res.body, `${res.request.method} ${res.request.url}`).toEqual(body)
+    }
+  })
+
   // REG-07 (BR-31): the status a soft removal goes by is read under the
   // Ticket's row lock, so a Ticket being finished at that moment keeps its
   // Attachment.

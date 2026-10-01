@@ -18,6 +18,7 @@ import {
   AttachmentLimitReachedError,
   AttachmentNotFoundError,
 } from '../services/attachment.service'
+import { rowIdOf } from './rowId'
 
 const router = Router()
 
@@ -28,8 +29,8 @@ function sendTicketFinished(res: Response) {
 }
 
 router.post('/tickets/:id/attachments', requireRequesterRole, async (req: SessionRequest, res) => {
-  const ticketId = Number(req.params.id)
-  if (!Number.isInteger(ticketId) || ticketId <= 0) {
+  const ticketId = rowIdOf(req.params.id)
+  if (ticketId === null) {
     res.status(404).json({ error: 'Ticket not found' })
     return
   }
@@ -97,8 +98,8 @@ router.post('/tickets/:id/attachments', requireRequesterRole, async (req: Sessio
 // Any role may ask (specification.md §5.3); what the caller reaches is
 // decided by the lookup. A Requester reaches their own Tickets' Attachments.
 router.get('/attachments/:id/download', async (req: SessionRequest, res) => {
-  const attachmentId = Number(req.params.id)
-  if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
+  const attachmentId = rowIdOf(req.params.id)
+  if (attachmentId === null) {
     res.status(404).json({ error: 'Attachment not found' })
     return
   }
@@ -129,10 +130,9 @@ router.get('/attachments/:id/download', async (req: SessionRequest, res) => {
 
 // Before the body is read or the reason validated (api-spec.md §1.5).
 async function refuseFinished(req: SessionRequest, res: Response, next: NextFunction) {
-  const attachmentId = Number(req.params.id)
-  const isId = Number.isInteger(attachmentId) && attachmentId > 0
+  const attachmentId = rowIdOf(req.params.id)
 
-  if (isId && (await isOwnAttachmentTicketFinished(attachmentId, req.user!.id))) {
+  if (attachmentId !== null && (await isOwnAttachmentTicketFinished(attachmentId, req.user!.id))) {
     sendTicketFinished(res)
     return
   }
@@ -141,8 +141,8 @@ async function refuseFinished(req: SessionRequest, res: Response, next: NextFunc
 }
 
 router.post('/attachments/:id/remove', requireRequesterRole, refuseFinished, parseJsonBody, async (req: SessionRequest, res) => {
-  const attachmentId = Number(req.params.id)
-  if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
+  const attachmentId = rowIdOf(req.params.id)
+  if (attachmentId === null) {
     res.status(404).json({ error: 'Attachment not found' })
     return
   }
