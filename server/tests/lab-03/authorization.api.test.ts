@@ -339,10 +339,10 @@ describe('order of checks', () => {
 })
 
 // API-16 (AC-16, BR-17). Pending until the last of the endpoints it runs
-// lands: Public Comments (#50), the queue (#51), and the staff ticket
-// operations and Internal Notes (#52).
+// lands: the queue (#51), and the staff ticket operations and Internal
+// Notes (#52).
 describe('Administrator on the staff ticket operations', () => {
-  it.skip('succeeds on each exactly as IT Staff does (pending #50, #51, #52)', async () => {
+  it.skip('succeeds on each exactly as IT Staff does (pending #51, #52)', async () => {
     const requester = await signInAs('REQUESTER')
     const statuses: Partial<Record<Role, number[]>> = {}
 
@@ -467,9 +467,8 @@ describe("another Requester's resource", () => {
     ).toBe(200)
   })
 
-  // The Public Comment half of API-19, pending until #50 delivers
-  // api-spec.md §6.1.
-  it.skip('answers the same 404 for its Public Comments, read or posted, and creates no comment (pending #50)', async () => {
+  // The Public Comment half of API-19 (api-spec.md §6.1).
+  it('answers the same 404 for its Public Comments, read or posted, and creates no comment', async () => {
     const requesterA = await signInAs('REQUESTER')
     const ticketId = await createTicket(requesterA.cookie)
     const requesterB = await signInAs('REQUESTER')

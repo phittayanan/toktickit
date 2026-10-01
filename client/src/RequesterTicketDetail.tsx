@@ -1,11 +1,14 @@
 import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
 import {
+  ApiError,
   downloadAttachment,
   fetchCategories,
   fetchRelatedSystems,
   fetchTicketById,
   removeAttachment,
+  setResolutionIndication,
   uploadAttachment,
+  withdrawResolutionIndication,
   type Category,
   type RelatedSystem,
   type TicketAttachment,
@@ -14,6 +17,20 @@ import {
 import { MAX_ACTIVE_ATTACHMENTS, validateAttachmentFile } from './attachmentRules'
 import { useSession } from './useSession'
 import { PriorityBadge, StatusBadge } from './badges'
+import { ConflictNotice, InlineAlert, SAFE_FAILURE_MESSAGE, SuccessNotice } from './feedback'
+import PublicComments from './PublicComments'
+
+// A Closed or Cancelled Ticket is finished, and read-only (BR-31).
+const FINISHED_AS: Record<string, 'closed' | 'cancelled'> = { CLOSED: 'closed', CANCELLED: 'cancelled' }
+
+function isFinished(status: string): boolean {
+  return status in FINISHED_AS
+}
+
+// A 409: the Ticket is no longer as this screen last loaded it.
+function isConflict(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 409
+}
 
 type DetailState =
   | { status: 'loading' }
@@ -32,7 +49,7 @@ function formatSize(bytes: number): string {
 
 function ReadOnlyField({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="col-sm-6 col-lg-4">
+    <div className="col-md-6 col-lg-4">
       <div className="form-label mb-1">{label}</div>
       <div className="form-control bg-body-tertiary" style={{ pointerEvents: 'none' }} aria-readonly="true">
         {value}
@@ -48,13 +65,20 @@ function ReadOnlyField({ label, value }: { label: string; value: ReactNode }) {
 function AttachmentsSection({
   ticketId,
   attachments,
+  readOnly,
   onAdded,
   onRemoved,
+  onConflict,
 }: {
   ticketId: number
   attachments: TicketAttachment[]
+  // A finished Ticket (docs/lab-03/ui-spec.md §7.4): Add Attachment and
+  // each Remove action are not rendered; Download remains.
+  readOnly: boolean
   onAdded: (attachment: TicketAttachment) => void
   onRemoved: (attachment: TicketAttachment) => void
+  // The Ticket was finished meanwhile: load it again.
+  onConflict: () => void
 }) {
   const [pickError, setPickError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -63,6 +87,7 @@ function AttachmentsSection({
   const [removalReason, setRemovalReason] = useState('')
   const [removalError, setRemovalError] = useState<string | null>(null)
   const [removing, setRemoving] = useState(false)
+  const [conflict, setConflict] = useState(false)
 
   const active = attachments.filter((a) => a.removedAt === null)
   const removed = attachments.filter((a) => a.removedAt !== null)
@@ -84,12 +109,18 @@ function AttachmentsSection({
     }
 
     setPickError(null)
+    setConflict(false)
     setUploading(true)
     try {
       const attachment = await uploadAttachment(ticketId, file)
       onAdded({ ...attachment, removedAt: null, removedByRequesterId: null, removalReason: null })
     } catch (err) {
-      setPickError(err instanceof Error ? err.message : 'Unable to upload attachment')
+      if (isConflict(err)) {
+        setConflict(true)
+        onConflict()
+      } else {
+        setPickError(err instanceof Error ? err.message : 'Unable to upload attachment')
+      }
     } finally {
       setUploading(false)
     }
@@ -135,13 +166,19 @@ function AttachmentsSection({
 
     setRemoving(true)
     setRemovalError(null)
+    setConflict(false)
     try {
       const updated = await removeAttachment(removingId, reason)
       onRemoved(updated)
       setRemovingId(null)
       setRemovalReason('')
     } catch (err) {
-      setRemovalError(err instanceof Error ? err.message : 'Unable to remove attachment')
+      if (isConflict(err)) {
+        setConflict(true)
+        onConflict()
+      } else {
+        setRemovalError(err instanceof Error ? err.message : 'Unable to remove attachment')
+      }
     } finally {
       setRemoving(false)
     }
@@ -150,6 +187,8 @@ function AttachmentsSection({
   return (
     <div className="mb-4 border-top pt-4">
       <h2 className="h5 mb-3">Attachments</h2>
+
+      {conflict && <ConflictNotice />}
 
       {active.length === 0 && <p className="text-muted small mb-3">No active attachments.</p>}
 
@@ -170,21 +209,23 @@ function AttachmentsSection({
               >
                 ⬇
               </button>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-danger"
-                aria-label={`Remove ${attachment.originalFilename}`}
-                title="Remove"
-                onClick={() => openRemoveConfirm(attachment.id)}
-              >
-                ✕
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  aria-label={`Remove ${attachment.originalFilename}`}
+                  title="Remove"
+                  onClick={() => openRemoveConfirm(attachment.id)}
+                >
+                  ✕
+                </button>
+              )}
               {downloadErrors[attachment.id] && (
                 <div className="text-danger small w-100" role="alert">
                   {downloadErrors[attachment.id]}
                 </div>
               )}
-              {removingId === attachment.id && (
+              {!readOnly && removingId === attachment.id && (
                 <div className="w-100 mt-2 p-2 border rounded border-danger-subtle">
                   <label htmlFor={`removal-reason-${attachment.id}`} className="form-label small mb-1">
                     Reason for removal <span className="text-danger">*</span>
@@ -226,30 +267,32 @@ function AttachmentsSection({
         </ul>
       )}
 
-      <div className="mb-3">
-        <label htmlFor="add-attachment" className="form-label">
-          Add Attachment
-        </label>
-        <input
-          id="add-attachment"
-          type="file"
-          className="form-control"
-          accept="image/jpeg,image/png,image/webp,application/pdf"
-          onChange={handleFileSelected}
-          disabled={uploading || active.length >= MAX_ACTIVE_ATTACHMENTS}
-        />
-        <div className="form-text">JPG, PNG, WEBP, or PDF — up to 5 MB each, up to 5 active files.</div>
-        {uploading && (
-          <p role="status" className="text-muted small mt-1">
-            Uploading…
-          </p>
-        )}
-        {pickError && (
-          <div className="text-danger small mt-1" role="alert">
-            {pickError}
-          </div>
-        )}
-      </div>
+      {!readOnly && (
+        <div className="mb-3">
+          <label htmlFor="add-attachment" className="form-label">
+            Add Attachment
+          </label>
+          <input
+            id="add-attachment"
+            type="file"
+            className="form-control"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            onChange={handleFileSelected}
+            disabled={uploading || active.length >= MAX_ACTIVE_ATTACHMENTS}
+          />
+          <div className="form-text">JPG, PNG, WEBP, or PDF — up to 5 MB each, up to 5 active files.</div>
+          {uploading && (
+            <p role="status" className="text-muted small mt-1">
+              Uploading…
+            </p>
+          )}
+          {pickError && (
+            <div className="text-danger small mt-1" role="alert">
+              {pickError}
+            </div>
+          )}
+        </div>
+      )}
 
       {removed.length > 0 && (
         <div>
@@ -276,10 +319,113 @@ function AttachmentsSection({
   )
 }
 
-// Requester Ticket Detail, view mode (ui-spec.md §9, ticket #21): a
-// read-only field grid + Summary/Description, plus Attachment management
-// (#22). No Public Comments / Internal Notes / Actions Taken / status
-// change — those are permanently out of scope for Lab 2.
+// Problem Appears Resolved (docs/lab-03/ui-spec.md §7.2, BR-33): the
+// Requester's flag that the problem seems fixed. It never changes the
+// Current Status, and is not offered once the Ticket is Resolved or
+// finished.
+function ProblemAppearsResolved({
+  ticket,
+  onChanged,
+  onConflict,
+}: {
+  ticket: TicketDetail
+  onChanged: (requesterResolvedAt: string | null) => void
+  // The Ticket was resolved or finished meanwhile: load it again.
+  onConflict: () => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [feedback, setFeedback] = useState<
+    { kind: 'success'; message: string } | { kind: 'conflict' } | { kind: 'failure' } | null
+  >(null)
+
+  const indicated = ticket.requesterResolvedAt !== null
+
+  const change = async (indicate: boolean) => {
+    setBusy(true)
+    setFeedback(null)
+    try {
+      const { requesterResolvedAt } = await (indicate
+        ? setResolutionIndication(ticket.id)
+        : withdrawResolutionIndication(ticket.id))
+      onChanged(requesterResolvedAt)
+      setFeedback({
+        kind: 'success',
+        message: indicate ? 'IT has been told that the problem appears resolved.' : 'Indication withdrawn.',
+      })
+    } catch (err) {
+      if (isConflict(err)) {
+        setFeedback({ kind: 'conflict' })
+        onConflict()
+      } else {
+        setFeedback({ kind: 'failure' })
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // A finished Ticket has no card. The notice that it was finished
+  // meanwhile still has to be said.
+  if (isFinished(ticket.currentStatus)) {
+    return feedback?.kind === 'conflict' ? <ConflictNotice /> : null
+  }
+
+  return (
+    <section
+      className={`tk-resolved-card card mb-4 ${indicated ? 'tk-resolved-card--indicated' : ''}`}
+      aria-label="Problem Appears Resolved"
+    >
+      <div className="card-body">
+        {feedback?.kind === 'success' && <SuccessNotice>{feedback.message}</SuccessNotice>}
+        {feedback?.kind === 'conflict' && <ConflictNotice />}
+        {feedback?.kind === 'failure' && <InlineAlert variant="error">{SAFE_FAILURE_MESSAGE}</InlineAlert>}
+
+        {ticket.currentStatus === 'RESOLVED' ? (
+          <p className="tk-resolved-card__info mb-0">
+            IT has marked this ticket resolved. If the problem has returned, say so in a comment below.
+          </p>
+        ) : indicated ? (
+          <>
+            <p className="mb-2">
+              You told IT on {formatDate(ticket.requesterResolvedAt!)} that the problem appears resolved. IT Staff
+              will review it.
+            </p>
+            <button
+              type="button"
+              className="btn btn-link"
+              disabled={busy}
+              aria-busy={busy}
+              onClick={() => change(false)}
+            >
+              {busy && <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />}
+              Withdraw
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="mb-2">Is the problem fixed? Let IT know. IT Staff decide when the ticket is resolved.</p>
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              disabled={busy}
+              aria-busy={busy}
+              onClick={() => change(true)}
+            >
+              {busy && <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />}
+              Problem Appears Resolved
+            </button>
+          </>
+        )}
+      </div>
+    </section>
+  )
+}
+
+// Requester Ticket Detail (docs/lab-02/ui-spec.md §9, continued in
+// docs/lab-03/ui-spec.md §7): a read-only field grid, Summary and
+// Description, and Attachment management, plus the Ticket Owner, the
+// Resolution Summary, Problem Appears Resolved, and Public Comments. No
+// Internal Notes, Actions Taken, or status change (BR-32).
 function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack: () => void }) {
   const { user } = useSession()
   const [categories, setCategories] = useState<Category[]>([])
@@ -319,6 +465,16 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
       cancelled = true
     }
   }, [ticketId])
+
+  // After a Conflict: the latest Ticket, in place, so the cards below keep
+  // what was typed into them (ui-spec.md §2.3).
+  const reloadTicket = () => {
+    fetchTicketById(ticketId)
+      .then((ticket) => setDetail((prev) => (prev.status === 'success' ? { status: 'success', ticket } : prev)))
+      .catch(() => {
+        // The Ticket shown stays as it was; the notice has been given.
+      })
+  }
 
   const categoryName = (id: number) => categories.find((c) => c.id === id)?.name ?? '—'
   const relatedSystemName = (id: number) => relatedSystems.find((s) => s.id === id)?.name ?? '—'
@@ -365,6 +521,10 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
             />
             <ReadOnlyField label="IT Priority" value={<PriorityBadge priority={detail.ticket.itPriority} />} />
             <ReadOnlyField label="Current Status" value={<StatusBadge status={detail.ticket.currentStatus} />} />
+            <ReadOnlyField
+              label="Ticket Owner"
+              value={detail.ticket.ownerName ?? <span className="text-muted fst-italic">Unassigned</span>}
+            />
           </div>
 
           <div className="mb-4">
@@ -385,9 +545,23 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
             </div>
           </div>
 
+          {detail.ticket.resolutionSummary !== null && (
+            <section className="tk-resolution mb-4" aria-labelledby="resolution-summary-title">
+              <h2 id="resolution-summary-title" className="tk-resolution__title">
+                Resolution Summary
+              </h2>
+              <p className="tk-resolution__text">{detail.ticket.resolutionSummary}</p>
+              {detail.ticket.resolvedAt && (
+                <p className="small mb-0">Resolved on {formatDate(detail.ticket.resolvedAt)}</p>
+              )}
+            </section>
+          )}
+
           <AttachmentsSection
             ticketId={detail.ticket.id}
             attachments={detail.ticket.attachments}
+            readOnly={isFinished(detail.ticket.currentStatus)}
+            onConflict={reloadTicket}
             onAdded={(attachment) => {
               setDetail((prev) =>
                 prev.status === 'success'
@@ -410,6 +584,23 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
                   : prev,
               )
             }}
+          />
+
+          <ProblemAppearsResolved
+            ticket={detail.ticket}
+            onConflict={reloadTicket}
+            onChanged={(requesterResolvedAt) => {
+              setDetail((prev) =>
+                prev.status === 'success' ? { ...prev, ticket: { ...prev.ticket, requesterResolvedAt } } : prev,
+              )
+            }}
+          />
+
+          <PublicComments
+            key={detail.ticket.id}
+            ticketId={detail.ticket.id}
+            finishedAs={FINISHED_AS[detail.ticket.currentStatus] ?? null}
+            onConflict={reloadTicket}
           />
         </>
       )}

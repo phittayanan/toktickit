@@ -126,8 +126,28 @@ export interface TicketAttachment extends Attachment {
   removalReason: string | null
 }
 
+// docs/lab-03/api-spec.md §4.1: `ownerName` is null while the Ticket is
+// unassigned; the resolution fields are null until it is first resolved.
+// `requesterResolvedAt` is set while the Requester has indicated that the
+// problem appears resolved.
 export interface TicketDetail extends Ticket {
   attachments: TicketAttachment[]
+  ownerName: string | null
+  resolutionSummary: string | null
+  resolvedAt: string | null
+  requesterResolvedAt: string | null
+}
+
+// A Public Comment (api-spec.md §1.7). `body` is plain text.
+export interface Entry {
+  id: number
+  body: string
+  createdAt: string
+  author: { id: number; name: string; role: Role }
+}
+
+export interface ResolutionIndication {
+  requesterResolvedAt: string | null
 }
 
 type UnauthenticatedListener = () => void
@@ -298,8 +318,14 @@ export async function downloadAttachment(attachmentId: number, originalFilename:
 }
 
 // BR-18/BR-19: soft-removes an active Attachment given a required reason.
-export function removeAttachment(attachmentId: number, removalReason: string): Promise<TicketAttachment> {
-  return postJson<TicketAttachment>(`/api/attachments/${attachmentId}/remove`, { removalReason })
+// A refusal is an ApiError; a 409 is TICKET_FINISHED (BR-31).
+export async function removeAttachment(attachmentId: number, removalReason: string): Promise<TicketAttachment> {
+  const res = await request(`/api/attachments/${attachmentId}/remove`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ removalReason }),
+  })
+  return res.json()
 }
 
 export function checkHealth(): Promise<HealthResponse> {
@@ -337,7 +363,7 @@ export function fetchTickets(params: TicketListParams = {}): Promise<TicketListR
 // Ticket Detail needs to tell "not found" (404, api-spec.md's `{ error }`
 // body) apart from a generic connectivity failure — unlike getJson, which
 // collapses every non-2xx into the same message — so this uses the same
-// error-message extraction as postJson/uploadAttachment instead.
+// error-message extraction as postJson instead.
 export async function fetchTicketById(id: number): Promise<TicketDetail> {
   const res = await send(`/api/tickets/${id}`)
 
@@ -356,11 +382,37 @@ export async function uploadAttachment(ticketId: number, file: File): Promise<At
   const body = new FormData()
   body.append('file', file)
 
-  const res = await send(`/api/tickets/${ticketId}/attachments`, { method: 'POST', body })
+  const res = await request(`/api/tickets/${ticketId}/attachments`, { method: 'POST', body })
 
-  if (!res.ok) {
-    throw new Error(await extractErrorMessage(res))
-  }
+  return res.json()
+}
 
+// GET /api/tickets/:id/comments: the Ticket's Public Comments, newest first.
+export async function fetchPublicComments(ticketId: number): Promise<Entry[]> {
+  const res = await request(`/api/tickets/${ticketId}/comments`)
+  return res.json()
+}
+
+// POST /api/tickets/:id/comments. Refusals are ApiErrors: 400 naming
+// `body`, 404, or 409 TICKET_FINISHED.
+export async function postPublicComment(ticketId: number, body: string): Promise<Entry> {
+  const res = await request(`/api/tickets/${ticketId}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body }),
+  })
+  return res.json()
+}
+
+// PUT and DELETE /api/tickets/:id/resolution-indication: sets or withdraws
+// Problem Appears Resolved. A 409 ApiError is INDICATION_NOT_AVAILABLE (the
+// Ticket is Resolved) or TICKET_FINISHED.
+export async function setResolutionIndication(ticketId: number): Promise<ResolutionIndication> {
+  const res = await request(`/api/tickets/${ticketId}/resolution-indication`, { method: 'PUT' })
+  return res.json()
+}
+
+export async function withdrawResolutionIndication(ticketId: number): Promise<ResolutionIndication> {
+  const res = await request(`/api/tickets/${ticketId}/resolution-indication`, { method: 'DELETE' })
   return res.json()
 }

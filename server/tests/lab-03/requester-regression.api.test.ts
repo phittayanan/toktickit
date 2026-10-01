@@ -150,7 +150,7 @@ function upload(cookie: string, ticketId: number) {
 // §4.3). They are written to the contract and stay pending until then.
 describe('Requester Ticket Detail additions', () => {
   // REG-05 (AC-23)
-  it.skip('GET /api/tickets/:id adds the owner name and the resolution fields to the Lab 2 fields (pending #50)', async () => {
+  it('GET /api/tickets/:id adds the owner name and the resolution fields to the Lab 2 fields', async () => {
     const { cookie } = await signInAs('REQUESTER')
     const owner = await createUser('IT_STAFF')
     const ticketId = await createTicket(cookie)
@@ -180,10 +180,25 @@ describe('Requester Ticket Detail additions', () => {
       resolvedAt: resolvedAt.toISOString(),
       requesterResolvedAt: null,
     })
+    // Those four and nothing else: the owner is a name, not a user id.
+    expect(Object.keys(res.body).sort()).toEqual(
+      [
+        ...LAB_2_TICKET_FIELDS,
+        'attachments',
+        'ownerName',
+        'resolutionSummary',
+        'resolvedAt',
+        'requesterResolvedAt',
+      ].sort(),
+    )
+
+    await prisma.ticket.update({ where: { id: ticketId }, data: { ownerId: null } })
+    const unassigned = await request(app).get(`/api/tickets/${ticketId}`).set('Cookie', cookie)
+    expect(unassigned.body.ownerName).toBeNull()
   })
 
   // REG-06 (AC-21, BR-33)
-  it.skip('Problem Appears Resolved is set, kept, and withdrawn without changing the status, and refused on a Resolved, a finished, and another Requester\'s Ticket (pending #50)', async () => {
+  it('Problem Appears Resolved is set, kept, and withdrawn without changing the status, and refused on a Resolved, a finished, and another Requester\'s Ticket', async () => {
     const { cookie } = await signInAs('REQUESTER')
     const indication = (method: 'put' | 'delete', ticketId: number, as = cookie) =>
       request(app)[method](`/api/tickets/${ticketId}/resolution-indication`).set('Cookie', as)
@@ -213,6 +228,10 @@ describe('Requester Ticket Detail additions', () => {
     const onResolved = await indication('put', ticketId)
     expect(onResolved.status).toBe(409)
     expect(onResolved.body.code).toBe('INDICATION_NOT_AVAILABLE')
+    // api-spec.md §4.3: withdrawing is refused only on a finished Ticket.
+    const withdrawnOnResolved = await indication('delete', ticketId)
+    expect(withdrawnOnResolved.status).toBe(200)
+    expect(withdrawnOnResolved.body).toEqual({ requesterResolvedAt: null })
 
     for (const finished of ['CLOSED', 'CANCELLED'] as const) {
       await prisma.ticket.update({ where: { id: ticketId }, data: { currentStatus: finished } })
@@ -235,14 +254,16 @@ describe('Requester Ticket Detail additions', () => {
       expect(foreign.status).toBe(404)
       expect(missing.status).toBe(404)
       expect(foreign.body).toEqual(missing.body)
+      // api-spec.md §4: the unchanged Lab 2 body.
+      expect(foreign.body).toEqual({ error: 'Ticket not found' })
     }
     const untouched = await prisma.ticket.findUniqueOrThrow({ where: { id: foreignTicketId } })
     expect(untouched.requesterResolvedAt).toBeNull()
   })
 
   // REG-07 (AC-37, BR-31)
-  it.skip.each(['CLOSED', 'CANCELLED'] as const)(
-    'a %s Ticket refuses a new Attachment and a soft removal, and still serves a download (pending #50)',
+  it.each(['CLOSED', 'CANCELLED'] as const)(
+    'a %s Ticket refuses a new Attachment and a soft removal, and still serves a download',
     async (finished) => {
       const { cookie } = await signInAs('REQUESTER')
       const ticketId = await createTicket(cookie)
@@ -263,7 +284,78 @@ describe('Requester Ticket Detail additions', () => {
       expect(removed.body.code).toBe('TICKET_FINISHED')
       expect(downloaded.status).toBe(200)
 
+      // api-spec.md §1.5: on these two endpoints the finished check comes
+      // directly after the lookup, ahead of the validation of the input.
+      const invalidFile = await request(app)
+        .post(`/api/tickets/${ticketId}/attachments`)
+        .set('Cookie', cookie)
+        .attach('file', Buffer.from('plain text'), { filename: 'notes.txt', contentType: 'text/plain' })
+      const noFile = await request(app).post(`/api/tickets/${ticketId}/attachments`).set('Cookie', cookie)
+      const noReason = await request(app)
+        .post(`/api/attachments/${uploaded.body.id}/remove`)
+        .set('Cookie', cookie)
+        .send({})
+      for (const res of [invalidFile, noFile, noReason]) {
+        expect(res.status).toBe(409)
+        expect(res.body).toEqual({ error: expect.any(String), code: 'TICKET_FINISHED' })
+      }
+
       expect(await prisma.attachment.count({ where: { ticketId, removedAt: null } })).toBe(1)
     },
   )
+
+  // ADR-0004: an id beyond the range of the id column names no Ticket and
+  // no Attachment, as a malformed one does.
+  it.each([2147483648, 99999999999])('answers the out-of-range id %d as a missing Ticket or Attachment', async (id) => {
+    const { cookie } = await signInAs('REQUESTER')
+    const TICKET_NOT_FOUND = { error: 'Ticket not found' }
+    const ATTACHMENT_NOT_FOUND = { error: 'Attachment not found' }
+
+    const answers = [
+      [await request(app).put(`/api/tickets/${id}/resolution-indication`).set('Cookie', cookie), TICKET_NOT_FOUND],
+      [await request(app).delete(`/api/tickets/${id}/resolution-indication`).set('Cookie', cookie), TICKET_NOT_FOUND],
+      [await upload(cookie, id), TICKET_NOT_FOUND],
+      [
+        await request(app)
+          .post(`/api/attachments/${id}/remove`)
+          .set('Cookie', cookie)
+          .send({ removalReason: 'Uploaded the wrong screenshot' }),
+        ATTACHMENT_NOT_FOUND,
+      ],
+    ] as const
+
+    for (const [res, body] of answers) {
+      expect(res.status, `${res.request.method} ${res.request.url}`).toBe(404)
+      expect(res.body, `${res.request.method} ${res.request.url}`).toEqual(body)
+    }
+  })
+
+  // REG-07 (BR-31): the status a soft removal goes by is read under the
+  // Ticket's row lock, so a Ticket being finished at that moment keeps its
+  // Attachment.
+  it('a soft removal waits for a Ticket that is being finished, and is then refused', async () => {
+    const { cookie } = await signInAs('REQUESTER')
+    const ticketId = await createTicket(cookie)
+    const uploaded = await upload(cookie, ticketId)
+    expect(uploaded.status).toBe(201)
+
+    let removal!: Promise<request.Response>
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = ${ticketId} FOR UPDATE`
+      await tx.ticket.update({ where: { id: ticketId }, data: { currentStatus: 'CLOSED' } })
+
+      removal = request(app)
+        .post(`/api/attachments/${uploaded.body.id}/remove`)
+        .set('Cookie', cookie)
+        .send({ removalReason: 'Uploaded the wrong screenshot' })
+        .then((res) => res)
+      // Long enough for a removal that does not wait to have answered.
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+    })
+
+    const removed = await removal
+    expect(removed.status).toBe(409)
+    expect(removed.body).toEqual({ error: expect.any(String), code: 'TICKET_FINISHED' })
+    expect(await prisma.attachment.count({ where: { ticketId, removedAt: null } })).toBe(1)
+  })
 })

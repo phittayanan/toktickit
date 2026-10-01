@@ -32,3 +32,9 @@ export function allowedTransitions(from: TicketStatus): readonly TicketStatus[] 
 export function canTransition(from: TicketStatus, to: TicketStatus): boolean {
   return TRANSITIONS[from].includes(to)
 }
+
+// BR-31: a Closed or Cancelled Ticket is finished, and read-only for
+// everyone.
+export function isFinished(status: TicketStatus): boolean {
+  return status === 'CLOSED' || status === 'CANCELLED'
+}
