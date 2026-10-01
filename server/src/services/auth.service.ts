@@ -2,7 +2,7 @@ import type { User } from '../../generated/prisma/client'
 import { now } from '../clock'
 import prisma from '../prisma'
 import type { ChangePasswordInput } from '../schemas/auth.schema'
-import { clearFailedLogins, loginRefusedUntil, recordFailedLogin } from './loginThrottle.service'
+import { beginLoginAttempt, clearFailedLogins, uncountLoginAttempt } from './loginThrottle.service'
 import { hashPassword, verifyPassword } from './passwordHash.service'
 import { firstUnmetPasswordRule, type PasswordRule } from './passwordPolicy.service'
 import { createSession } from './session.service'
@@ -32,22 +32,26 @@ export type LoginResult =
 export async function login(rawEmail: string, password: string): Promise<LoginResult> {
   const email = normaliseEmail(rawEmail)
 
-  // BR-12: the password is not checked while the email is refused.
-  const refusedUntil = await loginRefusedUntil(email)
-  if (refusedUntil) {
-    return { outcome: 'THROTTLED', retryAfterSeconds: Math.ceil((refusedUntil.getTime() - now().getTime()) / 1000) }
+  // BR-12: the password is not checked while the email is refused, and
+  // the login is counted as a failure before it is.
+  const attempt = await beginLoginAttempt(email)
+  if ('refusedUntil' in attempt) {
+    return {
+      outcome: 'THROTTLED',
+      retryAfterSeconds: Math.ceil((attempt.refusedUntil.getTime() - now().getTime()) / 1000),
+    }
   }
 
   const user = await prisma.user.findUnique({ where: { email } })
 
   if (!(await verifyPassword(password, user?.passwordHash ?? null)) || !user) {
-    await recordFailedLogin(email)
     return { outcome: 'INVALID_CREDENTIALS' }
   }
 
   // BR-11: said only once the password has proved correct. It neither
   // counts as a failure nor clears the ones recorded.
   if (!user.isActive) {
+    await uncountLoginAttempt(email, attempt.countedAt)
     return { outcome: 'ACCOUNT_INACTIVE' }
   }
 

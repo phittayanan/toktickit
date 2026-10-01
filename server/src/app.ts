@@ -37,9 +37,11 @@ app.use('/api', requireSession, requirePasswordChanged, (_req, res) => {
 // password reaches the log (BR-07). The Lab 2 routes catch their own
 // failures and keep their Lab 2 bodies.
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
-  // express.json() could not read the body: the client's error.
-  if ((err as { type?: string } | null)?.type === 'entity.parse.failed') {
-    sendError(res, 400, 'VALIDATION_ERROR', 'The request body is not valid JSON.')
+  // express.json() refused the body (not JSON, too large, a charset it
+  // does not read): the client's error, answered with the status it names.
+  const { type, status, expose, message } = (err ?? {}) as Record<string, unknown>
+  if (expose === true && typeof status === 'number' && status >= 400 && status < 500) {
+    sendError(res, status, 'VALIDATION_ERROR', type === 'entity.parse.failed' ? 'The request body is not valid JSON.' : String(message))
     return
   }
 

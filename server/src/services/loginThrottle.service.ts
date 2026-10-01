@@ -1,3 +1,4 @@
+import type { Prisma } from '../../generated/prisma/client'
 import { now } from '../clock'
 import prisma from '../prisma'
 
@@ -31,27 +32,58 @@ export function afterFailedLogin(state: LoginThrottleState): LoginThrottleState 
   return { failedAt, lockedUntil }
 }
 
-// The state is kept per normalised email, whether or not it matches a
-// user, so an unknown email is throttled identically (BR-12).
-export async function loginRefusedUntil(email: string): Promise<Date | null> {
-  const state = await prisma.loginThrottle.findUnique({ where: { email } })
+// The state without the failure counted at that time, for a login that
+// turned out not to be one.
+export function withoutFailedLogin(state: LoginThrottleState, countedAt: Date): LoginThrottleState {
+  const index = state.failedAt.findIndex((failure) => failure.getTime() === countedAt.getTime())
+  if (index === -1) return state
 
-  return state ? refusedUntil(state) : null
+  const failedAt = state.failedAt.filter((_failure, position) => position !== index)
+
+  return { failedAt, lockedUntil: failedAt.length >= MAX_FAILURES ? state.lockedUntil : null }
 }
 
-export async function recordFailedLogin(email: string): Promise<void> {
-  await prisma.$transaction(async (tx) => {
-    // One failure at a time per email, so failures that arrive together
-    // are all counted instead of overwriting each other.
+// One change at a time per email, so logins that arrive together are each
+// checked against, and counted on top of, the ones before them.
+function withThrottleLock<T>(email: string, change: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${email}))`
 
-    const state = (await tx.loginThrottle.findUnique({ where: { email } })) ?? NO_FAILURES
-    const next = afterFailedLogin(state)
+    return change(tx)
+  })
+}
 
+export type LoginAttempt = { refusedUntil: Date } | { countedAt: Date }
+
+// The state is kept per normalised email, whether or not it matches a
+// user, so an unknown email is throttled identically (BR-12).
+//
+// A login is counted as a failure before its password is checked, unless
+// the email is refused: however many arrive together, no more than five
+// passwords are checked. What the check finds then keeps the failure,
+// clears them all, or takes this one back.
+export function beginLoginAttempt(email: string): Promise<LoginAttempt> {
+  return withThrottleLock(email, async (tx) => {
+    const state = (await tx.loginThrottle.findUnique({ where: { email } })) ?? NO_FAILURES
+    const until = refusedUntil(state)
+    if (until) return { refusedUntil: until }
+
+    const next = afterFailedLogin(state)
     await tx.loginThrottle.upsert({ where: { email }, update: next, create: { email, ...next } })
+
+    return { countedAt: next.failedAt[next.failedAt.length - 1] }
+  })
+}
+
+export async function uncountLoginAttempt(email: string, countedAt: Date): Promise<void> {
+  await withThrottleLock(email, async (tx) => {
+    const state = await tx.loginThrottle.findUnique({ where: { email } })
+    if (!state) return
+
+    await tx.loginThrottle.update({ where: { email }, data: withoutFailedLogin(state, countedAt) })
   })
 }
 
 export async function clearFailedLogins(email: string): Promise<void> {
-  await prisma.loginThrottle.deleteMany({ where: { email } })
+  await withThrottleLock(email, (tx) => tx.loginThrottle.deleteMany({ where: { email } }))
 }

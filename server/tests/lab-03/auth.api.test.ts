@@ -190,6 +190,35 @@ describe('POST /api/auth/login', () => {
     expect((await login(user.email, user.password)).status).toBe(429)
   })
 
+  // BR-12: a login is counted before its password is checked, so sending
+  // them together buys no extra guesses.
+  it('checks no more than five passwords among wrong ones sent at the same moment', async () => {
+    const user = await createUser('REQUESTER')
+    const compare = vi.spyOn(bcrypt, 'compare')
+
+    const attempts = await Promise.all(Array.from({ length: 12 }, (_, guess) => login(user.email, `Wrong-Passw0rd-${guess}!`)))
+
+    const statuses = attempts.map((res) => res.status)
+    expect(statuses.filter((status) => status === 401)).toHaveLength(5)
+    expect(statuses.filter((status) => status === 429)).toHaveLength(7)
+    expect(compare).toHaveBeenCalledTimes(5)
+  })
+
+  // BR-12, api-spec.md §2 Throttle
+  it('does not let an inactive account\'s correct password, sent with wrong ones, change their count', async () => {
+    const user = await createUser('REQUESTER', { isActive: false })
+    const wrong = () => login(user.email, 'Wrong-Passw0rd!')
+
+    for (let failure = 0; failure < 3; failure += 1) await wrong()
+    const [correct, fourth] = await Promise.all([login(user.email, user.password), wrong()])
+
+    expect(correct.status).toBe(403)
+    expect(fourth.status).toBe(401)
+    // Four failures stand, not five and not none: one more is the fifth.
+    expect((await wrong()).status).toBe(401)
+    expect((await wrong()).status).toBe(429)
+  })
+
   // api-spec.md §2: 400, with `field` naming the input.
   it.each([
     ['a missing email', { password: TEST_PASSWORD }, 'email'],
@@ -442,6 +471,21 @@ describe('request body', () => {
 
     expect(res.status).toBe(400)
     expect(res.body).toEqual({ error: 'The request body is not valid JSON.', code: 'VALIDATION_ERROR' })
+  })
+
+  // api-spec.md §1.4: a body the server will not read is the client's
+  // error too, under the status that says why.
+  it.each([
+    ['larger than the limit', 'application/json', JSON.stringify({ email: 'a'.repeat(200_000) }), 413],
+    ['in a charset the server does not read', 'application/json; charset=latin1', '{}', 415],
+  ])('that is %s is answered with its own status', async (_case, contentType, body, status) => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const res = await request(app).post('/api/auth/login').set('Content-Type', contentType).send(body)
+
+    expect(res.status).toBe(status)
+    expect(res.body).toEqual({ error: expect.any(String), code: 'VALIDATION_ERROR' })
+    expect(logged).not.toHaveBeenCalled()
   })
 })
 
