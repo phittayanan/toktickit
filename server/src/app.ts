@@ -11,6 +11,7 @@ import commentRoutes from './routes/comment.routes'
 import authRoutes from './routes/auth.routes'
 import adminRoutes from './routes/admin.routes'
 import { noStore } from './middleware/noStore'
+import staffRoutes from './routes/staff.routes'
 
 const app = express()
 
@@ -43,6 +44,7 @@ app.use('/api', ticketRoutes)
 app.use('/api', attachmentRoutes)
 app.use('/api', commentRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/staff', staffRoutes)
 
 // api-spec.md §1.4: an /api path, or a method, that nothing above defines
 // is answered after the session checks, so it says nothing to a visitor

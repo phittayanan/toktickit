@@ -47,9 +47,9 @@ export const ENDPOINTS: readonly Endpoint[] = [
   { method: 'DELETE', path: '/api/tickets/:id/resolution-indication', roles: REQUESTER },
 
   // §5 Staff Tickets
-  { method: 'GET', path: '/api/staff/tickets', roles: STAFF, pendingIssue: 51 },
+  { method: 'GET', path: '/api/staff/tickets', roles: STAFF },
   { method: 'GET', path: '/api/staff/tickets/:id', roles: STAFF, pendingIssue: 52 },
-  { method: 'GET', path: '/api/staff/eligible-owners', roles: STAFF, pendingIssue: 51 },
+  { method: 'GET', path: '/api/staff/eligible-owners', roles: STAFF },
   { method: 'PUT', path: '/api/staff/tickets/:id/owner', roles: STAFF, pendingIssue: 52 },
   { method: 'PUT', path: '/api/staff/tickets/:id/it-priority', roles: STAFF, pendingIssue: 52 },
   { method: 'POST', path: '/api/staff/tickets/:id/status', roles: STAFF, pendingIssue: 52 },

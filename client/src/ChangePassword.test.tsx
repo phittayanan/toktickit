@@ -15,6 +15,11 @@ beforeEach(() => {
     data: [],
     meta: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 },
   })
+  vi.spyOn(api, 'fetchStaffQueue').mockResolvedValue({
+    data: [],
+    meta: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 },
+  })
+  vi.spyOn(api, 'fetchEligibleOwners').mockResolvedValue([])
 })
 
 afterEach(() => {

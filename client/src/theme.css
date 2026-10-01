@@ -340,6 +340,16 @@ button:focus-visible {
   box-shadow: inset 0 0 0 1px currentColor;
 }
 
+/* Flag badge (docs/lab-03/ui-spec.md §2.2) */
+.tk-badge--success-outline {
+  background-color: var(--tk-surface);
+  color: var(--tk-success-text);
+  box-shadow: inset 0 0 0 1px var(--tk-success-text);
+}
+.tk-badge__icon {
+  margin-right: 4px;
+}
+
 /* ---- Shared feedback (docs/lab-03/ui-spec.md §2.3) ---- */
 
 .tk-alert {
@@ -724,6 +734,126 @@ button:focus-visible {
 }
 .table thead th {
   border-bottom: 2px solid var(--tk-surface-border);
+}
+
+/* ---- Ticket Queue (docs/lab-03/ui-spec.md §8) ---- */
+
+/* The search, the filters, and the sort in one wrapping row. */
+.tk-queue__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+}
+.tk-queue__controls .form-label {
+  margin-bottom: 4px;
+}
+.tk-queue__search {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.tk-queue__search .form-control {
+  text-overflow: ellipsis;
+}
+
+/* The table sits on the card surface, not on the page background. */
+.tk-queue__table {
+  --bs-table-bg: transparent;
+}
+.tk-queue__table th {
+  white-space: nowrap;
+}
+.tk-queue__filters {
+  display: contents;
+}
+.tk-queue__check {
+  margin-bottom: 0;
+  padding-bottom: 7px;
+}
+
+/* A sortable column header is a button that reads as the header. */
+.tk-queue__sort-header {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font-weight: inherit;
+  text-align: left;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+/* Mobile (§8.4): the filters open as a panel, and every control is a
+   44px tap target. */
+@media (max-width: 767px) {
+  .tk-queue__filters {
+    display: none;
+  }
+  .tk-queue__filters.is-open {
+    display: flex;
+    flex: 1 1 100%;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--tk-surface-border);
+    border-radius: 6px;
+    background: var(--tk-surface);
+  }
+  .tk-queue__search,
+  .tk-queue__sort {
+    flex: 1 1 100%;
+  }
+  .tk-queue .btn,
+  .tk-queue .form-control,
+  .tk-queue .form-select {
+    min-height: 44px;
+  }
+  .tk-queue__check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding-bottom: 0;
+  }
+  .tk-queue__card a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+.tk-queue__row,
+.tk-queue__card {
+  cursor: pointer;
+}
+.tk-queue__row:hover > td {
+  background: var(--tk-pale-green);
+}
+
+/* A long Summary or name wraps instead of widening the page (§11). */
+.tk-queue__summary {
+  overflow-wrap: anywhere;
+}
+
+.tk-queue__message {
+  align-items: center;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.tk-queue__skeleton-row {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--tk-surface-border);
+  color: var(--tk-neutral-text);
+}
+.tk-queue__skeleton-row:last-child {
+  border-bottom: 0;
+}
+
+.tk-queue__unassigned {
+  color: var(--tk-neutral-text);
+  font-style: italic;
 }
 
 /* ---- Attachment chips (ui-spec.md §3) ---- */
