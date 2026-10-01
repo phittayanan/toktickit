@@ -9,6 +9,8 @@ import ticketRoutes from './routes/ticket.routes'
 import attachmentRoutes from './routes/attachment.routes'
 import commentRoutes from './routes/comment.routes'
 import authRoutes from './routes/auth.routes'
+import adminRoutes from './routes/admin.routes'
+import { noStore } from './middleware/noStore'
 
 const app = express()
 
@@ -23,6 +25,10 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes)
 
+// api-spec.md §1.6: no User Management response is cached, a refusal
+// included.
+app.use('/api/admin', noStore)
+
 // api-spec.md §1.5 steps 1 and 2: everything below needs a session whose
 // user has no password change pending.
 app.use('/api', requireSession, requirePasswordChanged)
@@ -36,6 +42,7 @@ app.use('/api', referenceDataRoutes)
 app.use('/api', ticketRoutes)
 app.use('/api', attachmentRoutes)
 app.use('/api', commentRoutes)
+app.use('/api/admin', adminRoutes)
 
 // api-spec.md §1.4: an /api path, or a method, that nothing above defines
 // is answered after the session checks, so it says nothing to a visitor

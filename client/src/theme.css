@@ -563,6 +563,160 @@ button:focus-visible {
   width: 60%;
 }
 
+/* ---- Dialogs (docs/lab-03/ui-spec.md §2.3, §12) ---- */
+
+.tk-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(26, 46, 39, 0.5);
+  overflow-y: auto;
+}
+
+.tk-dialog {
+  width: 100%;
+  max-width: 480px;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.tk-dialog:focus {
+  outline: none;
+}
+
+.tk-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* ---- User Management (docs/lab-03/ui-spec.md §10) ---- */
+
+/* §10.3: the panel opens beside the list, which keeps about three fifths
+   of the width. */
+.tk-users__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.tk-users--with-panel .tk-users__layout {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+
+/* Search takes the width the role filter and Clear Filters leave, and has
+   a row to itself when there is not enough. */
+.tk-users__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.tk-users__search {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.tk-users__role {
+  flex: 1 1 160px;
+  max-width: 220px;
+}
+
+.tk-users__skeleton-row {
+  display: flex;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--tk-surface-border);
+}
+
+.tk-users__panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tk-info-panel {
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--tk-info-bg);
+  color: var(--tk-info-text);
+  font-size: 14px;
+}
+
+/* The Active switch: Primary green when on, and the theme's focus ring in
+   place of Bootstrap's blue one. */
+.tk-switch .form-check-input {
+  border-color: var(--tk-field-border);
+}
+.tk-switch .form-check-input:checked {
+  background-color: var(--tk-primary-green);
+  border-color: var(--tk-primary-green);
+}
+.tk-switch .form-check-input:focus {
+  box-shadow: none;
+}
+.tk-switch .form-check-input:focus:not(:checked) {
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
+}
+.tk-switch .form-check-input:focus-visible {
+  outline: 2px solid var(--tk-secondary-green);
+  outline-offset: 1px;
+}
+.tk-switch__state {
+  margin-left: 8px;
+  color: var(--tk-neutral-text);
+}
+
+.tk-one-time-password {
+  font-family: var(--bs-font-monospace);
+}
+.tk-one-time-password__copied {
+  min-height: 20px;
+  margin-bottom: 8px;
+  color: var(--tk-success-text);
+}
+
+.tk-dialog--panel {
+  max-width: 560px;
+}
+
+@media (max-width: 767px) {
+  /* §10.3: on mobile the panel is a full-screen dialog with full-width
+     buttons. */
+  .tk-dialog-backdrop:has(> .tk-dialog--panel) {
+    align-items: stretch;
+    padding: 0;
+  }
+  .tk-dialog--panel {
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+  }
+  .tk-users__panel-actions .btn {
+    width: 100%;
+  }
+
+  /* §11: 44px tap targets. */
+  .tk-users .btn,
+  .tk-users .form-control,
+  .tk-users .form-select,
+  .tk-dialog .btn,
+  .tk-dialog .form-control {
+    min-height: 44px;
+  }
+  .tk-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+  }
+}
+
 /* ---- My Tickets table / mobile cards (ui-spec.md §8, §11) ---- */
 
 .table {

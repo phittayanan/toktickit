@@ -372,10 +372,9 @@ describe('Administrator on the staff ticket operations', () => {
   })
 })
 
-// API-17 (AC-17, BR-14). Pending until User Management (#53) delivers the
-// three Administrator actions that end a user's sessions.
+// API-17 (AC-17, BR-14)
 describe('a signed-in user an Administrator acts on', () => {
-  it.skip('gets 401 on their existing session after each of deactivation, a role change, and a new initial password (pending #53)', async () => {
+  it('gets 401 on their existing session after each of deactivation, a role change, and a new initial password', async () => {
     const administrator = await signInAs('ADMINISTRATOR')
     const actions: Array<(userId: number) => request.Test> = [
       (userId) => send('PATCH', `/api/admin/users/${userId}`, administrator.cookie).send({ isActive: false }),

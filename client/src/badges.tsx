@@ -56,3 +56,13 @@ export function RoleBadge({ role }: { role: Role }) {
 
   return <span className={`badge rounded-pill ${classByRole[role]}`}>{labelByRole[role]}</span>
 }
+
+// Account badge (docs/lab-03/ui-spec.md §2.2): Active Success, Inactive
+// Neutral.
+export function AccountBadge({ isActive }: { isActive: boolean }) {
+  return (
+    <span className={`badge rounded-pill ${isActive ? 'tk-badge--success' : 'tk-badge--neutral'}`}>
+      {isActive ? 'Active' : 'Inactive'}
+    </span>
+  )
+}
