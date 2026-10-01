@@ -2,6 +2,7 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import cors from 'cors'
 import { sendError } from './apiError'
 import { CLIENT_ORIGIN, requireAllowedOrigin } from './middleware/requireAllowedOrigin'
+import { requireRole } from './middleware/requireRole'
 import { requirePasswordChanged, requireSession } from './middleware/requireSession'
 import referenceDataRoutes from './routes/referenceData.routes'
 import ticketRoutes from './routes/ticket.routes'
@@ -14,13 +15,22 @@ const app = express()
 // sends the session cookie to it and to nothing else.
 app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }))
 app.use(requireAllowedOrigin)
-app.use(express.json())
 
 app.get('/api/health', (_req, res) => {
   res.status(200).json({ status: 'ok', service: 'TokTickIT API' })
 })
 
 app.use('/api/auth', authRoutes)
+
+// api-spec.md §1.5 steps 1 and 2: everything below needs a session whose
+// user has no password change pending.
+app.use('/api', requireSession, requirePasswordChanged)
+
+// Step 3 where the role is fixed by prefix, so it holds for every path
+// under it, defined or not (api-spec.md §1.4).
+app.use('/api/staff', requireRole('IT_STAFF', 'ADMINISTRATOR'))
+app.use('/api/admin', requireRole('ADMINISTRATOR'))
+
 app.use('/api', referenceDataRoutes)
 app.use('/api', ticketRoutes)
 app.use('/api', attachmentRoutes)
@@ -28,7 +38,7 @@ app.use('/api', attachmentRoutes)
 // api-spec.md §1.4: an /api path, or a method, that nothing above defines
 // is answered after the session checks, so it says nothing to a visitor
 // who is not signed in.
-app.use('/api', requireSession, requirePasswordChanged, (_req, res) => {
+app.use('/api', (_req, res) => {
   sendError(res, 404, 'NOT_FOUND', 'Not found')
 })
 

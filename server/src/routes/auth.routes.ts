@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { sendError, sendValidationError } from '../apiError'
+import { parseJsonBody } from '../middleware/parseJsonBody'
 import { requireSession, type SessionRequest } from '../middleware/requireSession'
 import { changePasswordSchema, loginSchema } from '../schemas/auth.schema'
 import { changePassword, login, toUserIdentity } from '../services/auth.service'
@@ -14,7 +15,7 @@ router.use((_req, res, next) => {
   next()
 })
 
-router.post('/login', async (req, res) => {
+router.post('/login', parseJsonBody, async (req, res) => {
   const parsed = loginSchema.safeParse(req.body ?? {})
   if (!parsed.success) {
     sendValidationError(res, parsed.error)
@@ -55,7 +56,7 @@ router.get('/me', requireSession, (req: SessionRequest, res) => {
   res.status(200).json(toUserIdentity(req.user!))
 })
 
-router.post('/change-password', requireSession, async (req: SessionRequest, res) => {
+router.post('/change-password', requireSession, parseJsonBody, async (req: SessionRequest, res) => {
   const parsed = changePasswordSchema.safeParse(req.body ?? {})
   if (!parsed.success) {
     sendValidationError(res, parsed.error)

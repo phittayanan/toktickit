@@ -11,6 +11,9 @@ export interface Endpoint {
   roles: readonly Role[] | 'public'
   // Reachable by a user who must still change their password (§1.5 step 2).
   allowedBeforePasswordChange?: true
+  // The issue that delivers an endpoint the API does not have yet. Its rows
+  // in authorization.api.test.ts stay pending until that issue removes this.
+  pendingIssue?: number
 }
 
 const ANY_ROLE = ROLES
@@ -40,27 +43,27 @@ export const ENDPOINTS: readonly Endpoint[] = [
   { method: 'GET', path: '/api/tickets/:id', roles: REQUESTER },
   { method: 'POST', path: '/api/tickets/:id/attachments', roles: REQUESTER },
   { method: 'POST', path: '/api/attachments/:id/remove', roles: REQUESTER },
-  { method: 'PUT', path: '/api/tickets/:id/resolution-indication', roles: REQUESTER },
-  { method: 'DELETE', path: '/api/tickets/:id/resolution-indication', roles: REQUESTER },
+  { method: 'PUT', path: '/api/tickets/:id/resolution-indication', roles: REQUESTER, pendingIssue: 50 },
+  { method: 'DELETE', path: '/api/tickets/:id/resolution-indication', roles: REQUESTER, pendingIssue: 50 },
 
   // §5 Staff Tickets
-  { method: 'GET', path: '/api/staff/tickets', roles: STAFF },
-  { method: 'GET', path: '/api/staff/tickets/:id', roles: STAFF },
-  { method: 'GET', path: '/api/staff/eligible-owners', roles: STAFF },
-  { method: 'PUT', path: '/api/staff/tickets/:id/owner', roles: STAFF },
-  { method: 'PUT', path: '/api/staff/tickets/:id/it-priority', roles: STAFF },
-  { method: 'POST', path: '/api/staff/tickets/:id/status', roles: STAFF },
-  { method: 'GET', path: '/api/staff/tickets/:id/notes', roles: STAFF },
-  { method: 'POST', path: '/api/staff/tickets/:id/notes', roles: STAFF },
+  { method: 'GET', path: '/api/staff/tickets', roles: STAFF, pendingIssue: 51 },
+  { method: 'GET', path: '/api/staff/tickets/:id', roles: STAFF, pendingIssue: 52 },
+  { method: 'GET', path: '/api/staff/eligible-owners', roles: STAFF, pendingIssue: 51 },
+  { method: 'PUT', path: '/api/staff/tickets/:id/owner', roles: STAFF, pendingIssue: 52 },
+  { method: 'PUT', path: '/api/staff/tickets/:id/it-priority', roles: STAFF, pendingIssue: 52 },
+  { method: 'POST', path: '/api/staff/tickets/:id/status', roles: STAFF, pendingIssue: 52 },
+  { method: 'GET', path: '/api/staff/tickets/:id/notes', roles: STAFF, pendingIssue: 52 },
+  { method: 'POST', path: '/api/staff/tickets/:id/notes', roles: STAFF, pendingIssue: 52 },
 
   // §6 Shared ticket resources
-  { method: 'GET', path: '/api/tickets/:id/comments', roles: ANY_ROLE },
-  { method: 'POST', path: '/api/tickets/:id/comments', roles: ANY_ROLE },
+  { method: 'GET', path: '/api/tickets/:id/comments', roles: ANY_ROLE, pendingIssue: 50 },
+  { method: 'POST', path: '/api/tickets/:id/comments', roles: ANY_ROLE, pendingIssue: 50 },
   { method: 'GET', path: '/api/attachments/:id/download', roles: ANY_ROLE },
 
   // §7 User Management
-  { method: 'GET', path: '/api/admin/users', roles: ADMINISTRATOR },
-  { method: 'POST', path: '/api/admin/users', roles: ADMINISTRATOR },
-  { method: 'PATCH', path: '/api/admin/users/:id', roles: ADMINISTRATOR },
-  { method: 'POST', path: '/api/admin/users/:id/initial-password', roles: ADMINISTRATOR },
+  { method: 'GET', path: '/api/admin/users', roles: ADMINISTRATOR, pendingIssue: 53 },
+  { method: 'POST', path: '/api/admin/users', roles: ADMINISTRATOR, pendingIssue: 53 },
+  { method: 'PATCH', path: '/api/admin/users/:id', roles: ADMINISTRATOR, pendingIssue: 53 },
+  { method: 'POST', path: '/api/admin/users/:id/initial-password', roles: ADMINISTRATOR, pendingIssue: 53 },
 ]

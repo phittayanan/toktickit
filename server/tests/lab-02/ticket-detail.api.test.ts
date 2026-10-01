@@ -2,16 +2,19 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import request from 'supertest'
 import app from '../../src/app'
 import prisma from '../../src/prisma'
+import { signInAs } from '../lab-03/support/signIn'
 
 let requesterId: number
 let otherRequesterId: number
+// Lab 3: a Requester acts through their session (BR-03); each id's cookie.
+const cookies = new Map<number, string>()
 let categoryId: number
 let relatedSystemId: number
 
 async function createTicket(byRequesterId: number) {
   const res = await request(app)
     .post('/api/tickets')
-    .set('X-Requester-Id', String(byRequesterId))
+    .set('Cookie', cookies.get(byRequesterId)!)
     .send({
       categoryId,
       relatedSystemId,
@@ -23,15 +26,13 @@ async function createTicket(byRequesterId: number) {
 }
 
 beforeAll(async () => {
-  const requester = await prisma.user.findFirstOrThrow({ where: { isActive: true, role: 'REQUESTER' } })
-  requesterId = requester.id
+  const requester = await signInAs('REQUESTER')
+  requesterId = requester.user.id
+  cookies.set(requesterId, requester.cookie)
 
-  const other = await prisma.user.upsert({
-    where: { email: 'ticket-detail.api.test@example.com' },
-    update: { isActive: true },
-    create: { name: 'Ticket Detail Test Other', email: 'ticket-detail.api.test@example.com' },
-  })
-  otherRequesterId = other.id
+  const other = await signInAs('REQUESTER')
+  otherRequesterId = other.user.id
+  cookies.set(otherRequesterId, other.cookie)
 
   const category = await prisma.category.findFirstOrThrow({ where: { isActive: true } })
   categoryId = category.id
@@ -47,12 +48,12 @@ describe('GET /api/tickets/:id', () => {
 
     const activeUpload = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set('X-Requester-Id', String(requesterId))
+      .set('Cookie', cookies.get(requesterId)!)
       .attach('file', Buffer.from('active file contents'), { filename: 'active.png', contentType: 'image/png' })
 
     const removedUpload = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set('X-Requester-Id', String(requesterId))
+      .set('Cookie', cookies.get(requesterId)!)
       .attach('file', Buffer.from('removed file contents'), { filename: 'removed.png', contentType: 'image/png' })
 
     await prisma.attachment.update({
@@ -60,7 +61,7 @@ describe('GET /api/tickets/:id', () => {
       data: { removedAt: new Date(), removedByRequesterId: requesterId, removalReason: 'Wrong file' },
     })
 
-    const res = await request(app).get(`/api/tickets/${ticketId}`).set('X-Requester-Id', String(requesterId))
+    const res = await request(app).get(`/api/tickets/${ticketId}`).set('Cookie', cookies.get(requesterId)!)
 
     expect(res.status).toBe(200)
     expect(res.body.id).toBe(ticketId)
@@ -83,7 +84,7 @@ describe('GET /api/tickets/:id', () => {
   it("returns a 404 for another Requester's Ticket", async () => {
     const ticketId = await createTicket(otherRequesterId)
 
-    const res = await request(app).get(`/api/tickets/${ticketId}`).set('X-Requester-Id', String(requesterId))
+    const res = await request(app).get(`/api/tickets/${ticketId}`).set('Cookie', cookies.get(requesterId)!)
 
     expect(res.status).toBe(404)
     expect(res.body).toEqual({ error: 'Ticket not found' })
@@ -91,25 +92,16 @@ describe('GET /api/tickets/:id', () => {
 
   // API-19 (AC-03): a nonexistent id -> identical 404 body
   it('returns an identical 404 for a nonexistent Ticket id', async () => {
-    const res = await request(app).get('/api/tickets/999999999').set('X-Requester-Id', String(requesterId))
+    const res = await request(app).get('/api/tickets/999999999').set('Cookie', cookies.get(requesterId)!)
 
     expect(res.status).toBe(404)
     expect(res.body).toEqual({ error: 'Ticket not found' })
   })
 
   it('returns a 404 for a malformed id', async () => {
-    const res = await request(app).get('/api/tickets/not-a-number').set('X-Requester-Id', String(requesterId))
+    const res = await request(app).get('/api/tickets/not-a-number').set('Cookie', cookies.get(requesterId)!)
 
     expect(res.status).toBe(404)
     expect(res.body).toEqual({ error: 'Ticket not found' })
-  })
-
-  // shared header contract: missing X-Requester-Id rejected 400
-  it('rejects a request with no X-Requester-Id header', async () => {
-    const ticketId = await createTicket(requesterId)
-
-    const res = await request(app).get(`/api/tickets/${ticketId}`)
-
-    expect(res.status).toBe(400)
   })
 })

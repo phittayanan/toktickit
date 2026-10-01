@@ -495,7 +495,11 @@ describe('request path', () => {
   it('with a parameter that cannot be decoded is answered 400', async () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const res = await request(app).get('/api/tickets/%E0%A4%A')
+    // The session check comes first (api-spec.md §1.5), so the request is
+    // a signed-in Requester's.
+    const { cookie } = await signInAs('REQUESTER')
+
+    const res = await request(app).get('/api/tickets/%E0%A4%A').set('Cookie', cookie)
 
     expect(res.status).toBe(400)
     expect(res.body).toEqual({ error: 'The request is malformed.', code: 'VALIDATION_ERROR' })
@@ -611,9 +615,9 @@ describe('POST /api/auth/change-password', () => {
   })
 })
 
-// The Lab 2 routes come under the session in #48, so until then the
-// protected endpoint here is one the contract answers for any path
-// (api-spec.md §1.4): an /api path it does not define.
+// The protected endpoint here is one the contract answers for any path
+// (api-spec.md §1.4): an /api path it does not define. Each defined
+// endpoint is covered by authorization.api.test.ts.
 describe('a path the API does not define', () => {
   const undefinedPath = () => request(app).get('/api/no-such-resource')
 
