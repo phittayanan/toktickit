@@ -307,6 +307,14 @@ function AppShell({ user, children }: { user: UserIdentity; children: ReactNode 
   const isMobile = useIsMobile()
   const [logoutFailed, setLogoutFailed] = useState(false)
   const notice = useHandedNotice()
+  const location = useLocation()
+  const [shownAt, setShownAt] = useState(location.key)
+
+  // The Logout failure message is about the screen it happened on.
+  if (shownAt !== location.key) {
+    setShownAt(location.key)
+    setLogoutFailed(false)
+  }
 
   const Header = isMobile ? MobileHeader : DesktopHeader
 

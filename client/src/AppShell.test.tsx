@@ -230,6 +230,24 @@ describe('Logout and session end', () => {
     expect(window.location.pathname).toBe('/tickets')
   })
 
+  // The failure message belongs to the screen where Logout failed
+  it('clears the Logout failure message when the user goes to another screen', async () => {
+    vi.spyOn(api, 'logout').mockRejectedValue(new Error('Unable to connect to TokTickIT API'))
+    signedInAs(REQUESTER)
+    openPath('/tickets')
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: /Somchai Jaidee/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Logout' }))
+    expect(await screen.findByText('Something went wrong. Please try again.')).toBeInTheDocument()
+
+    const navigation = within(screen.getByRole('navigation', { name: 'Primary' }))
+    fireEvent.click(navigation.getByRole('button', { name: 'Create Ticket' }))
+
+    expect(await screen.findByRole('heading', { name: 'Create Ticket' })).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Something went wrong. Please try again.')).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /Somchai Jaidee/ })).toBeInTheDocument()
+  })
+
   // UI-09 (AC-10): any request answering 401 UNAUTHENTICATED while signed
   // in -> client state cleared, Login with the session-ended alert
   it('shows Login with the session-ended alert when a request answers 401', async () => {
