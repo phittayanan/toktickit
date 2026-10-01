@@ -1,5 +1,9 @@
 # Ownership and missing-resource failures both return 404
 
+Status: accepted, and kept in Lab 3. Extended by
+[ADR-0009](./0009-role-failure-403-ownership-failure-404.md), which adds
+`403` for role failures only.
+
 RequesterUser is not real authentication (§4.2) — the backend has no
 authenticated session to base an authorization judgment on, so 403 (which
 asserts "known identity, forbidden") isn't a decision Lab 2 can make. We

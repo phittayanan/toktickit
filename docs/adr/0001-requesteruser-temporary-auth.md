@@ -1,5 +1,9 @@
 # RequesterUser as a temporary authentication substitute
 
+Status: retired in Lab 3 by [ADR-0007](./0007-server-side-session-authentication.md)
+(real login) and [ADR-0008](./0008-requesteruser-to-user-migration.md)
+(`RequesterUser` becomes `User`).
+
 Lab 2 needs a per-request identity to scope Tickets/Attachments before real
 auth exists (Lab 3). We introduce a `RequesterUser` model and a Development
 Requester Selector that assigns the chosen identity client-side
