@@ -198,9 +198,13 @@ function UserMenu({ user, onLogoutFailed }: { user: UserIdentity; onLogoutFailed
   )
 }
 
-function Wordmark({ user }: { user: UserIdentity }) {
+function Wordmark({ user, onNavigate }: { user: UserIdentity; onNavigate?: () => void }) {
   return (
-    <Link to={LANDING_PATH[user.role]} className="app-shell__brand fw-semibold text-decoration-none">
+    <Link
+      to={LANDING_PATH[user.role]}
+      className="app-shell__brand fw-semibold text-decoration-none"
+      onClick={onNavigate}
+    >
       TokTickIT
     </Link>
   )
@@ -234,7 +238,7 @@ function MobileHeader({ user, onLogoutFailed }: { user: UserIdentity; onLogoutFa
   return (
     <header className="app-shell__header px-3 py-2">
       <div className="d-flex justify-content-between align-items-center gap-2">
-        <Wordmark user={user} />
+        <Wordmark user={user} onNavigate={() => setOpen(false)} />
         <button
           type="button"
           className="app-shell__menu-toggle btn btn-outline-light"

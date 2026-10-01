@@ -168,6 +168,20 @@ describe('Mobile shell', () => {
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
   })
 
+  it('closes the menu after the wordmark is used', async () => {
+    await openMobileMenu()
+    fireEvent.click(screen.getByRole('button', { name: 'Ticket Queue' }))
+    await waitFor(() => expect(window.location.pathname).toBe('/staff/queue'))
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }))
+    expect(screen.getByRole('button', { name: 'Menu' })).toHaveAttribute('aria-expanded', 'true')
+
+    fireEvent.click(screen.getByRole('link', { name: 'TokTickIT' }))
+
+    await waitFor(() => expect(window.location.pathname).toBe('/admin/users'))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Menu' })).toHaveAttribute('aria-expanded', 'false'))
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
+  })
+
   // Change Password chosen again while already open keeps its return path
   it('still returns to the previous screen when Change Password is opened again from the menu', async () => {
     await openMobileMenu()
