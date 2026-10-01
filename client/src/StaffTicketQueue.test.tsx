@@ -285,6 +285,48 @@ describe('Ticket Queue controls', () => {
       await act(async () => vi.advanceTimersByTime(1000))
       expect(fetchQueue).toHaveBeenCalledTimes(2)
     })
+
+    it('keeps a filter chosen before the typed search is applied', async () => {
+      const fetchQueue = mockQueue()
+      await openQueue()
+      await table()
+      vi.useFakeTimers()
+
+      fireEvent.change(searchBox(), { target: { value: 'bat' } })
+      await act(async () => vi.advanceTimersByTime(100))
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Requester says resolved' }))
+      await act(async () => vi.advanceTimersByTime(200))
+
+      expect(lastRequest(fetchQueue)).toEqual({
+        ...DEFAULT_REQUEST,
+        ...NO_FILTERS,
+        search: 'bat',
+        appearsResolved: true,
+      })
+      expect(Object.fromEntries(new URLSearchParams(window.location.search))).toEqual({
+        search: 'bat',
+        appearsResolved: 'true',
+      })
+      expect(screen.getByRole('checkbox', { name: 'Requester says resolved' })).toBeChecked()
+    })
+
+    it('is not applied after Clear Filters when it was typed just before', async () => {
+      const fetchQueue = mockQueue()
+      await openQueue('/staff/queue?status=CLOSED')
+      await table()
+      vi.useFakeTimers()
+
+      fireEvent.change(searchBox(), { target: { value: 'bat' } })
+      await act(async () => vi.advanceTimersByTime(100))
+      fireEvent.click(screen.getByRole('button', { name: 'Clear Filters' }))
+      await act(async () => vi.advanceTimersByTime(1000))
+
+      expect(fetchQueue).toHaveBeenCalledTimes(2)
+      expect(lastRequest(fetchQueue)).toEqual({ ...DEFAULT_REQUEST, ...NO_FILTERS })
+      expect(window.location.search).toBe('')
+      expect(searchBox()).toHaveValue('')
+      expect(selected('Status')).toBe('Unfinished')
+    })
   })
 
   // UI-16 (AC-26): each filter, from page 3, so that the page returns to 1

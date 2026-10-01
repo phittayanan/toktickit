@@ -188,10 +188,17 @@ function StaffTicketQueue({ user }: { user: UserIdentity }) {
   const view = readView(searchParams)
   const viewKey = writeView(view).toString()
 
+  // The view at the moment a change is made: a typed search is applied
+  // after the render it was typed in, and the view may have changed since.
+  const currentView = useRef(view)
+  useEffect(() => {
+    currentView.current = view
+  })
+
   // Changing the search, a filter, the sort, or the page size returns to
   // page 1.
   const show = (changes: Partial<View>) => {
-    setSearchParams(writeView({ ...view, page: 1, ...changes }), { replace: true })
+    setSearchParams(writeView({ ...currentView.current, page: 1, ...changes }), { replace: true })
   }
 
   // What is typed in Search, which is applied 300ms after typing stops or
@@ -201,7 +208,7 @@ function StaffTicketQueue({ user }: { user: UserIdentity }) {
   const searchTimer = useRef<number | undefined>(undefined)
 
   // The applied search changed. When that came from outside the input
-  // (Clear Filters), the input follows it.
+  // (a link to the queue), the input follows it.
   if (appliedSearch !== view.search) {
     setAppliedSearch(view.search)
     if (searchText.trim() !== view.search) setSearchText(view.search)
@@ -211,13 +218,21 @@ function StaffTicketQueue({ user }: { user: UserIdentity }) {
 
   const applySearch = (text: string) => {
     window.clearTimeout(searchTimer.current)
-    if (text.trim() !== view.search) show({ search: text.trim() })
+    if (text.trim() !== currentView.current.search) show({ search: text.trim() })
   }
 
   const typeSearch = (text: string) => {
     setSearchText(text)
     window.clearTimeout(searchTimer.current)
     searchTimer.current = window.setTimeout(() => applySearch(text), SEARCH_DELAY_MS)
+  }
+
+  // Every control returns to its default, and so does a search that was
+  // typed and not yet applied.
+  const clearFilters = () => {
+    window.clearTimeout(searchTimer.current)
+    setSearchText('')
+    show(DEFAULT_VIEW)
   }
 
   useEffect(() => {
@@ -455,7 +470,7 @@ function StaffTicketQueue({ user }: { user: UserIdentity }) {
           </div>
         </div>
 
-        <button type="button" className="btn btn-link text-decoration-none" onClick={() => show(DEFAULT_VIEW)}>
+        <button type="button" className="btn btn-link text-decoration-none" onClick={clearFilters}>
           Clear Filters
         </button>
       </div>
@@ -493,7 +508,7 @@ function StaffTicketQueue({ user }: { user: UserIdentity }) {
       {queue.status === 'loaded' && totalItems === 0 && !isDefaultView(view) && (
         <div className="card tk-queue__message">
           <p className="mb-3">No tickets match your search or filters.</p>
-          <button type="button" className="btn btn-outline-primary" onClick={() => show(DEFAULT_VIEW)}>
+          <button type="button" className="btn btn-outline-primary" onClick={clearFilters}>
             Clear Filters
           </button>
         </div>
