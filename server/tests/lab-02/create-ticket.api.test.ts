@@ -17,7 +17,7 @@ const VALID_BODY = () => ({
 })
 
 beforeAll(async () => {
-  const requester = await prisma.requesterUser.findFirstOrThrow({ where: { isActive: true } })
+  const requester = await prisma.user.findFirstOrThrow({ where: { isActive: true, role: 'REQUESTER' } })
   activeRequesterId = requester.id
 
   const category = await prisma.category.findFirstOrThrow({ where: { isActive: true } })

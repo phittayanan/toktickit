@@ -1,5 +1,7 @@
 import request from 'supertest'
 import app from '../../../src/app'
+import prisma from '../../../src/prisma'
+import { hashPassword } from '../../../src/services/passwordHash.service'
 import type { Role } from './roles'
 
 // Meets BR-08, so a helper-made user could also keep it through a change.
@@ -28,11 +30,12 @@ interface NewUser {
   mustChangePassword: boolean
 }
 
-// The one step this helper cannot take yet: the User model arrives with
-// #46 and bcrypt hashing (BR-07) with #47. It becomes a `prisma.user.create`
-// storing the hash of `password`, returning the new id.
-async function insertUser(_user: NewUser, _password: string): Promise<number> {
-  throw new Error('createUser needs the User model (#46) and bcrypt hashing (#47)')
+async function insertUser(user: NewUser, password: string): Promise<number> {
+  const created = await prisma.user.create({
+    data: { ...user, passwordHash: await hashPassword(password) },
+  })
+
+  return created.id
 }
 
 // Creates a user of the given role with a known password, directly in the

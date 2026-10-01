@@ -34,10 +34,10 @@ async function uploadAttachment(ticketId: number, byRequesterId: number, filenam
 }
 
 beforeAll(async () => {
-  const requester = await prisma.requesterUser.findFirstOrThrow({ where: { isActive: true } })
+  const requester = await prisma.user.findFirstOrThrow({ where: { isActive: true, role: 'REQUESTER' } })
   requesterId = requester.id
 
-  const other = await prisma.requesterUser.upsert({
+  const other = await prisma.user.upsert({
     where: { email: 'attachments-detail.api.test@example.com' },
     update: { isActive: true },
     create: { name: 'Attachments Detail Test Other', email: 'attachments-detail.api.test@example.com' },

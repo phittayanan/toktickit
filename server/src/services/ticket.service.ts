@@ -49,6 +49,8 @@ export async function createTicket(input: CreateTicketInput, requesterId: number
         summary: input.summary,
         description: input.description,
         requestedPriority: input.requestedPriority,
+        // BR-26: IT Priority starts as the Requested Priority.
+        itPriority: input.requestedPriority,
       },
     })
   })
