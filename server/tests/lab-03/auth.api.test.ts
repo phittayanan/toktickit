@@ -474,16 +474,17 @@ describe('request body', () => {
   })
 
   // api-spec.md §1.4: a body the server will not read is the client's
-  // error too, under the status that says why.
+  // error too, and the one status the contract gives VALIDATION_ERROR is
+  // 400.
   it.each([
-    ['larger than the limit', 'application/json', JSON.stringify({ email: 'a'.repeat(200_000) }), 413],
-    ['in a charset the server does not read', 'application/json; charset=latin1', '{}', 415],
-  ])('that is %s is answered with its own status', async (_case, contentType, body, status) => {
+    ['larger than the limit', 'application/json', JSON.stringify({ email: 'a'.repeat(200_000) })],
+    ['in a charset the server does not read', 'application/json; charset=latin1', '{}'],
+  ])('that is %s is answered 400', async (_case, contentType, body) => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const res = await request(app).post('/api/auth/login').set('Content-Type', contentType).send(body)
 
-    expect(res.status).toBe(status)
+    expect(res.status).toBe(400)
     expect(res.body).toEqual({ error: expect.any(String), code: 'VALIDATION_ERROR' })
     expect(logged).not.toHaveBeenCalled()
   })

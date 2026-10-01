@@ -39,8 +39,10 @@ app.use('/api', requireSession, requirePasswordChanged, (_req, res) => {
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   // An error that names a 4xx status (express.json() refusing a body that
   // is not JSON, too large, or in a charset it does not read; the router
-  // refusing a path it cannot decode) is the client's, answered with that
-  // status. Its own text is repeated only when it is marked safe to show.
+  // refusing a path it cannot decode) is the client's. Whatever status it
+  // names, it is answered 400, the one status api-spec.md §1.4 gives
+  // VALIDATION_ERROR. Its own text is repeated only when it is marked safe
+  // to show.
   const { type, status, expose, message } = (err ?? {}) as Record<string, unknown>
   if (typeof status === 'number' && status >= 400 && status < 500) {
     const error =
@@ -49,7 +51,7 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
         : expose === true
           ? String(message)
           : 'The request is malformed.'
-    sendError(res, status, 'VALIDATION_ERROR', error)
+    sendError(res, 400, 'VALIDATION_ERROR', error)
     return
   }
 
