@@ -1,5 +1,3 @@
-import { getRequester } from './requesterStore'
-
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000'
 
 export interface HealthResponse {
@@ -17,13 +15,37 @@ export interface RelatedSystem {
   name: string
 }
 
-export interface Requester {
+export type Priority = 'LOW' | 'MEDIUM' | 'HIGH'
+
+export type Role = 'REQUESTER' | 'IT_STAFF' | 'ADMINISTRATOR'
+
+// The signed-in User as the authentication endpoints return them
+// (docs/lab-03/api-spec.md §1.7).
+export interface UserIdentity {
   id: number
   name: string
   email: string
+  role: Role
+  mustChangePassword: boolean
 }
 
-export type Priority = 'LOW' | 'MEDIUM' | 'HIGH'
+// A refusal the API answered with (docs/lab-03/api-spec.md §1.4): its
+// `error` text, which is safe to display, as the message, with the HTTP
+// status, the machine `code`, and the `field` of a single-field validation
+// error. A request that never reached the API is not an ApiError.
+export class ApiError extends Error {
+  readonly status: number
+  readonly code?: string
+  readonly field?: string
+
+  constructor(status: number, message: string, code?: string, field?: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.code = code
+    this.field = field
+  }
+}
 
 export interface CreateTicketInput {
   categoryId: number
@@ -108,23 +130,52 @@ export interface TicketDetail extends Ticket {
   attachments: TicketAttachment[]
 }
 
-function requesterHeaders(): Record<string, string> {
-  const requester = getRequester()
-  return requester ? { 'X-Requester-Id': String(requester.id) } : {}
+type UnauthenticatedListener = () => void
+const unauthenticatedListeners = new Set<UnauthenticatedListener>()
+
+// Subscribes to "a request answered 401 UNAUTHENTICATED" (ui-spec.md
+// §4.2): the Session behind the cookie is gone. Returns the unsubscribe.
+export function onUnauthenticated(listener: UnauthenticatedListener): () => void {
+  unauthenticatedListeners.add(listener)
+  return () => {
+    unauthenticatedListeners.delete(listener)
+  }
 }
 
-// Wraps fetch() so any failure — the API responding with a non-2xx status,
-// or the request never reaching the API at all (server down, DNS failure,
-// CORS) — surfaces as the same useful message instead of the browser's raw
-// "Failed to fetch" / "NetworkError" text. Also attaches X-Requester-Id
-// (ADR-0006, FR-03) whenever a Requester is currently selected.
-async function getJson<T>(path: string): Promise<T> {
+async function reportIfUnauthenticated(res: Response): Promise<void> {
+  if (res.status !== 401) return
+
+  try {
+    const data = (await res.clone().json()) as { code?: string }
+    if (data?.code !== 'UNAUTHENTICATED') return
+  } catch {
+    return
+  }
+
+  for (const listener of unauthenticatedListeners) listener()
+}
+
+// Every request goes through here. The session cookie goes with it
+// (docs/lab-03/api-spec.md §1.1) and is the only identity the client
+// sends. A request that never reaches the API at all (server down, DNS
+// failure, CORS) surfaces as one useful message instead of the browser's
+// raw "Failed to fetch" / "NetworkError" text.
+async function send(path: string, init: RequestInit = {}): Promise<Response> {
   let res: Response
   try {
-    res = await fetch(`${API_BASE_URL}${path}`, { headers: requesterHeaders() })
+    res = await fetch(`${API_BASE_URL}${path}`, { ...init, credentials: 'include' })
   } catch {
     throw new Error('Unable to connect to TokTickIT API')
   }
+
+  await reportIfUnauthenticated(res)
+  return res
+}
+
+// A GET whose every non-2xx answer collapses into the same connectivity
+// message.
+async function getJson<T>(path: string): Promise<T> {
+  const res = await send(path)
 
   if (!res.ok) {
     throw new Error('Unable to connect to TokTickIT API')
@@ -150,21 +201,11 @@ async function extractErrorMessage(res: Response): Promise<string> {
 // server's own field-specific `{ error }` message over the generic
 // connectivity message, since the request *did* reach the API.
 async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...requesterHeaders(),
-  }
-
-  let res: Response
-  try {
-    res = await fetch(`${API_BASE_URL}${path}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    })
-  } catch {
-    throw new Error('Unable to connect to TokTickIT API')
-  }
+  const res = await send(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
 
   if (!res.ok) {
     throw new Error(await extractErrorMessage(res))
@@ -173,18 +214,73 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.json()
 }
 
+// A Lab 3 request: a refusal becomes an ApiError carrying its status,
+// `code`, and `field` (api-spec.md §1.4).
+async function request(path: string, init: RequestInit = {}): Promise<Response> {
+  const res = await send(path, init)
+
+  if (!res.ok) {
+    throw await toApiError(res)
+  }
+
+  return res
+}
+
+async function toApiError(res: Response): Promise<ApiError> {
+  try {
+    const data = (await res.json()) as { error?: string; code?: string; field?: string }
+    if (data?.error) return new ApiError(res.status, data.error, data.code, data.field)
+  } catch {
+    // Response wasn't JSON — fall through to the generic message.
+  }
+  return new ApiError(res.status, 'The server was unable to process this request')
+}
+
+// GET /api/auth/me: who the session cookie belongs to, or a 401 ApiError
+// when there is no session.
+export async function fetchCurrentUser(): Promise<UserIdentity> {
+  const res = await request('/api/auth/me')
+  return res.json()
+}
+
+// POST /api/auth/login. Refusals are ApiErrors: 401 INVALID_CREDENTIALS,
+// 403 ACCOUNT_INACTIVE, 429 LOGIN_THROTTLED, 400 naming the `field`.
+export async function login(email: string, password: string): Promise<UserIdentity> {
+  const res = await request('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  return res.json()
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+// POST /api/auth/change-password: answers the User with the must-change
+// flag cleared. A 400 ApiError names the `field` it refuses.
+export async function changePassword(input: ChangePasswordInput): Promise<UserIdentity> {
+  const res = await request('/api/auth/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  return res.json()
+}
+
+// POST /api/auth/logout: ends the Session. Safe to repeat (204 either way).
+export async function logout(): Promise<void> {
+  await request('/api/auth/logout', { method: 'POST' })
+}
+
 // Downloads an active Attachment's file content and triggers a browser save
 // under its original filename. A removed or not-owned Attachment 404s with
 // the shared { error } body (BR-20/BR-21).
 export async function downloadAttachment(attachmentId: number, originalFilename: string): Promise<void> {
-  let res: Response
-  try {
-    res = await fetch(`${API_BASE_URL}/api/attachments/${attachmentId}/download`, {
-      headers: requesterHeaders(),
-    })
-  } catch {
-    throw new Error('Unable to connect to TokTickIT API')
-  }
+  const res = await send(`/api/attachments/${attachmentId}/download`)
 
   if (!res.ok) {
     throw new Error(await extractErrorMessage(res))
@@ -218,12 +314,6 @@ export function fetchRelatedSystems(): Promise<RelatedSystem[]> {
   return getJson<RelatedSystem[]>('/api/related-systems')
 }
 
-// The one endpoint that doesn't require X-Requester-Id — it's how the
-// client discovers who it can act as (api-spec.md).
-export function fetchRequesters(): Promise<Requester[]> {
-  return getJson<Requester[]>('/api/requesters')
-}
-
 export function createTicket(input: CreateTicketInput): Promise<Ticket> {
   return postJson<Ticket>('/api/tickets', input)
 }
@@ -249,12 +339,7 @@ export function fetchTickets(params: TicketListParams = {}): Promise<TicketListR
 // collapses every non-2xx into the same message — so this uses the same
 // error-message extraction as postJson/uploadAttachment instead.
 export async function fetchTicketById(id: number): Promise<TicketDetail> {
-  let res: Response
-  try {
-    res = await fetch(`${API_BASE_URL}/api/tickets/${id}`, { headers: requesterHeaders() })
-  } catch {
-    throw new Error('Unable to connect to TokTickIT API')
-  }
+  const res = await send(`/api/tickets/${id}`)
 
   if (!res.ok) {
     throw new Error(await extractErrorMessage(res))
@@ -271,16 +356,7 @@ export async function uploadAttachment(ticketId: number, file: File): Promise<At
   const body = new FormData()
   body.append('file', file)
 
-  let res: Response
-  try {
-    res = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}/attachments`, {
-      method: 'POST',
-      headers: requesterHeaders(),
-      body,
-    })
-  } catch {
-    throw new Error('Unable to connect to TokTickIT API')
-  }
+  const res = await send(`/api/tickets/${ticketId}/attachments`, { method: 'POST', body })
 
   if (!res.ok) {
     throw new Error(await extractErrorMessage(res))

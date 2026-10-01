@@ -12,7 +12,7 @@ import {
   type TicketDetail,
 } from './api'
 import { MAX_ACTIVE_ATTACHMENTS, validateAttachmentFile } from './attachmentRules'
-import { useRequester } from './useRequester'
+import { useSession } from './useSession'
 import { PriorityBadge, StatusBadge } from './badges'
 
 type DetailState =
@@ -281,7 +281,7 @@ function AttachmentsSection({
 // (#22). No Public Comments / Internal Notes / Actions Taken / status
 // change — those are permanently out of scope for Lab 2.
 function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack: () => void }) {
-  const { requester } = useRequester()
+  const { user } = useSession()
   const [categories, setCategories] = useState<Category[]>([])
   const [relatedSystems, setRelatedSystems] = useState<RelatedSystem[]>([])
   const [detail, setDetail] = useState<DetailState>({ status: 'loading' })
@@ -335,7 +335,7 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
         <div className="text-center py-5 border rounded">
           <h1 className="h4 mb-2">Ticket not found</h1>
           <p className="text-muted mb-3">
-            This Ticket doesn't exist, or isn't one of {requester?.name ?? 'yours'}'s Tickets.
+            This Ticket doesn't exist, or isn't one of {user?.name ?? 'yours'}'s Tickets.
           </p>
           <button type="button" className="btn btn-outline-primary" onClick={onBack}>
             Back to My Tickets
@@ -356,7 +356,7 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
           <div className="row g-3 mb-4">
             <ReadOnlyField label="Ticket Number" value={detail.ticket.ticketNumber} />
             <ReadOnlyField label="Ticket Date" value={formatDate(detail.ticket.createdAt)} />
-            <ReadOnlyField label="Requester" value={requester?.name ?? '—'} />
+            <ReadOnlyField label="Requester" value={user?.name ?? '—'} />
             <ReadOnlyField label="Category" value={categoryName(detail.ticket.categoryId)} />
             <ReadOnlyField label="Related System" value={relatedSystemName(detail.ticket.relatedSystemId)} />
             <ReadOnlyField
