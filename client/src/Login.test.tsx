@@ -73,7 +73,7 @@ describe('Login', () => {
     const email = screen.getByLabelText('Email address')
     const password = screen.getByLabelText('Password')
     expect(email).toHaveValue('')
-    expect(email).toHaveFocus()
+    await waitFor(() => expect(email).toHaveFocus())
     expect(email).toHaveAttribute('type', 'email')
     expect(email).toHaveAttribute('autocomplete', 'username')
     expect(password).toHaveValue('')

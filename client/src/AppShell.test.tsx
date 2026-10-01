@@ -205,10 +205,12 @@ describe('Logout and session end', () => {
     await screen.findByRole('heading', { name: 'Sign in to your account' })
     vi.mocked(api.fetchTickets).mockClear()
 
+    const wentBack = new Promise((resolve) => window.addEventListener('popstate', resolve, { once: true }))
     window.history.back()
+    await wentBack
 
     await waitFor(() => expect(window.location.pathname).toBe('/login'))
-    expect(screen.getByRole('heading', { name: 'Sign in to your account' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Sign in to your account' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'My Tickets' })).not.toBeInTheDocument()
     expect(api.fetchTickets).not.toHaveBeenCalled()
   })
@@ -367,7 +369,7 @@ describe('Guards', () => {
     render(<App />)
 
     await screen.findByRole('navigation', { name: 'Primary' })
-    expect(window.location.pathname).toBe(landing)
+    await waitFor(() => expect(window.location.pathname).toBe(landing))
     expect(screen.queryByRole('heading', { name: 'Sign in to your account' })).not.toBeInTheDocument()
   })
 

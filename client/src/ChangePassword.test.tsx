@@ -357,7 +357,8 @@ describe('Change Password, voluntary mode', () => {
 
     expect(await screen.findByText('Password changed.')).toHaveAttribute('role', 'status')
     expect(window.location.pathname).toBe('/tickets/new')
-    expect(screen.getByLabelText(/^summary/i)).toBeInTheDocument()
+    // Create Ticket shows its form once its reference data has loaded.
+    expect(await screen.findByLabelText(/^summary/i)).toBeInTheDocument()
     expect(changePassword).toHaveBeenCalledWith({
       currentPassword: CURRENT,
       newPassword: VALID_NEW,
@@ -406,7 +407,8 @@ describe('Change Password, voluntary mode', () => {
 
     expect(await screen.findByText('Password changed.')).toHaveAttribute('role', 'status')
     expect(window.location.pathname).toBe('/tickets/new')
-    expect(screen.getByLabelText(/^summary/i)).toBeInTheDocument()
+    // Create Ticket shows its form once its reference data has loaded.
+    expect(await screen.findByLabelText(/^summary/i)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Change Password' })).not.toBeInTheDocument()
   })
 
