@@ -2,16 +2,19 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import request from 'supertest'
 import app from '../../src/app'
 import prisma from '../../src/prisma'
+import { signInAs } from '../lab-03/support/signIn'
 
 let requesterId: number
 let otherRequesterId: number
+// Lab 3: a Requester acts through their session (BR-03); each id's cookie.
+const cookies = new Map<number, string>()
 let categoryId: number
 let relatedSystemId: number
 
 async function createTicket(byRequesterId: number) {
   const res = await request(app)
     .post('/api/tickets')
-    .set('X-Requester-Id', String(byRequesterId))
+    .set('Cookie', cookies.get(byRequesterId)!)
     .send({
       categoryId,
       relatedSystemId,
@@ -23,15 +26,13 @@ async function createTicket(byRequesterId: number) {
 }
 
 beforeAll(async () => {
-  const requester = await prisma.user.findFirstOrThrow({ where: { isActive: true, role: 'REQUESTER' } })
-  requesterId = requester.id
+  const requester = await signInAs('REQUESTER')
+  requesterId = requester.user.id
+  cookies.set(requesterId, requester.cookie)
 
-  const other = await prisma.user.upsert({
-    where: { email: 'attachments.api.test@example.com' },
-    update: { isActive: true },
-    create: { name: 'Attachments Test Other', email: 'attachments.api.test@example.com' },
-  })
-  otherRequesterId = other.id
+  const other = await signInAs('REQUESTER')
+  otherRequesterId = other.user.id
+  cookies.set(otherRequesterId, other.cookie)
 
   const category = await prisma.category.findFirstOrThrow({ where: { isActive: true } })
   categoryId = category.id
@@ -47,7 +48,7 @@ describe('POST /api/tickets/:id/attachments', () => {
 
     const res = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set('X-Requester-Id', String(requesterId))
+      .set('Cookie', cookies.get(requesterId)!)
       .attach('file', Buffer.from([0x89, 0x50, 0x4e, 0x47]), {
         filename: 'screenshot.png',
         contentType: 'image/png',
@@ -65,7 +66,7 @@ describe('POST /api/tickets/:id/attachments', () => {
 
     const res = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set('X-Requester-Id', String(requesterId))
+      .set('Cookie', cookies.get(requesterId)!)
       .attach('file', Buffer.from('plain text'), {
         filename: 'notes.txt',
         contentType: 'text/plain',
@@ -82,7 +83,7 @@ describe('POST /api/tickets/:id/attachments', () => {
 
     const res = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set('X-Requester-Id', String(requesterId))
+      .set('Cookie', cookies.get(requesterId)!)
       .attach('file', oversized, { filename: 'big.png', contentType: 'image/png' })
 
     expect(res.status).toBe(400)
@@ -97,7 +98,7 @@ describe('POST /api/tickets/:id/attachments', () => {
     for (let i = 0; i < 5; i++) {
       const res = await request(app)
         .post(`/api/tickets/${ticketId}/attachments`)
-        .set('X-Requester-Id', String(requesterId))
+        .set('Cookie', cookies.get(requesterId)!)
         .attach('file', Buffer.from([0x89, 0x50, 0x4e, 0x47]), {
           filename: `file-${i}.png`,
           contentType: 'image/png',
@@ -107,7 +108,7 @@ describe('POST /api/tickets/:id/attachments', () => {
 
     const sixth = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set('X-Requester-Id', String(requesterId))
+      .set('Cookie', cookies.get(requesterId)!)
       .attach('file', Buffer.from([0x89, 0x50, 0x4e, 0x47]), {
         filename: 'file-5.png',
         contentType: 'image/png',
@@ -127,7 +128,7 @@ describe('POST /api/tickets/:id/attachments', () => {
 
     const res = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set('X-Requester-Id', String(requesterId))
+      .set('Cookie', cookies.get(requesterId)!)
       .attach('file', Buffer.from([0x89, 0x50, 0x4e, 0x47]), {
         filename: 'screenshot.png',
         contentType: 'image/png',
@@ -141,26 +142,12 @@ describe('POST /api/tickets/:id/attachments', () => {
   it('returns 404 for a nonexistent Ticket id', async () => {
     const res = await request(app)
       .post('/api/tickets/999999999/attachments')
-      .set('X-Requester-Id', String(requesterId))
+      .set('Cookie', cookies.get(requesterId)!)
       .attach('file', Buffer.from([0x89, 0x50, 0x4e, 0x47]), {
         filename: 'screenshot.png',
         contentType: 'image/png',
       })
 
     expect(res.status).toBe(404)
-  })
-
-  // API-26: missing X-Requester-Id rejected 400
-  it('rejects a request with no X-Requester-Id header', async () => {
-    const ticketId = await createTicket(requesterId)
-
-    const res = await request(app)
-      .post(`/api/tickets/${ticketId}/attachments`)
-      .attach('file', Buffer.from([0x89, 0x50, 0x4e, 0x47]), {
-        filename: 'screenshot.png',
-        contentType: 'image/png',
-      })
-
-    expect(res.status).toBe(400)
   })
 })

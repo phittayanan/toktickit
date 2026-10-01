@@ -1,7 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { Router } from 'express'
-import { requireRequester, type RequesterRequest } from '../middleware/requireRequester'
+import { parseJsonBody } from '../middleware/parseJsonBody'
+import { requireRequesterRole } from '../middleware/requireRole'
+import type { SessionRequest } from '../middleware/requireSession'
 import { uploadSingleFile, UnsupportedFileTypeError, UPLOAD_DIR } from '../upload'
 import { validateRemovalReason } from '../schemas/attachment.schema'
 import {
@@ -15,7 +17,7 @@ import {
 
 const router = Router()
 
-router.post('/tickets/:id/attachments', requireRequester, (req: RequesterRequest, res) => {
+router.post('/tickets/:id/attachments', requireRequesterRole, (req: SessionRequest, res) => {
   const ticketId = Number(req.params.id)
   if (!Number.isInteger(ticketId) || ticketId <= 0) {
     res.status(404).json({ error: 'Ticket not found' })
@@ -44,7 +46,7 @@ router.post('/tickets/:id/attachments', requireRequester, (req: RequesterRequest
     }
 
     try {
-      const attachment = await uploadAttachment(ticketId, req.requesterId!, req.file)
+      const attachment = await uploadAttachment(ticketId, req.user!.id, req.file)
       res.status(201).json({
         id: attachment.id,
         ticketId: attachment.ticketId,
@@ -72,7 +74,9 @@ router.post('/tickets/:id/attachments', requireRequester, (req: RequesterRequest
   })
 })
 
-router.get('/attachments/:id/download', requireRequester, async (req: RequesterRequest, res) => {
+// Any role may ask (specification.md §5.3); what the caller reaches is
+// decided by the lookup. A Requester reaches their own Tickets' Attachments.
+router.get('/attachments/:id/download', async (req: SessionRequest, res) => {
   const attachmentId = Number(req.params.id)
   if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
     res.status(404).json({ error: 'Attachment not found' })
@@ -80,7 +84,7 @@ router.get('/attachments/:id/download', requireRequester, async (req: RequesterR
   }
 
   try {
-    const attachment = await getDownloadableAttachment(attachmentId, req.requesterId!)
+    const attachment = await getDownloadableAttachment(attachmentId, req.user!.id)
     res.download(path.join(UPLOAD_DIR, attachment.storedFilename), attachment.originalFilename, (err) => {
       if (err) {
         console.error('GET /api/attachments/:id/download failed', err)
@@ -103,7 +107,7 @@ router.get('/attachments/:id/download', requireRequester, async (req: RequesterR
   }
 })
 
-router.post('/attachments/:id/remove', requireRequester, async (req: RequesterRequest, res) => {
+router.post('/attachments/:id/remove', requireRequesterRole, parseJsonBody, async (req: SessionRequest, res) => {
   const attachmentId = Number(req.params.id)
   if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
     res.status(404).json({ error: 'Attachment not found' })
@@ -120,7 +124,7 @@ router.post('/attachments/:id/remove', requireRequester, async (req: RequesterRe
   }
 
   try {
-    const attachment = await removeAttachment(attachmentId, req.requesterId!, removalReason)
+    const attachment = await removeAttachment(attachmentId, req.user!.id, removalReason)
     res.status(200).json({
       id: attachment.id,
       removedAt: attachment.removedAt,

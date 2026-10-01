@@ -18,11 +18,3 @@ export function getActiveRelatedSystems() {
     select: { id: true, name: true },
   })
 }
-
-export function getActiveRequesters() {
-  return prisma.user.findMany({
-    where: { isActive: true, role: 'REQUESTER' },
-    orderBy: { id: 'asc' },
-    select: { id: true, name: true, email: true },
-  })
-}

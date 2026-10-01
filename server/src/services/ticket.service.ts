@@ -52,6 +52,21 @@ export async function createTicket(input: CreateTicketInput, requesterId: number
         // BR-26: IT Priority starts as the Requested Priority.
         itPriority: input.requestedPriority,
       },
+      // api-spec.md §4.1: the body has exactly the Lab 2 fields.
+      select: {
+        id: true,
+        ticketNumber: true,
+        requesterId: true,
+        categoryId: true,
+        relatedSystemId: true,
+        summary: true,
+        description: true,
+        requestedPriority: true,
+        itPriority: true,
+        currentStatus: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     })
   })
 }

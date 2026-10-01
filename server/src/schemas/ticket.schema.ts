@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { TICKET_STATUSES } from '../services/statusTransitions.service'
 
 // BR-08/BR-09/BR-11: Summary and Description are required, trimmed, and
 // length-bounded; Requested Priority is a fixed enum. categoryId/
@@ -17,7 +18,6 @@ export type CreateTicketInput = z.infer<typeof createTicketSchema>
 const PAGE_SIZES = [10, 25, 50] as const
 const SORT_FIELDS = ['createdAt', 'updatedAt', 'ticketNumber'] as const
 const SORT_DIRS = ['asc', 'desc'] as const
-const STATUSES = ['NEW'] as const
 
 // Query params arrive as strings (or are absent). `withDefault` applies the
 // default only when the param is genuinely omitted; a *present* value that
@@ -48,7 +48,8 @@ export const listTicketsQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
   requestedPriority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
   itPriority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
-  currentStatus: z.enum(STATUSES).optional(),
+  // api-spec.md §4.1: all eight statuses.
+  currentStatus: z.enum(TICKET_STATUSES).optional(),
   sortBy: withDefault(z.enum(SORT_FIELDS), 'updatedAt'),
   sortDir: withDefault(z.enum(SORT_DIRS), 'desc'),
 })

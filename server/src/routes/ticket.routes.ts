@@ -1,5 +1,7 @@
 import { Router } from 'express'
-import { requireRequester, type RequesterRequest } from '../middleware/requireRequester'
+import { parseJsonBody } from '../middleware/parseJsonBody'
+import { requireRequesterRole } from '../middleware/requireRole'
+import type { SessionRequest } from '../middleware/requireSession'
 import { createTicketSchema, listTicketsQuerySchema } from '../schemas/ticket.schema'
 import {
   createTicket,
@@ -11,7 +13,7 @@ import {
 
 const router = Router()
 
-router.post('/tickets', requireRequester, async (req: RequesterRequest, res) => {
+router.post('/tickets', requireRequesterRole, parseJsonBody, async (req: SessionRequest, res) => {
   const parsed = createTicketSchema.safeParse(req.body)
   if (!parsed.success) {
     const issue = parsed.error.issues[0]
@@ -20,7 +22,7 @@ router.post('/tickets', requireRequester, async (req: RequesterRequest, res) => 
   }
 
   try {
-    const ticket = await createTicket(parsed.data, req.requesterId!)
+    const ticket = await createTicket(parsed.data, req.user!.id)
     res.status(201).json(ticket)
   } catch (err) {
     if (err instanceof TicketValidationError) {
@@ -32,7 +34,7 @@ router.post('/tickets', requireRequester, async (req: RequesterRequest, res) => 
   }
 })
 
-router.get('/tickets', requireRequester, async (req: RequesterRequest, res) => {
+router.get('/tickets', requireRequesterRole, async (req: SessionRequest, res) => {
   const parsed = listTicketsQuerySchema.safeParse(req.query)
   if (!parsed.success) {
     const issue = parsed.error.issues[0]
@@ -41,7 +43,7 @@ router.get('/tickets', requireRequester, async (req: RequesterRequest, res) => {
   }
 
   try {
-    const result = await listTickets(parsed.data, req.requesterId!)
+    const result = await listTickets(parsed.data, req.user!.id)
     res.status(200).json(result)
   } catch (err) {
     console.error('GET /api/tickets failed', err)
@@ -49,7 +51,7 @@ router.get('/tickets', requireRequester, async (req: RequesterRequest, res) => {
   }
 })
 
-router.get('/tickets/:id', requireRequester, async (req: RequesterRequest, res) => {
+router.get('/tickets/:id', requireRequesterRole, async (req: SessionRequest, res) => {
   const ticketId = Number(req.params.id)
   if (!Number.isInteger(ticketId) || ticketId <= 0) {
     // A malformed id can never resolve to a row — same 404 shape as a
@@ -59,7 +61,7 @@ router.get('/tickets/:id', requireRequester, async (req: RequesterRequest, res) 
   }
 
   try {
-    const ticket = await getTicketById(ticketId, req.requesterId!)
+    const ticket = await getTicketById(ticketId, req.user!.id)
     res.status(200).json(ticket)
   } catch (err) {
     if (err instanceof TicketNotFoundError) {
