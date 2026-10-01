@@ -57,8 +57,8 @@ router.get('/tickets', requireRequesterRole, async (req: SessionRequest, res) =>
 })
 
 router.get('/tickets/:id', requireRequesterRole, async (req: SessionRequest, res) => {
-  const ticketId = rowIdOf(req.params.id)
-  if (ticketId === null) {
+  const ticketId = Number(req.params.id)
+  if (!Number.isInteger(ticketId) || ticketId <= 0) {
     // A malformed id can never resolve to a row — same 404 shape as a
     // well-formed-but-missing/not-owned one (ADR-0004).
     res.status(404).json({ error: 'Ticket not found' })

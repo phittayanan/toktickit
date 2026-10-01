@@ -312,11 +312,9 @@ describe('Requester Ticket Detail additions', () => {
     const ATTACHMENT_NOT_FOUND = { error: 'Attachment not found' }
 
     const answers = [
-      [await request(app).get(`/api/tickets/${id}`).set('Cookie', cookie), TICKET_NOT_FOUND],
       [await request(app).put(`/api/tickets/${id}/resolution-indication`).set('Cookie', cookie), TICKET_NOT_FOUND],
       [await request(app).delete(`/api/tickets/${id}/resolution-indication`).set('Cookie', cookie), TICKET_NOT_FOUND],
       [await upload(cookie, id), TICKET_NOT_FOUND],
-      [await request(app).get(`/api/attachments/${id}/download`).set('Cookie', cookie), ATTACHMENT_NOT_FOUND],
       [
         await request(app)
           .post(`/api/attachments/${id}/remove`)

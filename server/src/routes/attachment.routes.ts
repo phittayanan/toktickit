@@ -98,8 +98,8 @@ router.post('/tickets/:id/attachments', requireRequesterRole, async (req: Sessio
 // Any role may ask (specification.md §5.3); what the caller reaches is
 // decided by the lookup. A Requester reaches their own Tickets' Attachments.
 router.get('/attachments/:id/download', async (req: SessionRequest, res) => {
-  const attachmentId = rowIdOf(req.params.id)
-  if (attachmentId === null) {
+  const attachmentId = Number(req.params.id)
+  if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
     res.status(404).json({ error: 'Attachment not found' })
     return
   }
