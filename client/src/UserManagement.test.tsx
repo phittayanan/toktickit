@@ -586,12 +586,7 @@ describe('User Management edit', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(updateAdminUser).toHaveBeenCalledTimes(1)
-    expect(updateAdminUser).toHaveBeenCalledWith(12, {
-      name: 'Wichai P. Phromma',
-      email: 'wichai.p@kmutt.ac.th',
-      role: 'IT_STAFF',
-      isActive: true,
-    })
+    expect(updateAdminUser).toHaveBeenCalledWith(12, { name: 'Wichai P. Phromma', email: 'wichai.p@kmutt.ac.th' })
     const save = panel.getByRole('button', { name: 'Save Changes' })
     expect(save).toBeDisabled()
     expect(save).toHaveAttribute('aria-busy', 'true')
@@ -602,6 +597,66 @@ describe('User Management edit', () => {
     expect(successNotice()).toHaveTextContent(/^Changes saved\.$/)
     await waitFor(() => expect(fetchAdminUsers).toHaveBeenCalledTimes(1))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('sends only the field that was changed', async () => {
+    listReturns()
+    const updateAdminUser = saved({ ...WICHAI, email: 'wichai.p@kmutt.ac.th' })
+    const panel = await openEditPanel('Wichai Phromma')
+
+    fill(panel, { email: 'wichai.p@kmutt.ac.th' })
+    fireEvent.click(panel.getByRole('button', { name: 'Save Changes' }))
+
+    expect(updateAdminUser).toHaveBeenCalledTimes(1)
+    expect(updateAdminUser).toHaveBeenCalledWith(12, { email: 'wichai.p@kmutt.ac.th' })
+    await waitFor(() => expect(successNotice()).toHaveTextContent(/^Changes saved\.$/))
+  })
+
+  it('sends nothing when no field was changed, closes, reloads the list, and says Changes saved', async () => {
+    const fetchAdminUsers = listReturns()
+    const updateAdminUser = vi.spyOn(api, 'updateAdminUser')
+    const onSelfSaved = vi.fn()
+    render(
+      <MemoryRouter>
+        <UserManagement user={ADMINISTRATOR} onSelfSaved={onSelfSaved} />
+      </MemoryRouter>,
+    )
+    fireEvent.click((await table()).getByRole('button', { name: 'Edit Apinya Thongchai' }))
+    const panel = within(screen.getByRole('region', { name: 'Edit User' }))
+    fetchAdminUsers.mockClear()
+
+    // Typed and put back, with spaces around it: still the same name.
+    fill(panel, { name: 'Someone Else' })
+    fill(panel, { name: ` ${SELF.name} ` })
+    fireEvent.click(panel.getByRole('button', { name: 'Save Changes' }))
+
+    expect(screen.queryByRole('region', { name: 'Edit User' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(updateAdminUser).not.toHaveBeenCalled()
+    expect(onSelfSaved).not.toHaveBeenCalled()
+    expect(successNotice()).toHaveTextContent(/^Changes saved\.$/)
+    await waitFor(() => expect(fetchAdminUsers).toHaveBeenCalledTimes(1))
+  })
+
+  // The panel holds the row as it was when Edit was pressed: a change made
+  // elsewhere since is not put back by saving another field.
+  it('leaves a user inactive who was deactivated elsewhere while a rename was being typed', async () => {
+    const fetchAdminUsers = listReturns()
+    const deactivatedElsewhere = { ...WICHAI, name: 'Wichai Renamed', isActive: false }
+    const updateAdminUser = saved(deactivatedElsewhere)
+    const panel = await openEditPanel('Wichai Phromma')
+    expect(panel.getByRole('switch', { name: /Active/ })).toBeChecked()
+    fetchAdminUsers.mockResolvedValue([SELF, deactivatedElsewhere])
+
+    fill(panel, { name: 'Wichai Renamed' })
+    fireEvent.click(panel.getByRole('button', { name: 'Save Changes' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(updateAdminUser).toHaveBeenCalledTimes(1)
+    expect(updateAdminUser).toHaveBeenCalledWith(12, { name: 'Wichai Renamed' })
+    await waitFor(() => expect(successNotice()).toHaveTextContent(/^Changes saved\.$/))
+    const row = rowOf(await table(), 'Wichai Renamed')
+    expect(await row.findByText('Inactive')).toBeInTheDocument()
   })
 
   // UI-29 (AC-47): deactivate an owner of three Tickets
@@ -625,12 +680,7 @@ describe('User Management edit', () => {
 
     fireEvent.click(dialog.getByRole('button', { name: 'Deactivate' }))
 
-    expect(updateAdminUser).toHaveBeenCalledWith(12, {
-      name: 'Wichai Phromma',
-      email: 'wichai.phromma@kmutt.ac.th',
-      role: 'IT_STAFF',
-      isActive: false,
-    })
+    expect(updateAdminUser).toHaveBeenCalledWith(12, { isActive: false })
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Edit User' })).not.toBeInTheDocument())
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(successNotice()).toHaveTextContent('Changes saved. 3 tickets returned to the queue as unassigned.')
@@ -702,7 +752,7 @@ describe('User Management edit', () => {
 
     fireEvent.click(dialog.getByRole('button', { name: 'Change Role' }))
 
-    expect(updateAdminUser).toHaveBeenCalledWith(12, expect.objectContaining({ role: 'REQUESTER', isActive: true }))
+    expect(updateAdminUser).toHaveBeenCalledWith(12, { role: 'REQUESTER' })
     await waitFor(() =>
       expect(successNotice()).toHaveTextContent('Changes saved. 2 tickets returned to the queue as unassigned.'),
     )
@@ -728,7 +778,7 @@ describe('User Management edit', () => {
 
     fireEvent.click(dialog.getByRole('button', { name: 'Change Role' }))
 
-    expect(updateAdminUser).toHaveBeenCalledWith(expect.any(Number), expect.objectContaining({ role: to }))
+    expect(updateAdminUser).toHaveBeenCalledWith(expect.any(Number), { role: to })
     await waitFor(() => expect(successNotice()).toHaveTextContent(/^Changes saved\.$/))
   })
 
@@ -1135,6 +1185,6 @@ describe('User Management dialogs', () => {
     const beside = within(screen.getByRole('region', { name: 'Edit User' }))
     expect(beside.getByLabelText(/Full Name/)).toHaveValue('Wichai Renamed')
     fireEvent.click(within(screen.getByRole('dialog', { name: 'Deactivate user?' })).getByRole('button', { name: 'Deactivate' }))
-    expect(updateAdminUser).toHaveBeenCalledWith(12, expect.objectContaining({ name: 'Wichai Renamed', isActive: false }))
+    expect(updateAdminUser).toHaveBeenCalledWith(12, { name: 'Wichai Renamed', isActive: false })
   })
 })

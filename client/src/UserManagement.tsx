@@ -126,15 +126,24 @@ interface Confirmation {
   destructive: boolean
 }
 
-// What saving `input` over `target` does beyond changing the fields, which
+// The fields of `input` that differ from the row the panel was opened with.
+// Only these are saved, so a save never puts back a value that was changed
+// elsewhere since.
+function changedFields(target: AdminUser, input: AdminUserInput): Partial<AdminUserInput> {
+  return Object.fromEntries(
+    FIELD_ORDER.filter((field) => input[field] !== target[field]).map((field) => [field, input[field]]),
+  )
+}
+
+// What saving `changes` to `target` does beyond changing the fields, which
 // the Administrator confirms first (ui-spec.md §10.2). Null when the
 // change needs no confirmation.
-function confirmationFor(target: AdminUser, input: AdminUserInput): Confirmation | null {
-  const deactivating = target.isActive && !input.isActive
-  const roleChanging = input.role !== target.role
+function confirmationFor(target: AdminUser, changes: Partial<AdminUserInput>): Confirmation | null {
+  const deactivating = changes.isActive === false
+  const role = changes.role
 
   // BR-25: the Tickets a User who can no longer own any hands back.
-  if (deactivating || (roleChanging && input.role === 'REQUESTER')) {
+  if (deactivating || role === 'REQUESTER') {
     const owned = target.ownedUnfinishedTicketCount
     const returned =
       owned === 0
@@ -149,10 +158,10 @@ function confirmationFor(target: AdminUser, input: AdminUserInput): Confirmation
     }
   }
 
-  if (roleChanging) {
+  if (role) {
     return {
       title: 'Change role?',
-      message: `${target.name} will be signed out and will see the ${ROLE_LABEL[input.role]} navigation at next sign-in.`,
+      message: `${target.name} will be signed out and will see the ${ROLE_LABEL[role]} navigation at next sign-in.`,
       confirmLabel: 'Change Role',
       destructive: false,
     }
@@ -188,7 +197,9 @@ function UserPanel({
   asDialog: boolean
   onClose: () => void
   onCreated: (user: AdminUser, initialPassword: string) => void
-  onSaved: (user: AdminUser, unassignedTicketCount: number) => void
+  // The edit is done. `user` is null when no field differed, so nothing
+  // was sent.
+  onSaved: (user: AdminUser | null, unassignedTicketCount: number) => void
   // A new Initial Password was set for the User being edited.
   onIssued: (user: AdminUser, initialPassword: string) => void
   // The User being edited no longer exists.
@@ -199,7 +210,7 @@ function UserPanel({
   const [values, setValues] = useState<FormValues>(
     target ? { name: target.name, email: target.email, role: target.role, isActive: target.isActive } : EMPTY_FORM,
   )
-  const [confirmation, setConfirmation] = useState<(Confirmation & { input: AdminUserInput }) | null>(null)
+  const [confirmation, setConfirmation] = useState<(Confirmation & { changes: Partial<AdminUserInput> }) | null>(null)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   // A failure that is not tied to one field, shown at the top of the panel.
   const [alert, setAlert] = useState<string | null>(null)
@@ -257,23 +268,29 @@ function UserPanel({
     }
   }
 
-  const save = async (input: AdminUserInput) => {
+  const save = async (send: () => Promise<void>) => {
     setSubmitting(true)
     try {
-      if (target) {
-        const updated = await updateAdminUser(target.id, input)
-        onSaved(updated.user, updated.unassignedTicketCount)
-      } else {
-        const created = await createAdminUser(input)
-        // The panel stays as it is, behind the one-time password dialog,
-        // until that is done.
-        onCreated(created.user, created.initialPassword)
-      }
+      await send()
     } catch (err) {
       setSubmitting(false)
       showRefusal(err)
     }
   }
+
+  const create = (input: AdminUserInput) =>
+    save(async () => {
+      const created = await createAdminUser(input)
+      // The panel stays as it is, behind the one-time password dialog,
+      // until that is done.
+      onCreated(created.user, created.initialPassword)
+    })
+
+  const update = (user: AdminUser, changes: Partial<AdminUserInput>) =>
+    save(async () => {
+      const updated = await updateAdminUser(user.id, changes)
+      onSaved(updated.user, updated.unassignedTicketCount)
+    })
 
   // BR-39: sets a new Initial Password for the User being edited. It is
   // not a save: the fields stay as they are.
@@ -301,9 +318,20 @@ function UserPanel({
     if (showFieldErrors(validate(trimmed))) return
 
     const input = trimmed as AdminUserInput
-    const needed = target && confirmationFor(target, input)
-    if (needed) setConfirmation({ ...needed, input })
-    else void save(input)
+    if (!target) {
+      void create(input)
+      return
+    }
+
+    const changes = changedFields(target, input)
+    if (Object.keys(changes).length === 0) {
+      onSaved(null, 0)
+      return
+    }
+
+    const needed = confirmationFor(target, changes)
+    if (needed) setConfirmation({ ...needed, changes })
+    else void update(target, changes)
   }
 
   const describedBy = (field: Field) => (fieldErrors[field] ? `${id}-${field}-error` : undefined)
@@ -314,7 +342,7 @@ function UserPanel({
       </div>
     )
 
-  const confirmationDialog = confirmation && (
+  const confirmationDialog = target && confirmation && (
     <ConfirmDialog
       title={confirmation.title}
       confirmLabel={confirmation.confirmLabel}
@@ -322,7 +350,7 @@ function UserPanel({
       onCancel={() => setConfirmation(null)}
       onConfirm={() => {
         setConfirmation(null)
-        void save(confirmation.input)
+        void update(target, confirmation.changes)
       }}
     >
       {confirmation.message}
@@ -627,10 +655,10 @@ function UserManagement({
     reload()
   }
 
-  const finishEdit = (user: AdminUser, unassignedTicketCount: number) => {
+  const finishEdit = (user: AdminUser | null, unassignedTicketCount: number) => {
     // BR-14: a change of their own role ends the Administrator's session,
     // so only a change that leaves them signed in is handed up.
-    if (user.id === currentUser.id && user.role === currentUser.role) onSelfSaved?.(user)
+    if (user?.id === currentUser.id && user.role === currentUser.role) onSelfSaved?.(user)
 
     const returned =
       unassignedTicketCount === 0
