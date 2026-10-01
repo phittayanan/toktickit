@@ -296,6 +296,72 @@ export async function logout(): Promise<void> {
   await request('/api/auth/logout', { method: 'POST' })
 }
 
+// A User as User Management sees them (docs/lab-03/api-spec.md §7).
+// `ownedUnfinishedTicketCount` is what a deactivation or a change to
+// Requester would return to the Ticket Queue.
+export interface AdminUser {
+  id: number
+  name: string
+  email: string
+  role: Role
+  isActive: boolean
+  mustChangePassword: boolean
+  hasPassword: boolean
+  ownedUnfinishedTicketCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminUserListParams {
+  search?: string
+  role?: Role
+}
+
+// GET /api/admin/users: every matching User, ordered by name.
+export async function fetchAdminUsers(params: AdminUserListParams = {}): Promise<AdminUser[]> {
+  const res = await request(`/api/admin/users${toQueryString(params)}`)
+  return res.json()
+}
+
+export interface AdminUserInput {
+  name: string
+  email: string
+  role: Role
+  isActive: boolean
+}
+
+function sendJson(path: string, method: 'POST' | 'PATCH', body: unknown): Promise<Response> {
+  return request(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+}
+
+// POST /api/admin/users: creates the User. `initialPassword` is in this
+// answer only and cannot be read again. Refusals are ApiErrors: 400
+// naming the `field`, 409 EMAIL_TAKEN.
+export async function createAdminUser(input: AdminUserInput): Promise<{ user: AdminUser; initialPassword: string }> {
+  const res = await sendJson('/api/admin/users', 'POST', input)
+  return res.json()
+}
+
+// PATCH /api/admin/users/:id: saves the fields given. `unassignedTicketCount`
+// is how many Tickets the change returned to the Ticket Queue. Refusals are
+// ApiErrors: 400 naming the `field`, 404, and 409 EMAIL_TAKEN,
+// SELF_DEACTIVATION, or LAST_ADMINISTRATOR.
+export async function updateAdminUser(
+  id: number,
+  input: Partial<AdminUserInput>,
+): Promise<{ user: AdminUser; unassignedTicketCount: number }> {
+  const res = await sendJson(`/api/admin/users/${id}`, 'PATCH', input)
+  return res.json()
+}
+
+// POST /api/admin/users/:id/initial-password: replaces the User's password
+// with a new Initial Password, in this answer only. Refusals are ApiErrors:
+// 404, and 409 SELF_INITIAL_PASSWORD for the Administrator's own account.
+export async function setInitialPassword(id: number): Promise<{ initialPassword: string }> {
+  const res = await request(`/api/admin/users/${id}/initial-password`, { method: 'POST' })
+  return res.json()
+}
+
 // Downloads an active Attachment's file content and triggers a browser save
 // under its original filename. A removed or not-owned Attachment 404s with
 // the shared { error } body (BR-20/BR-21).
@@ -347,7 +413,7 @@ export function createTicket(input: CreateTicketInput): Promise<Ticket> {
 // Only defined (non-empty-string) params are sent — omitting a param is how
 // the server applies its own default (api-spec.md), rather than the client
 // re-encoding those defaults itself.
-function toQueryString(params: TicketListParams): string {
+function toQueryString(params: object): string {
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== '') search.set(key, String(value))

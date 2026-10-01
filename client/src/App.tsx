@@ -11,6 +11,7 @@ import ChangePassword from './ChangePassword'
 import CreateTicket from './CreateTicket'
 import MyTickets from './MyTickets'
 import RequesterTicketDetail from './RequesterTicketDetail'
+import UserManagement from './UserManagement'
 
 // The Lab 2 Requester screens keep their props; these adapters give them
 // the URL paths of specification.md §6.
@@ -35,6 +36,14 @@ function RequesterTicketDetailScreen() {
   }
 
   return <RequesterTicketDetail ticketId={Number(id)} onBack={() => navigate('/tickets')} />
+}
+
+// The shell shows the signed-in Administrator's name, so a change they
+// save to their own account is taken into the Session state.
+function UserManagementScreen({ user }: { user: UserIdentity }) {
+  const { signIn } = useSession()
+
+  return <UserManagement user={user} onSelfSaved={(saved) => signIn({ ...user, name: saved.name, email: saved.email })} />
 }
 
 const REQUESTER: Role[] = ['REQUESTER']
@@ -73,9 +82,9 @@ function AppRoutes() {
   }
 
   const landing = <Navigate to={LANDING_PATH[user.role]} replace />
-  // The Ticket Queue and Staff Ticket Detail (#51, #52) and User Management
-  // (#53) screens are not built yet. Their paths are guarded now, and show
-  // the Not Found page to the Roles that may open them.
+  // The Ticket Queue and Staff Ticket Detail (#51, #52) screens are not
+  // built yet. Their paths are guarded now, and show the Not Found page to
+  // the Roles that may open them.
   const notBuiltYet = <NotFoundPage role={user.role} />
 
   return (
@@ -127,7 +136,7 @@ function AppRoutes() {
           path="/admin/users"
           element={
             <RequireRole user={user} roles={ADMINISTRATOR}>
-              {notBuiltYet}
+              <UserManagementScreen user={user} />
             </RequireRole>
           }
         />
