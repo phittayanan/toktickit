@@ -7,8 +7,8 @@ import { signInAs } from './support/signIn'
 // The shared sign-in helper (tests.md §1): a user of a given role with a
 // known password, signed in through POST /api/auth/login.
 //
-// Pending #47: needs the User model (#46) and the login and current-user
-// endpoints (#47). Remove `.skip` when they land.
+// Pending #47: needs the login and current-user endpoints. Remove `.skip`
+// when they land.
 describe.skip('signInAs', () => {
   it.each(ROLES)('signs in a new %s whose session the API accepts', async (role) => {
     const { user, cookie } = await signInAs(role)

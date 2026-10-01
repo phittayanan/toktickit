@@ -10,12 +10,12 @@ let relatedSystemId: number
 // never collides with a previous run's Ticket Numbers.
 const RUN_ID = Date.now()
 
-// Each test gets its own fresh RequesterUser rather than sharing seeded
+// Each test gets its own fresh Requester rather than sharing seeded
 // ones — that keeps assertions exact (no "some tickets belonging to other
 // tests" noise) instead of relying on .some()/.every() against a shared
 // growing dataset.
 async function seedRequester(label: string) {
-  return prisma.requesterUser.create({
+  return prisma.user.create({
     data: { name: `my-tickets.api.test — ${label}`, email: `my-tickets-${RUN_ID}-${label}@example.com` },
   })
 }
@@ -29,6 +29,7 @@ async function seedTicket(overrides: {
   summary?: string
   requestedPriority?: 'LOW' | 'MEDIUM' | 'HIGH'
 }) {
+  const requestedPriority = overrides.requestedPriority ?? 'MEDIUM'
   return prisma.ticket.create({
     data: {
       ticketNumber: overrides.ticketNumber,
@@ -37,7 +38,8 @@ async function seedTicket(overrides: {
       relatedSystemId,
       summary: overrides.summary ?? 'Default summary for a seeded ticket',
       description: 'A description long enough to satisfy validation, for a seeded ticket.',
-      requestedPriority: overrides.requestedPriority ?? 'MEDIUM',
+      requestedPriority,
+      itPriority: requestedPriority,
     },
   })
 }

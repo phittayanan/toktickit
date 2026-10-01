@@ -58,6 +58,34 @@ npx prisma db seed
 npm run dev
 ```
 
+### Seed accounts (local development)
+
+`npx prisma db seed` is safe to run repeatedly. Besides the Categories and
+Related Systems it provides these accounts, and 24 example Tickets
+(`TKT-2026-900001` upward) with Public Comments and Internal Notes:
+
+| Name | Email | Role | Status |
+|---|---|---|---|
+| Somchai Jaidee | `somchai.jaidee@kmutt.ac.th` | Requester | Active |
+| Nalinee Suksawat | `nalinee.suksawat@kmutt.ac.th` | Requester | Active |
+| Kittipong Rattanakosin | `kittipong.rattanakosin@kmutt.ac.th` | Requester | Active |
+| Ploy Wongsawang | `ploy.wongsawang@kmutt.ac.th` | Requester | Active |
+| Anucha Boonmee | `anucha.boonmee@kmutt.ac.th` | Requester | Inactive |
+| Wichai Phromma | `wichai.phromma@kmutt.ac.th` | IT Staff | Active |
+| Siriporn Kaewmanee | `siriporn.kaewmanee@kmutt.ac.th` | IT Staff | Active |
+| Thanakorn Srisuk | `thanakorn.srisuk@kmutt.ac.th` | IT Staff | Active |
+| Pranee Chaiyasit | `pranee.chaiyasit@kmutt.ac.th` | IT Staff | Inactive |
+| Apinya Thongchai | `apinya.thongchai@kmutt.ac.th` | Administrator | Active |
+
+Every seed account has the initial password `TokTickIT-Lab3!` and must
+change it at first login. This password is for local development only. The
+seed sets it only on a seed account that has no password yet, so running
+the seed again never resets a password that was changed, and it leaves
+alone any account or Ticket a person has edited.
+
+A Requester migrated from a Lab 2 database who is not a seed account has no
+password and cannot log in until an Administrator sets an initial password.
+
 ### Frontend (`client/`)
 
 ```bash
