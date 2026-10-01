@@ -123,14 +123,16 @@ export async function getDownloadableAttachment(attachmentId: number, requesterI
 // inside one transaction with a row lock (same pattern as uploadAttachment)
 // so two concurrent removals of the same Attachment can't both pass the
 // active check and silently overwrite each other's removal metadata — the
-// second blocks on the lock, then re-reads and correctly 404s.
+// second blocks on the lock, then re-reads and correctly 404s. The Ticket
+// row is locked first, then the Attachment row, so the Ticket's status is
+// read under its lock: a Ticket finished at the same moment loses no
+// Attachment (BR-31).
 export async function removeAttachment(attachmentId: number, requesterId: number, removalReason: string) {
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = (SELECT "ticketId" FROM "Attachment" WHERE id = ${attachmentId}) FOR UPDATE`
     await tx.$queryRaw`SELECT id FROM "Attachment" WHERE id = ${attachmentId} FOR UPDATE`
 
     const attachment = await findOwnedActiveAttachment(attachmentId, requesterId, tx)
-    // BR-31
     if (isFinished(attachment.ticket.currentStatus)) {
       throw new TicketFinishedError()
     }
