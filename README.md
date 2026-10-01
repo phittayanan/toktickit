@@ -97,7 +97,8 @@ npm run dev
 ### Running Tests
 
 ```bash
-# Backend (Supertest)
+# Backend (Supertest). The migration and seed tests create and drop their
+# own databases, so the DATABASE_URL role must be allowed to CREATE DATABASE.
 cd server
 npm test
 
