@@ -46,7 +46,7 @@ router.get('/tickets/:id/comments', requireTicket, async (req: SessionRequest, r
 })
 
 router.post('/tickets/:id/comments', requireTicket, parseJsonBody, async (req: SessionRequest, res) => {
-  const parsed = publicCommentSchema.safeParse(req.body)
+  const parsed = publicCommentSchema.safeParse(req.body ?? {})
   if (!parsed.success) {
     sendValidationError(res, parsed.error)
     return

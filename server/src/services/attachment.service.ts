@@ -126,6 +126,7 @@ export async function getDownloadableAttachment(attachmentId: number, requesterI
 // second blocks on the lock, then re-reads and correctly 404s.
 export async function removeAttachment(attachmentId: number, requesterId: number, removalReason: string) {
   return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = (SELECT "ticketId" FROM "Attachment" WHERE id = ${attachmentId}) FOR UPDATE`
     await tx.$queryRaw`SELECT id FROM "Attachment" WHERE id = ${attachmentId} FOR UPDATE`
 
     const attachment = await findOwnedActiveAttachment(attachmentId, requesterId, tx)

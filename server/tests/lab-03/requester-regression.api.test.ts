@@ -303,4 +303,33 @@ describe('Requester Ticket Detail additions', () => {
       expect(await prisma.attachment.count({ where: { ticketId, removedAt: null } })).toBe(1)
     },
   )
+
+  // REG-07 (BR-31): the status a soft removal goes by is read under the
+  // Ticket's row lock, so a Ticket being finished at that moment keeps its
+  // Attachment.
+  it('a soft removal waits for a Ticket that is being finished, and is then refused', async () => {
+    const { cookie } = await signInAs('REQUESTER')
+    const ticketId = await createTicket(cookie)
+    const uploaded = await upload(cookie, ticketId)
+    expect(uploaded.status).toBe(201)
+
+    let removal!: Promise<request.Response>
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = ${ticketId} FOR UPDATE`
+      await tx.ticket.update({ where: { id: ticketId }, data: { currentStatus: 'CLOSED' } })
+
+      removal = request(app)
+        .post(`/api/attachments/${uploaded.body.id}/remove`)
+        .set('Cookie', cookie)
+        .send({ removalReason: 'Uploaded the wrong screenshot' })
+        .then((res) => res)
+      // Long enough for a removal that does not wait to have answered.
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+    })
+
+    const removed = await removal
+    expect(removed.status).toBe(409)
+    expect(removed.body).toEqual({ error: expect.any(String), code: 'TICKET_FINISHED' })
+    expect(await prisma.attachment.count({ where: { ticketId, removedAt: null } })).toBe(1)
+  })
 })

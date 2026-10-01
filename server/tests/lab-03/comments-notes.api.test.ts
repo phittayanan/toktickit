@@ -107,6 +107,17 @@ describe('Public Comments', () => {
       expect(res.status).toBe(400)
       expect(res.body).toEqual({ error: expect.any(String), code: 'VALIDATION_ERROR', field: 'body' })
     }
+    // A request with no JSON body at all is a missing `body`.
+    const url = `/api/tickets/${ticketId}/comments`
+    const withoutJson = [
+      await request(app).post(url).set('Cookie', cookie),
+      await request(app).post(url).set('Cookie', cookie).set('Content-Type', 'text/plain').send('Not JSON'),
+    ]
+
+    for (const res of withoutJson) {
+      expect(res.status).toBe(400)
+      expect(res.body).toEqual({ error: 'A comment is required.', code: 'VALIDATION_ERROR', field: 'body' })
+    }
     expect(await prisma.publicComment.count({ where: { ticketId } })).toBe(0)
     expect(await updatedAtOf(ticketId)).toBe(before)
 

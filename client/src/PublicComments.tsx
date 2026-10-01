@@ -108,7 +108,11 @@ function PublicComments({
     setPosting(true)
     try {
       const comment = await postPublicComment(ticketId, body)
-      setList((prev) => ({ status: 'success', comments: [comment, ...(prev.status === 'success' ? prev.comments : [])] }))
+      if (list.status === 'success') {
+        setList({ status: 'success', comments: [comment, ...list.comments] })
+      } else {
+        retryLoad()
+      }
       setText('')
       setOutcome('posted')
     } catch (err) {

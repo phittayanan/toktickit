@@ -663,6 +663,69 @@ describe('RequesterTicketDetail Public Comments', () => {
     expect(within(commentsCard()).queryByRole('alert')).not.toBeInTheDocument()
   })
 
+  const POSTED_COMMENT: api.Entry = {
+    id: 32,
+    body: 'Still happening after the update.',
+    createdAt: '2026-10-02T05:00:00.000Z',
+    author: { id: 7, name: 'Somchai Jaidee', role: 'REQUESTER' },
+  }
+
+  it('loads the comments again after a post when they could not be loaded, and keeps Retry when that fails too', async () => {
+    const fetchSpy = vi
+      .spyOn(api, 'fetchPublicComments')
+      .mockRejectedValueOnce(new Error('Unable to connect to TokTickIT API'))
+      .mockRejectedValueOnce(new Error('Unable to connect to TokTickIT API'))
+      .mockResolvedValueOnce([POSTED_COMMENT, STAFF_COMMENT, OWN_COMMENT])
+    vi.spyOn(api, 'postPublicComment').mockResolvedValue(POSTED_COMMENT)
+    await renderTicket({ currentStatus: 'IN_PROGRESS' })
+    await within(commentsCard()).findByRole('button', { name: 'Retry' })
+
+    type('Still happening after the update.')
+    fireEvent.click(postButton())
+
+    expect(await within(commentsCard()).findByRole('status')).toHaveTextContent('Comment posted')
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2))
+    // The earlier comments are still unknown: no list and no count.
+    expect(await within(commentsCard()).findByRole('button', { name: 'Retry' })).toBeInTheDocument()
+    expect(within(commentsCard()).getByRole('alert')).toHaveTextContent('Something went wrong. Please try again.')
+    expect(commentItems()).toHaveLength(0)
+    expect(within(commentsCard()).getByRole('heading', { name: 'Public Comments' })).toBeInTheDocument()
+    expect(composer()).toHaveValue('')
+
+    fireEvent.click(within(commentsCard()).getByRole('button', { name: 'Retry' }))
+
+    await waitFor(() => expect(commentItems()).toHaveLength(3))
+    expect(commentItems()[0]).toHaveTextContent('Still happening after the update.')
+    expect(within(commentsCard()).getByRole('heading', { name: 'Public Comments (3)' })).toBeInTheDocument()
+    expect(within(commentsCard()).queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('loads the comments again after a post made while they were loading, and ignores the earlier answer', async () => {
+    let answerFirstLoad!: (value: api.Entry[]) => void
+    const fetchSpy = vi
+      .spyOn(api, 'fetchPublicComments')
+      .mockReturnValueOnce(new Promise((resolve) => (answerFirstLoad = resolve)))
+      .mockResolvedValueOnce([POSTED_COMMENT, OWN_COMMENT])
+    vi.spyOn(api, 'postPublicComment').mockResolvedValue(POSTED_COMMENT)
+    await renderTicket({ currentStatus: 'IN_PROGRESS' })
+
+    type('Still happening after the update.')
+    fireEvent.click(postButton())
+
+    await waitFor(() => expect(commentItems()).toHaveLength(2))
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+
+    // The load that began before the post answers without the new comment.
+    answerFirstLoad([OWN_COMMENT])
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(commentItems()).toHaveLength(2)
+    expect(commentItems()[0]).toHaveTextContent('Still happening after the update.')
+    expect(commentItems()[1]).toHaveTextContent('It still drains within two hours.')
+    expect(within(commentsCard()).getByRole('heading', { name: 'Public Comments (2)' })).toBeInTheDocument()
+    expect(within(commentsCard()).getByRole('status')).toHaveTextContent('Comment posted')
+  })
+
   it('says so when there are no comments yet', async () => {
     await renderTicket({ currentStatus: 'IN_PROGRESS' })
 
