@@ -148,7 +148,12 @@ describe('Ticket Queue rows', () => {
     vi.spyOn(api, 'fetchStaffQueue').mockResolvedValue(queueResponse([ticket()]))
     await openQueue()
 
-    const card = within(await screen.findByRole('listitem'))
+    // The card is the list item that holds the Ticket; the page numbers
+    // are list items too.
+    await table()
+    const card = within(
+      screen.getAllByRole('listitem').find((item) => within(item).queryByRole('link', { name: 'TKT-2026-000123' }))!,
+    )
     expect(card.getByRole('link', { name: 'TKT-2026-000123' })).toHaveAttribute('href', '/staff/tickets/42')
     expect(card.getByText('In Progress')).toBeInTheDocument()
     expect(card.getByText('Somchai Jaidee')).toBeInTheDocument()
@@ -513,7 +518,87 @@ describe('Ticket Queue pagination', () => {
     await table()
 
     expect(pagination().getByText('Showing 11 to 20 of 37 tickets')).toBeInTheDocument()
-    expect(pagination().getByText('Page 2 of 4')).toBeInTheDocument()
+  })
+
+  // ui-spec.md §8.2: Previous, Next, and page numbers
+  it('jumps to a page by its number, keeping the filters, and keeps the page in the URL', async () => {
+    const fetchQueue = mockQueue(queueResponse([ticket()], { page: 2, pageSize: 10, totalItems: 37, totalPages: 4 }))
+    await openQueue('/staff/queue?itPriority=HIGH&page=2')
+    await table()
+
+    fireEvent.click(pagination().getByRole('button', { name: 'Page 4' }))
+
+    await waitFor(() =>
+      expect(lastRequest(fetchQueue)).toEqual({ ...DEFAULT_REQUEST, ...NO_FILTERS, itPriority: 'HIGH', page: 4 }),
+    )
+    expect(Object.fromEntries(new URLSearchParams(window.location.search))).toEqual({ itPriority: 'HIGH', page: '4' })
+  })
+
+  // The page-number buttons, as the control reads them: their labels, and
+  // "…" where pages are left out.
+  const pageNumbers = () =>
+    pagination()
+      .getAllByRole('listitem')
+      .map((item) => within(item).queryByRole('button')?.getAttribute('aria-label') ?? item.textContent)
+
+  it('lists the page numbers and marks the current page', async () => {
+    mockQueue(queueResponse([ticket()], { page: 2, pageSize: 10, totalItems: 37, totalPages: 4 }))
+
+    await openQueue('/staff/queue?page=2')
+    await table()
+
+    expect(pageNumbers()).toEqual(['Page 1', 'Page 2', 'Page 3', 'Page 4'])
+    expect(pagination().getByRole('button', { name: 'Page 2' })).toHaveAttribute('aria-current', 'page')
+    for (const other of ['Page 1', 'Page 3', 'Page 4']) {
+      expect(pagination().getByRole('button', { name: other })).not.toHaveAttribute('aria-current')
+    }
+  })
+
+  // Many pages: a compact window around the current page, with the first
+  // and the last page always reachable
+  it.each([
+    { page: 1, totalPages: 20, expected: ['Page 1', 'Page 2', '…', 'Page 20'] },
+    { page: 2, totalPages: 20, expected: ['Page 1', 'Page 2', 'Page 3', '…', 'Page 20'] },
+    // A gap of one page shows that page rather than "…".
+    { page: 3, totalPages: 20, expected: ['Page 1', 'Page 2', 'Page 3', 'Page 4', '…', 'Page 20'] },
+    { page: 10, totalPages: 20, expected: ['Page 1', '…', 'Page 9', 'Page 10', 'Page 11', '…', 'Page 20'] },
+    { page: 18, totalPages: 20, expected: ['Page 1', '…', 'Page 17', 'Page 18', 'Page 19', 'Page 20'] },
+    { page: 20, totalPages: 20, expected: ['Page 1', '…', 'Page 19', 'Page 20'] },
+    { page: 4, totalPages: 7, expected: ['Page 1', 'Page 2', 'Page 3', 'Page 4', 'Page 5', 'Page 6', 'Page 7'] },
+    { page: 1, totalPages: 8, expected: ['Page 1', 'Page 2', '…', 'Page 8'] },
+    { page: 1, totalPages: 1, expected: ['Page 1'] },
+  ])('shows $expected on page $page of $totalPages', async ({ page, totalPages, expected }) => {
+    mockQueue(queueResponse([ticket()], { page, pageSize: 10, totalItems: totalPages * 10, totalPages }))
+
+    await openQueue(`/staff/queue?page=${page}`)
+    await table()
+
+    expect(pageNumbers()).toEqual(expected)
+    expect(pagination().getByRole('button', { name: `Page ${page}` })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('reaches the first and the last page from the middle of many', async () => {
+    const fetchQueue = mockQueue(queueResponse([ticket()], { page: 10, pageSize: 10, totalItems: 200, totalPages: 20 }))
+    await openQueue('/staff/queue?page=10')
+    await table()
+
+    fireEvent.click(pagination().getByRole('button', { name: 'Page 20' }))
+    await waitFor(() => expect(lastRequest(fetchQueue)).toEqual({ ...DEFAULT_REQUEST, ...NO_FILTERS, page: 20 }))
+
+    await table()
+    fireEvent.click(pagination().getByRole('button', { name: 'Page 1' }))
+    await waitFor(() => expect(lastRequest(fetchQueue)).toEqual({ ...DEFAULT_REQUEST, ...NO_FILTERS, page: 1 }))
+  })
+
+  it('asks for nothing when the current page number is chosen', async () => {
+    const fetchQueue = mockQueue(queueResponse([ticket()], { page: 2, pageSize: 10, totalItems: 37, totalPages: 4 }))
+    await openQueue('/staff/queue?page=2')
+    await table()
+
+    fireEvent.click(pagination().getByRole('button', { name: 'Page 2' }))
+    await act(async () => {})
+
+    expect(fetchQueue).toHaveBeenCalledTimes(1)
   })
 
   it('shows a last page that is not full', async () => {

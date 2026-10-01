@@ -736,6 +736,25 @@ button:focus-visible {
   border-bottom: 2px solid var(--tk-surface-border);
 }
 
+/* ---- Pagination page numbers (docs/lab-03/ui-spec.md §8.2) ---- */
+
+.tk-pagination__pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tk-pagination__page {
+  min-width: 32px;
+}
+.tk-pagination__gap {
+  padding: 0 4px;
+  color: var(--tk-neutral-text);
+}
+
 /* ---- Ticket Queue (docs/lab-03/ui-spec.md §8) ---- */
 
 /* The search, the filters, and the sort in one wrapping row. */
@@ -806,6 +825,9 @@ button:focus-visible {
   .tk-queue .form-control,
   .tk-queue .form-select {
     min-height: 44px;
+  }
+  .tk-queue .tk-pagination__page {
+    min-width: 44px;
   }
   .tk-queue__check {
     display: flex;
