@@ -62,7 +62,7 @@ jobs:
         run: npm test
 
   client:
-    name: Client (lint, type check)
+    name: Client (lint, type check, tests)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -80,6 +80,8 @@ jobs:
         run: npm run lint
       - name: Type check and build
         run: npm run build
+      - name: Test
+        run: npm test
 
   e2e-typecheck:
     name: E2E specs (type check)
