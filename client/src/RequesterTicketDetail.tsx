@@ -36,7 +36,7 @@ type DetailState =
   | { status: 'loading' }
   | { status: 'success'; ticket: TicketDetail }
   | { status: 'not-found' }
-  | { status: 'error'; message: string }
+  | { status: 'error' }
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
@@ -51,7 +51,7 @@ function ReadOnlyField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="col-md-6 col-lg-4">
       <div className="form-label mb-1">{label}</div>
-      <div className="form-control bg-body-tertiary" style={{ pointerEvents: 'none' }} aria-readonly="true">
+      <div className="form-control tk-field--readonly" style={{ pointerEvents: 'none' }} aria-readonly="true">
         {value}
       </div>
     </div>
@@ -431,6 +431,8 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
   const [categories, setCategories] = useState<Category[]>([])
   const [relatedSystems, setRelatedSystems] = useState<RelatedSystem[]>([])
   const [detail, setDetail] = useState<DetailState>({ status: 'loading' })
+  // How many times Retry has asked for the Ticket again.
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     Promise.all([fetchCategories(), fetchRelatedSystems()])
@@ -454,17 +456,18 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
       })
       .catch((err) => {
         if (cancelled) return
-        const message = err instanceof Error ? err.message : 'Unable to load ticket'
         // AC-03/ADR-0004: a missing-or-not-owned Ticket is a 404 whose
         // body is exactly { error: "Ticket not found" } — that's the
-        // signal for the dedicated not-found state.
-        setDetail(message === 'Ticket not found' ? { status: 'not-found' } : { status: 'error', message })
+        // signal for the dedicated not-found state. Anything else is the
+        // safe failure (ui-spec.md §2.3), whatever the error says.
+        const notFound = err instanceof Error && err.message === 'Ticket not found'
+        setDetail({ status: notFound ? 'not-found' : 'error' })
       })
 
     return () => {
       cancelled = true
     }
-  }, [ticketId])
+  }, [ticketId, attempt])
 
   // After a Conflict: the latest Ticket, in place, so the cards below keep
   // what was typed into them (ui-spec.md §2.3).
@@ -485,10 +488,15 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
         ← Back to My Tickets
       </button>
 
-      {detail.status === 'loading' && <p role="status">⏳ Loading ticket…</p>}
+      {detail.status === 'loading' && (
+        <p role="status" className="d-flex align-items-center gap-2">
+          <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+          Loading ticket…
+        </p>
+      )}
 
       {detail.status === 'not-found' && (
-        <div className="text-center py-5 border rounded">
+        <div className="card align-items-center text-center px-3 py-5">
           <h1 className="h4 mb-2">Ticket not found</h1>
           <p className="text-muted mb-3">
             This Ticket doesn't exist, or isn't one of {user?.name ?? 'yours'}'s Tickets.
@@ -500,9 +508,12 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
       )}
 
       {detail.status === 'error' && (
-        <p className="text-danger" role="alert">
-          {detail.message}
-        </p>
+        <InlineAlert variant="error">
+          {SAFE_FAILURE_MESSAGE}{' '}
+          <button type="button" className="btn btn-link p-0 align-baseline" onClick={() => setAttempt(attempt + 1)}>
+            Retry
+          </button>
+        </InlineAlert>
       )}
 
       {detail.status === 'success' && (
@@ -529,7 +540,7 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
 
           <div className="mb-4">
             <div className="form-label mb-1">Summary</div>
-            <div className="form-control bg-body-tertiary" style={{ pointerEvents: 'none' }} aria-readonly="true">
+            <div className="form-control tk-field--readonly" style={{ pointerEvents: 'none' }} aria-readonly="true">
               {detail.ticket.summary}
             </div>
           </div>
@@ -537,7 +548,7 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
           <div className="mb-4">
             <div className="form-label mb-1">Description</div>
             <div
-              className="form-control bg-body-tertiary"
+              className="form-control tk-field--readonly"
               style={{ pointerEvents: 'none', minHeight: 120, whiteSpace: 'pre-wrap' }}
               aria-readonly="true"
             >

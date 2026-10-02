@@ -40,6 +40,9 @@
   --bs-link-color-rgb: 11, 122, 70;
   --bs-link-hover-color-rgb: 11, 122, 70;
   --bs-border-color: var(--tk-surface-border);
+  /* Muted text and placeholders; the file chooser's button. */
+  --bs-secondary-color: var(--tk-neutral-text);
+  --bs-tertiary-bg: var(--tk-readonly-bg);
   --bs-danger: var(--tk-error);
   --bs-danger-rgb: 179, 38, 30;
 }
@@ -129,7 +132,17 @@ a.app-shell__brand:focus {
 /* Mobile header (docs/lab-03/ui-spec.md §4.4): 44px tap targets. */
 
 .app-shell__menu-toggle {
+  --bs-btn-color: #fff;
+  --bs-btn-border-color: #fff;
   min-height: 44px;
+}
+
+@media (max-width: 767px) {
+  a.app-shell__brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
 .app-shell__mobile-panel {
@@ -199,6 +212,13 @@ a.app-shell__brand:focus {
   border-color: var(--tk-primary-green);
   color: var(--tk-primary-green);
 }
+.btn-outline-primary:disabled,
+.btn-secondary:disabled,
+.btn-outline-secondary:disabled {
+  background: #fff;
+  border-color: var(--tk-primary-green);
+  color: var(--tk-primary-green);
+}
 .btn-outline-primary:hover,
 .btn-secondary:hover,
 .btn-outline-secondary:hover {
@@ -244,25 +264,45 @@ button:focus-visible {
   background-color: #fff;
 }
 
+/* `background-color`, not the shorthand: a select keeps its arrow. */
 .form-control,
 .form-select {
-  background: #fff;
+  background-color: #fff;
   border: 1px solid var(--tk-field-border);
   color: var(--tk-text);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--tk-secondary-green);
 }
 
 .form-control[readonly],
 .form-control:disabled,
 .form-select:disabled,
 .tk-field--readonly {
-  background: var(--tk-readonly-bg);
+  background-color: var(--tk-readonly-bg);
   color: var(--tk-text);
   opacity: 1;
 }
 
+/* Bootstrap draws an invalid field and its icon in its own red; both use
+   the Error token here, focused or not. */
 .form-control.is-invalid,
 .form-select.is-invalid {
+  --tk-invalid-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23b3261e'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23b3261e' stroke='none'/%3e%3c/svg%3e");
   border-color: var(--tk-error);
+}
+.form-control.is-invalid:focus,
+.form-select.is-invalid:focus {
+  border-color: var(--tk-error);
+  box-shadow: none;
+}
+.form-control.is-invalid {
+  background-image: var(--tk-invalid-icon);
+}
+.form-select.is-invalid:not([multiple]):not([size]) {
+  --bs-form-select-bg-icon: var(--tk-invalid-icon);
 }
 
 .invalid-feedback {
@@ -381,6 +421,15 @@ button:focus-visible {
 .tk-feedback-page {
   max-width: 480px;
   margin-top: 48px;
+}
+/* §11: 44px tap targets on mobile. */
+@media (max-width: 767px) {
+  .tk-feedback-page .btn,
+  .tk-feedback-page a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
 .tk-page-loading {
@@ -560,6 +609,24 @@ button:focus-visible {
   .tk-resolved-card .btn {
     min-height: 44px;
   }
+  .requester-ticket-detail .btn {
+    min-height: 44px;
+  }
+  .requester-ticket-detail > .tk-alert .btn-link {
+    min-width: 44px;
+  }
+  .requester-ticket-detail input[type='file'] {
+    --tk-file-padding: 9px;
+    min-height: 44px;
+    padding-top: var(--tk-file-padding);
+    padding-bottom: var(--tk-file-padding);
+  }
+  .requester-ticket-detail input[type='file']::file-selector-button {
+    margin-top: calc(-1 * var(--tk-file-padding));
+    margin-bottom: calc(-1 * var(--tk-file-padding));
+    padding-top: var(--tk-file-padding);
+    padding-bottom: var(--tk-file-padding);
+  }
 }
 
 /* Loading placeholder rows */
@@ -643,6 +710,13 @@ button:focus-visible {
   padding: 14px 0;
   border-bottom: 1px solid var(--tk-surface-border);
 }
+.tk-users__skeleton-row .placeholder,
+.tk-queue__skeleton-row .placeholder {
+  border-radius: 6px;
+  background-color: var(--tk-readonly-bg);
+  opacity: 1;
+  animation: none;
+}
 
 .tk-users__panel-actions {
   display: flex;
@@ -660,10 +734,15 @@ button:focus-visible {
 
 /* The Active switch: Primary green when on, and the theme's focus ring in
    place of Bootstrap's blue one. */
-.tk-switch .form-check-input {
+.tk-switch .form-check-input,
+.tk-queue__check .form-check-input {
   border-color: var(--tk-field-border);
 }
-.tk-switch .form-check-input:checked {
+.tk-queue__check .form-check-input:not(:checked) {
+  background-color: var(--tk-surface);
+}
+.tk-switch .form-check-input:checked,
+.tk-queue__check .form-check-input:checked {
   background-color: var(--tk-primary-green);
   border-color: var(--tk-primary-green);
 }
@@ -729,7 +808,9 @@ button:focus-visible {
 
 /* ---- My Tickets table / mobile cards (ui-spec.md §8, §11) ---- */
 
+/* Bootstrap colours the cells from this variable, not from `.table`. */
 .table {
+  --bs-table-color: var(--tk-text);
   color: var(--tk-text);
 }
 .table thead th {
@@ -776,7 +857,8 @@ button:focus-visible {
 }
 
 /* The table sits on the card surface, not on the page background. */
-.tk-queue__table {
+.tk-queue__table,
+.tk-users__table {
   --bs-table-bg: transparent;
 }
 .tk-queue__table th {
@@ -799,6 +881,18 @@ button:focus-visible {
   text-align: left;
   text-decoration: none;
   vertical-align: baseline;
+}
+
+/* Tablet (§8.4): a narrower Search, and an Owner select that a long name
+   cannot widen, let the controls wrap to two rows. */
+@media (min-width: 768px) and (max-width: 991px) {
+  .tk-queue__search {
+    flex-basis: 180px;
+  }
+  .tk-queue__owner {
+    max-width: 240px;
+    text-overflow: ellipsis;
+  }
 }
 
 /* Mobile (§8.4): the filters open as a panel, and every control is a
@@ -895,6 +989,7 @@ button:focus-visible {
 .tk-breadcrumb {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px 8px;
   margin: 0;
   padding: 0;
@@ -1026,8 +1121,20 @@ button:focus-visible {
 /* Tablet (§9.7): the Operations card is below the information card, its
    three controls in a row. */
 @media (min-width: 768px) and (max-width: 991px) {
+  /* Current Status has the longest text, "Choose a new status…", and IT
+     Priority the shortest: the columns are sized to match, so the text
+     fits beside the arrow whatever the system font. */
   .tk-ops__controls {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 16px;
+  }
+  /* `margin-top: auto` keeps the three selects level when the line above
+     one of them wraps. */
+  .tk-ops__control .form-select {
+    margin-top: auto;
+    padding-left: 8px;
+    padding-right: 28px;
+    background-position: right 8px center;
   }
 }
 

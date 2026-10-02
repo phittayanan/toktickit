@@ -87,7 +87,8 @@ describe('Staff Ticket Detail page states', () => {
 
     expect((await screen.findByText('Loading ticket…')).closest('[role="status"]')).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Manage this ticket' })).not.toBeInTheDocument()
-    expect(api.fetchStaffTicket).toHaveBeenCalledWith(42)
+    // The skeleton is in the document before the effect that asks has run.
+    await waitFor(() => expect(api.fetchStaffTicket).toHaveBeenCalledWith(42))
   })
 
   // UI-19 (AC-30): the loaded layout
