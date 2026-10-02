@@ -338,11 +338,9 @@ describe('order of checks', () => {
   })
 })
 
-// API-16 (AC-16, BR-17). Pending until the last of the endpoints it runs
-// lands: the queue (#51), and the staff ticket operations and Internal
-// Notes (#52).
+// API-16 (AC-16, BR-17)
 describe('Administrator on the staff ticket operations', () => {
-  it.skip('succeeds on each exactly as IT Staff does (pending #51, #52)', async () => {
+  it('succeeds on each exactly as IT Staff does', async () => {
     const requester = await signInAs('REQUESTER')
     const statuses: Partial<Record<Role, number[]>> = {}
 
@@ -488,10 +486,9 @@ describe("another Requester's resource", () => {
   })
 })
 
-// API-20 (AC-22, BR-32). Pending until #52 delivers the three endpoints;
-// the refusal itself is the /api/staff prefix rule tested above.
+// API-20 (AC-22, BR-32)
 describe('a Requester on the staff operations of their own Ticket', () => {
-  it.skip('is answered 403 by the owner, IT Priority, and status endpoints, and the Ticket is unchanged (pending #52)', async () => {
+  it('is answered 403 by the owner, IT Priority, and status endpoints, and the Ticket is unchanged', async () => {
     const { user, cookie } = await signInAs('REQUESTER')
     const ticketId = await createTicket(cookie)
     const before = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId } })

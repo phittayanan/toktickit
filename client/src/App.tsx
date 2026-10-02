@@ -13,6 +13,7 @@ import MyTickets from './MyTickets'
 import RequesterTicketDetail from './RequesterTicketDetail'
 import UserManagement from './UserManagement'
 import StaffTicketQueue from './StaffTicketQueue'
+import StaffTicketDetail, { StaffTicketNotFound } from './StaffTicketDetail'
 
 // The Lab 2 Requester screens keep their props; these adapters give them
 // the URL paths of specification.md §6.
@@ -37,6 +38,17 @@ function RequesterTicketDetailScreen() {
   }
 
   return <RequesterTicketDetail ticketId={Number(id)} onBack={() => navigate('/tickets')} />
+}
+
+function StaffTicketDetailScreen({ user }: { user: UserIdentity }) {
+  const { id = '' } = useParams()
+
+  // A Ticket id is a positive integer; anything else names no Ticket.
+  if (!/^[1-9]\d*$/.test(id)) {
+    return <StaffTicketNotFound user={user} />
+  }
+
+  return <StaffTicketDetail key={id} ticketId={Number(id)} user={user} />
 }
 
 // The shell shows the signed-in Administrator's name, so a change they
@@ -83,9 +95,6 @@ function AppRoutes() {
   }
 
   const landing = <Navigate to={LANDING_PATH[user.role]} replace />
-  // The Staff Ticket Detail (#52) screen is not built yet. Its path is
-  // guarded now, and shows the Not Found page to the Roles that may open it.
-  const notBuiltYet = <NotFoundPage role={user.role} />
 
   return (
     <AppShell user={user}>
@@ -128,7 +137,7 @@ function AppRoutes() {
           path="/staff/tickets/:id"
           element={
             <RequireRole user={user} roles={STAFF}>
-              {notBuiltYet}
+              <StaffTicketDetailScreen user={user} />
             </RequireRole>
           }
         />
