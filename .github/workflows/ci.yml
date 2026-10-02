@@ -109,6 +109,8 @@ jobs:
           # Throwaway credentials for the CI-only database; not a secret.
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          # The Playwright global setup refuses a database whose name does
+          # not end in _e2e.
           POSTGRES_DB: toktickit_e2e
         ports:
           - 5432:5432

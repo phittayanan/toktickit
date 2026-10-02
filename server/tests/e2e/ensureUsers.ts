@@ -8,10 +8,16 @@ import type { Role } from '../../generated/prisma/client'
 // by e2e/lab-03/support/database.ts, which sends the users as JSON on
 // stdin and reads their ids as JSON from the last line of stdout.
 //
+// That database must be one set aside for E2E: its name has to end in
+// `_e2e`, and nothing is written otherwise. The suites change more than the
+// users created here (E2E-11 deactivates every other active Administrator,
+// which signs them out and unassigns their unfinished Tickets), so they
+// must never run against a development database or a real one.
+//
 // A user that already exists is put back to the state asked for, with no
 // session and no login throttle, so a run never depends on what an earlier
-// run left behind. Only `e2e.` addresses are accepted: this never touches a
-// seed account or a real one. Nothing here prints a password or a hash.
+// run left behind. This script itself writes only `e2e.` addresses. Nothing
+// here prints a password, a hash, or the connection string.
 interface E2EUserInput {
   name: string
   email: string
@@ -22,6 +28,19 @@ interface E2EUserInput {
 }
 
 const E2E_EMAIL_PREFIX = 'e2e.'
+const E2E_DATABASE_SUFFIX = '_e2e'
+
+function assertE2EDatabase() {
+  const url = process.env.DATABASE_URL
+  const name = url ? decodeURIComponent(new URL(url).pathname.slice(1)) : ''
+  if (!name.endsWith(E2E_DATABASE_SUFFIX)) {
+    throw new Error(
+      `Refusing to run the E2E suites against the database "${name}": they change and deactivate users, ` +
+        `so DATABASE_URL must name a dedicated E2E database whose name ends in "${E2E_DATABASE_SUFFIX}" ` +
+        '(for example toktickit_e2e). See "Running Tests" in README.md.',
+    )
+  }
+}
 
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = []
@@ -54,6 +73,7 @@ async function ensureUser(input: E2EUserInput): Promise<{ id: number; email: str
 }
 
 async function main() {
+  assertE2EDatabase()
   const inputs = JSON.parse(await readStdin()) as E2EUserInput[]
   const users = []
   for (const input of inputs) users.push(await ensureUser(input))

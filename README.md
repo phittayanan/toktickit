@@ -106,17 +106,27 @@ npm test
 cd client
 npm test
 
-# End to end (Playwright), from the repository root, with the server on
-# :4000 and the client on :5173 running against a migrated and seeded
-# database. The suites create the users they sign in as (`e2e.` addresses)
-# in the database named by the server's DATABASE_URL, and run one at a time.
+# End to end (Playwright), from the repository root. The suites need their
+# own database, never the development one: they create the users they sign
+# in as (`e2e.` addresses), and they also change other accounts (one flow
+# deactivates every other active Administrator, which signs them out and
+# unassigns their unfinished Tickets). The database name must end in `_e2e`;
+# the run stops before writing anything when it does not.
+createdb toktickit_e2e
+export DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/toktickit_e2e?schema=public"
+(cd server && npx prisma migrate deploy && npx prisma db seed)
+
+# With that same DATABASE_URL exported, start the server on :4000
+# (`cd server && npm run dev`), start the client on :5173, then:
 npm install
 npx playwright install chromium
 npx playwright test
 ```
 
-Set `CLIENT_URL` and `API_URL` when the client or the server runs on
-another port. CI runs the same suites on every pull request and uploads the
+An exported `DATABASE_URL` takes precedence over the one in `server/.env`,
+so the server and the Playwright run must both be started with it. Set
+`CLIENT_URL` and `API_URL` when the client or the server runs on another
+port. CI runs the same suites on every pull request and uploads the
 Playwright report when one fails.
 
 ## Git Workflow

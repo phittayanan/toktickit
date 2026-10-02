@@ -1,8 +1,8 @@
 // The users the Lab 3 E2E suites sign in as (docs/lab-03/tests.md §1 E2E).
 // Seed accounts must change their password once and the seed never resets
 // it, so E2E never signs in as them: a global setup (#54) creates these
-// directly in the test database, already past the password change. The
-// `e2e.` email prefix marks them as test data.
+// directly in the dedicated E2E database, already past the password change.
+// The `e2e.` email prefix marks them as test data.
 import { ensureUsers } from './database'
 
 export type Role = 'REQUESTER' | 'IT_STAFF' | 'ADMINISTRATOR'
@@ -19,27 +19,33 @@ export interface E2EUser {
 // Meets BR-08. Local test data only, never a real credential.
 const E2E_PASSWORD = 'E2e-Passw0rd!'
 
+const LANDING_PATHS: Record<Role, string> = {
+  REQUESTER: '/tickets',
+  IT_STAFF: '/staff/queue',
+  ADMINISTRATOR: '/admin/users',
+}
+
 export const E2E_USERS: Record<Role, E2EUser> = {
   REQUESTER: {
     name: 'E2E Requester',
     email: 'e2e.requester@kmutt.ac.th',
     password: E2E_PASSWORD,
     role: 'REQUESTER',
-    landingPath: '/tickets',
+    landingPath: LANDING_PATHS.REQUESTER,
   },
   IT_STAFF: {
     name: 'E2E IT Staff',
     email: 'e2e.it-staff@kmutt.ac.th',
     password: E2E_PASSWORD,
     role: 'IT_STAFF',
-    landingPath: '/staff/queue',
+    landingPath: LANDING_PATHS.IT_STAFF,
   },
   ADMINISTRATOR: {
     name: 'E2E Administrator',
     email: 'e2e.administrator@kmutt.ac.th',
     password: E2E_PASSWORD,
     role: 'ADMINISTRATOR',
-    landingPath: '/admin/users',
+    landingPath: LANDING_PATHS.ADMINISTRATOR,
   },
 }
 
@@ -49,17 +55,11 @@ export const E2E_SECOND_REQUESTER: E2EUser = {
   email: 'e2e.requester-2@kmutt.ac.th',
   password: E2E_PASSWORD,
   role: 'REQUESTER',
-  landingPath: '/tickets',
+  landingPath: LANDING_PATHS.REQUESTER,
 }
 
 // Every user the global setup creates before any spec runs.
 export const GLOBAL_SETUP_USERS: E2EUser[] = [...Object.values(E2E_USERS), E2E_SECOND_REQUESTER]
-
-const LANDING_PATHS: Record<Role, string> = {
-  REQUESTER: '/tickets',
-  IT_STAFF: '/staff/queue',
-  ADMINISTRATOR: '/admin/users',
-}
 
 export interface DisposableUser extends E2EUser {
   id: number
