@@ -12,7 +12,7 @@ describe('UPLOAD_DIR', () => {
   it('falls back to server/uploads when UPLOAD_DIR is empty', async () => {
     vi.stubEnv('UPLOAD_DIR', '')
     vi.resetModules()
-    const { UPLOAD_DIR } = await import('../../src/upload')
+    const { UPLOAD_DIR } = await import('../../src/upload.js')
     expect(UPLOAD_DIR).toBe(path.join(__dirname, '..', '..', 'uploads'))
   })
 })
