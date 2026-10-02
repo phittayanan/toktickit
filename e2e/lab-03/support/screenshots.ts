@@ -8,10 +8,6 @@ export const BREAKPOINTS = {
   mobile: { width: 390, height: 844 },
 } as const
 
-export type Breakpoint = keyof typeof BREAKPOINTS
-
-export const BREAKPOINT_NAMES = Object.keys(BREAKPOINTS) as Breakpoint[]
-
 // The screenshot folders of ui-spec.md §14.
 export type ScreenshotGroup =
   | 'authentication'

@@ -58,10 +58,23 @@ test.describe('visual: Ticket Queue', () => {
       await openFilters(page)
       await page.getByLabel('Status', { exact: true }).selectOption({ label: 'All statuses' })
       await page.getByLabel('Sort by').selectOption({ label: 'Ticket No.' })
-      for (const status of ['Cancelled', 'Closed', 'Reopened', 'Resolved', 'Waiting for Requester', 'Open', 'New']) {
-        const badge = page.locator('.badge').filter({ hasText: new RegExp(`^(✓ )?${status}$`) })
+      const statuses = [
+        'Cancelled',
+        'Closed',
+        'Reopened',
+        'Resolved',
+        'Waiting for Requester',
+        'In Progress',
+        'Open',
+        'New',
+      ]
+      const priorities = ['Low', 'Medium', 'High']
+      for (const label of [...statuses, ...priorities]) {
+        const badge = page.locator('.badge').filter({ hasText: new RegExp(`^(✓ )?${label}$`) })
         await expect(badge.locator('visible=true').first()).toBeVisible()
       }
+      const flag = page.locator('.badge').filter({ hasText: 'Requester: appears resolved' })
+      await expect(flag.locator('visible=true').first()).toBeVisible()
       await takeScreenshot(page, 'staff-queue', `${name}-all-statuses`)
     })
 
