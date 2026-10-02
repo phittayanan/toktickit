@@ -12,6 +12,7 @@ import CreateTicket from './CreateTicket'
 import MyTickets from './MyTickets'
 import RequesterTicketDetail from './RequesterTicketDetail'
 import UserManagement from './UserManagement'
+import StaffTicketQueue from './StaffTicketQueue'
 
 // The Lab 2 Requester screens keep their props; these adapters give them
 // the URL paths of specification.md §6.
@@ -82,9 +83,8 @@ function AppRoutes() {
   }
 
   const landing = <Navigate to={LANDING_PATH[user.role]} replace />
-  // The Ticket Queue and Staff Ticket Detail (#51, #52) screens are not
-  // built yet. Their paths are guarded now, and show the Not Found page to
-  // the Roles that may open them.
+  // The Staff Ticket Detail (#52) screen is not built yet. Its path is
+  // guarded now, and shows the Not Found page to the Roles that may open it.
   const notBuiltYet = <NotFoundPage role={user.role} />
 
   return (
@@ -120,7 +120,7 @@ function AppRoutes() {
           path="/staff/queue"
           element={
             <RequireRole user={user} roles={STAFF}>
-              {notBuiltYet}
+              <StaffTicketQueue user={user} />
             </RequireRole>
           }
         />

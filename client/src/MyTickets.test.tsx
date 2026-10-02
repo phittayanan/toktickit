@@ -113,6 +113,23 @@ describe('MyTickets', () => {
     })
   })
 
+  // UI-13 (AC-23): docs/lab-02/ui-spec.md §8, Previous/Next + page numbers
+  it('re-fetches the page whose number is clicked', async () => {
+    const fetchSpy = vi
+      .spyOn(api, 'fetchTickets')
+      .mockResolvedValue(listResponse([ticket()], { totalItems: 25, totalPages: 3 }))
+
+    render(<MyTickets onCreateTicket={vi.fn()} onOpenTicket={vi.fn()} />)
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1))
+
+    expect(screen.getByRole('button', { name: 'Page 1' })).toHaveAttribute('aria-current', 'page')
+    fireEvent.click(screen.getByRole('button', { name: 'Page 3' }))
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenLastCalledWith(expect.objectContaining({ page: 3 }))
+    })
+  })
+
   // The Create Ticket shortcut navigates away from this screen.
   it('calls onCreateTicket when the Create Ticket shortcut is clicked', async () => {
     vi.spyOn(api, 'fetchTickets').mockResolvedValue(listResponse([ticket()]))

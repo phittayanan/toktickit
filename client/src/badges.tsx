@@ -40,6 +40,19 @@ export function StatusBadge({ status }: { status: string }) {
   )
 }
 
+// Flag badge (docs/lab-03/ui-spec.md §2.2): the Requester has indicated
+// that the problem appears resolved.
+export function AppearsResolvedBadge() {
+  return (
+    <span className="badge rounded-pill tk-badge--success-outline">
+      <span className="tk-badge__icon" aria-hidden="true">
+        ⚑
+      </span>
+      Requester: appears resolved
+    </span>
+  )
+}
+
 // Role badge (docs/lab-03/ui-spec.md §2.2): Requester Neutral, IT Staff
 // Info, Administrator a Primary green outline.
 export function RoleBadge({ role }: { role: Role }) {

@@ -150,6 +150,60 @@ export interface ResolutionIndication {
   requesterResolvedAt: string | null
 }
 
+// Current Status values on the wire (docs/lab-03/api-spec.md §1.1).
+export type TicketStatus =
+  | 'NEW'
+  | 'OPEN'
+  | 'IN_PROGRESS'
+  | 'WAITING_FOR_REQUESTER'
+  | 'RESOLVED'
+  | 'CLOSED'
+  | 'REOPENED'
+  | 'CANCELLED'
+
+// A row of the Ticket Queue (docs/lab-03/api-spec.md §5.1).
+export interface QueueTicket {
+  id: number
+  ticketNumber: string
+  summary: string
+  requester: { id: number; name: string }
+  category: { id: number; name: string }
+  requestedPriority: Priority
+  itPriority: Priority
+  currentStatus: TicketStatus
+  owner: { id: number; name: string } | null
+  requesterResolvedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type QueueSortBy = 'updatedAt' | 'createdAt' | 'ticketNumber' | 'itPriority'
+
+export interface QueueParams {
+  page?: number
+  pageSize?: 10 | 25 | 50
+  search?: string
+  status?: TicketStatus[]
+  owner?: 'unassigned' | 'me' | number
+  itPriority?: Priority
+  categoryId?: number
+  appearsResolved?: boolean
+  sortBy?: QueueSortBy
+  sortDir?: SortDir
+}
+
+export interface QueueResponse {
+  data: QueueTicket[]
+  meta: TicketListResponse['meta']
+}
+
+// A User who can be made Ticket Owner (docs/lab-03/api-spec.md §5.3).
+export interface EligibleOwner {
+  id: number
+  name: string
+  role: Role
+}
+
 type UnauthenticatedListener = () => void
 const unauthenticatedListeners = new Set<UnauthenticatedListener>()
 
@@ -424,6 +478,20 @@ function toQueryString(params: object): string {
 
 export function fetchTickets(params: TicketListParams = {}): Promise<TicketListResponse> {
   return getJson<TicketListResponse>(`/api/tickets${toQueryString(params)}`)
+}
+
+// GET /api/staff/tickets: the Ticket Queue. A list of statuses goes as one
+// comma-separated value. A refusal is an ApiError.
+export async function fetchStaffQueue(params: QueueParams = {}): Promise<QueueResponse> {
+  const res = await request(`/api/staff/tickets${toQueryString(params)}`)
+  return res.json()
+}
+
+// GET /api/staff/eligible-owners: the active IT Staff and Administrators,
+// ordered by name.
+export async function fetchEligibleOwners(): Promise<EligibleOwner[]> {
+  const res = await request('/api/staff/eligible-owners')
+  return res.json()
 }
 
 // Ticket Detail needs to tell "not found" (404, api-spec.md's `{ error }`

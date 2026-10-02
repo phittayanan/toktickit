@@ -12,6 +12,11 @@ beforeEach(() => {
     meta: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 },
   })
   vi.spyOn(api, 'fetchAdminUsers').mockResolvedValue([])
+  vi.spyOn(api, 'fetchStaffQueue').mockResolvedValue({
+    data: [],
+    meta: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 },
+  })
+  vi.spyOn(api, 'fetchEligibleOwners').mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -358,13 +363,10 @@ describe('Guards', () => {
     expect(screen.getByRole('link', { name: 'Back to My Tickets' })).toHaveAttribute('href', '/tickets')
   })
 
-  // The Ticket Queue (#51) and Staff Ticket Detail (#51, #52) screens are
-  // not built yet: until they are, their paths show the Not Found page to
-  // the roles that may open them.
+  // The Staff Ticket Detail (#52) screen is not built yet: until it is,
+  // its path shows the Not Found page to the roles that may open it.
   it.each([
-    { user: IT_STAFF, path: '/staff/queue', back: 'Back to Ticket Queue' },
     { user: IT_STAFF, path: '/staff/tickets/5', back: 'Back to Ticket Queue' },
-    { user: ADMINISTRATOR, path: '/staff/queue', back: 'Back to User Management' },
   ])('shows the Not Found page to $user.role at the unbuilt $path', async ({ user, path, back }) => {
     signedInAs(user)
     openPath(path)
