@@ -97,3 +97,77 @@ jobs:
         run: npm ci
       - name: Type check
         run: npm run typecheck
+
+  e2e:
+    name: E2E (Playwright, Lab 2 and Lab 3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # Throwaway credentials for the CI-only database; not a secret.
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          # The Playwright global setup refuses a database whose name does
+          # not end in _e2e.
+          POSTGRES_DB: toktickit_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/toktickit_e2e?schema=public
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            client/package-lock.json
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix server
+          npm ci --prefix client
+      - name: Install the Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Migrate and seed the database
+        working-directory: server
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+          npx prisma db seed
+      # The server and the client keep their defaults: the API on :4000 and
+      # the client on :5173, which is the origin the API accepts.
+      - name: Start the server
+        working-directory: server
+        run: nohup npx tsx src/index.ts > "$RUNNER_TEMP/server.log" 2>&1 &
+      - name: Build and start the client
+        working-directory: client
+        run: |
+          npm run build
+          nohup npx vite preview --port 5173 --strictPort > "$RUNNER_TEMP/client.log" 2>&1 &
+      - name: Wait for the server and the client
+        run: |
+          curl --silent --show-error --fail --retry 30 --retry-delay 1 --retry-connrefused http://localhost:4000/api/health
+          curl --silent --show-error --fail --retry 30 --retry-delay 1 --retry-connrefused --output /dev/null http://localhost:5173/login
+      - name: Run the Playwright suites
+        run: npx playwright test --reporter=list,html
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+            ${{ runner.temp }}/server.log
+            ${{ runner.temp }}/client.log
+          retention-days: 7

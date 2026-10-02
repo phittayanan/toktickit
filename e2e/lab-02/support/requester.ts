@@ -1,17 +1,23 @@
 import type { Page } from '@playwright/test'
+import { attachFileTo, createTicketFor, type ArrangedTicket } from '../../lab-03/support/api'
+import { signInAs } from '../../lab-03/support/signIn'
+import { E2E_USERS } from '../../lab-03/support/users'
 
-// Seeds the Development Requester Selector's localStorage entry directly
-// (ADR-0001) so visual specs land straight on an authenticated screen
-// instead of re-driving the Selector in every spec.
-export async function signInAsSeedRequester(page: Page) {
-  await page.goto('/')
-  await page.evaluate(() => {
-    window.localStorage.setItem(
-      'toktickit.requester',
-      JSON.stringify({ id: 1, name: 'Somchai Jaidee', email: 'somchai.jaidee@kmutt.ac.th' }),
-    )
-  })
-  await page.reload()
+// Signs in as the Requester the Lab 3 global setup creates, so visual specs
+// land on an authenticated screen. Lab 3 retired the Development Requester
+// Selector and its localStorage entry (docs/lab-03/specification.md BR-48).
+export async function signInAsRequester(page: Page) {
+  await signInAs(page, 'REQUESTER')
+}
+
+// A Ticket of that Requester with one active and one removed Attachment,
+// so a visual spec has its own data instead of what another run left.
+export async function arrangeTicketWithAttachments(): Promise<ArrangedTicket> {
+  const ticket = await createTicketFor(E2E_USERS.REQUESTER, `Lab 2 visual QA ${Date.now()}`)
+  await attachFileTo(E2E_USERS.REQUESTER, ticket, 'screenshot.png')
+  await attachFileTo(E2E_USERS.REQUESTER, ticket, 'wrong-file.png', 'Uploaded the wrong file.')
+
+  return ticket
 }
 
 export const BREAKPOINTS = {
