@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])'
@@ -22,16 +22,18 @@ export function Dialog({
 }) {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
+  // Taken as the dialog first renders, before any effect inside it can move
+  // the focus.
+  const [opener] = useState(() => document.activeElement)
 
   useEffect(() => {
-    const opener = document.activeElement
     const dialog = dialogRef.current!
     ;(dialog.querySelector<HTMLElement>(FOCUSABLE) ?? dialog).focus()
 
     return () => {
       if (opener instanceof HTMLElement && opener.isConnected) opener.focus()
     }
-  }, [])
+  }, [opener])
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
