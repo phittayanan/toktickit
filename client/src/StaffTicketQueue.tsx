@@ -288,11 +288,15 @@ function StaffTicketQueue({ user }: { user: UserIdentity }) {
     </th>
   )
 
+  // Ticket Detail is told the view it was opened from, so that its "Back
+  // to Queue" restores it (ui-spec.md §9.1).
+  const detailState = { queueSearch: searchParams.toString() }
+
   // The whole row opens Ticket Detail. The Ticket Number inside it is a
   // real link, which handles its own click and the keyboard.
   const openOnClick = (ticket: QueueTicket) => (event: React.MouseEvent) => {
     if ((event.target as HTMLElement).closest('a')) return
-    navigate(detailPath(ticket))
+    navigate(detailPath(ticket), { state: detailState })
   }
 
   const activeFilters = countActiveFilters(view)
@@ -536,7 +540,9 @@ function StaffTicketQueue({ user }: { user: UserIdentity }) {
                 {tickets.map((ticket) => (
                   <tr key={ticket.id} className="tk-queue__row" onClick={openOnClick(ticket)}>
                     <td className="text-nowrap">
-                      <Link to={detailPath(ticket)}>{ticket.ticketNumber}</Link>
+                      <Link to={detailPath(ticket)} state={detailState}>
+                        {ticket.ticketNumber}
+                      </Link>
                     </td>
                     <td className="tk-queue__summary">
                       <div>{ticket.summary}</div>
@@ -576,7 +582,7 @@ function StaffTicketQueue({ user }: { user: UserIdentity }) {
               <li key={ticket.id} className="card tk-queue__card" onClick={openOnClick(ticket)}>
                 <div className="card-body p-3">
                   <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
-                    <Link to={detailPath(ticket)} className="fw-semibold">
+                    <Link to={detailPath(ticket)} state={detailState} className="fw-semibold">
                       {ticket.ticketNumber}
                     </Link>
                     <StatusBadge status={ticket.currentStatus} />

@@ -363,19 +363,24 @@ describe('Guards', () => {
     expect(screen.getByRole('link', { name: 'Back to My Tickets' })).toHaveAttribute('href', '/tickets')
   })
 
-  // The Staff Ticket Detail (#52) screen is not built yet: until it is,
-  // its path shows the Not Found page to the roles that may open it.
-  it.each([
-    { user: IT_STAFF, path: '/staff/tickets/5', back: 'Back to Ticket Queue' },
-  ])('shows the Not Found page to $user.role at the unbuilt $path', async ({ user, path, back }) => {
-    signedInAs(user)
-    openPath(path)
+  // UI-08 (AC-14): the Staff Ticket Detail path is open to both Staff roles
+  it.each([{ user: IT_STAFF }, { user: ADMINISTRATOR }])(
+    'opens Staff Ticket Detail for $user.role at /staff/tickets/5',
+    async ({ user }) => {
+      const fetchStaffTicket = vi
+        .spyOn(api, 'fetchStaffTicket')
+        .mockRejectedValue(new api.ApiError(404, 'Ticket not found', 'NOT_FOUND'))
+      vi.spyOn(api, 'fetchEligibleOwners').mockResolvedValue([])
+      signedInAs(user)
+      openPath('/staff/tickets/5')
 
-    render(<App />)
+      render(<App />)
 
-    expect(await screen.findByRole('heading', { name: "We couldn't find that page" })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: back })).toBeInTheDocument()
-  })
+      expect(await screen.findByRole('heading', { name: 'Ticket not found' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Back to Ticket Queue' })).toHaveAttribute('href', '/staff/queue')
+      expect(fetchStaffTicket).toHaveBeenCalledWith(5)
+    },
+  )
 
   // ui-spec.md §2.3: "Ticket not found" for a Ticket path that names no Ticket
   it('shows "Ticket not found" for a Ticket path whose id is not a number', async () => {

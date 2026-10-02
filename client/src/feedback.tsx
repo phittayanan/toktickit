@@ -63,9 +63,17 @@ export function ForbiddenPage({ role }: { role: Role }) {
 }
 
 // Not Found page: shown inside the shell for an unknown path, with a link
-// back to the list the Role lands on.
-export function NotFoundPage({ role, title = "We couldn't find that page" }: { role: Role; title?: string }) {
-  const landing = landingEntry(role)
+// back to a list: `back`, or else the one the Role lands on.
+export function NotFoundPage({
+  role,
+  title = "We couldn't find that page",
+  back,
+}: {
+  role: Role
+  title?: string
+  back?: { label: string; path: string }
+}) {
+  const landing = back ?? landingEntry(role)
 
   return (
     <div className="tk-feedback-page card mx-auto text-center">

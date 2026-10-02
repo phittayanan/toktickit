@@ -1,3 +1,4 @@
+import type { User } from '../../generated/prisma/client'
 import prisma from '../prisma'
 import { MAX_ACTIVE_ATTACHMENTS_PER_TICKET } from '../schemas/attachment.schema'
 import { isFinished } from './statusTransitions.service'
@@ -112,10 +113,20 @@ async function findOwnedActiveAttachment(
 }
 
 // GET /api/attachments/:id/download — returns the active Attachment row so
-// the route can stream its file content; a removed or not-owned Attachment
-// is indistinguishable from a missing one (BR-20/BR-21).
-export async function getDownloadableAttachment(attachmentId: number, requesterId: number) {
-  return findOwnedActiveAttachment(attachmentId, requesterId)
+// the route can stream its file content. Staff reach the active Attachments
+// of any Ticket (docs/lab-03/api-spec.md §6.2, FR-20); for a Requester a
+// not-owned Attachment is indistinguishable from a missing one
+// (BR-20/BR-21). A removed Attachment is missing for everyone.
+export async function getDownloadableAttachment(attachmentId: number, user: User) {
+  if (user.role === 'REQUESTER') {
+    return findOwnedActiveAttachment(attachmentId, user.id)
+  }
+
+  const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId } })
+  if (!attachment || attachment.removedAt) {
+    throw new AttachmentNotFoundError()
+  }
+  return attachment
 }
 
 // POST /api/attachments/:id/remove — BR-18/BR-19: soft removal only, and

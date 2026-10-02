@@ -878,6 +878,178 @@ button:focus-visible {
   font-style: italic;
 }
 
+/* ---- IT Staff Ticket Detail (docs/lab-03/ui-spec.md §9) ---- */
+
+/* Header row (§9.1): the breadcrumb, the status badges, and Back to
+   Queue at the far end. It wraps on a narrow screen. */
+.tk-staff-detail__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+}
+.tk-staff-detail__back {
+  margin-left: auto;
+}
+.tk-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.tk-breadcrumb li + li::before {
+  content: '>';
+  margin-right: 8px;
+  color: var(--tk-neutral-text);
+}
+.tk-staff-detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A read-only value: as tall as its text, which wraps and never widens
+   the page (§11). */
+.tk-staff-detail__value {
+  height: auto;
+  min-height: 38px;
+  overflow-wrap: anywhere;
+}
+.tk-staff-detail__description {
+  white-space: pre-wrap;
+}
+.tk-staff-detail__wrap {
+  overflow-wrap: anywhere;
+}
+
+/* The Operations card (§9.2): the only editable part of the screen, set
+   apart from the information card by its Primary green edge. */
+.tk-ops {
+  border-top: 3px solid var(--tk-primary-green);
+}
+.tk-ops__controls {
+  display: grid;
+  gap: 24px;
+}
+.tk-ops__control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.tk-ops__control .form-label,
+.tk-ops__control .tk-alert {
+  margin-bottom: 0;
+}
+.tk-ops__control .form-select {
+  width: 100%;
+}
+.tk-ops__current {
+  margin: 0;
+  font-size: 14px;
+  color: var(--tk-neutral-text);
+  overflow-wrap: anywhere;
+}
+.tk-ops__values dt {
+  font-size: 14px;
+  font-weight: 600;
+}
+.tk-ops__values dd {
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+.tk-ops__values dd:last-child {
+  margin-bottom: 0;
+}
+
+/* The tabs (§9.1, §12). The bar scrolls within itself when it does not
+   fit, so the page never scrolls sideways (§9.7). */
+.tk-tabs__list {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--tk-surface-border);
+}
+.tk-tabs__tab {
+  flex: none;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--tk-neutral-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tk-tabs__tab[aria-selected='true'] {
+  border-bottom-color: var(--tk-primary-green);
+  color: var(--tk-primary-green);
+}
+.tk-tabs__tab:focus-visible {
+  outline-offset: -2px;
+}
+.tk-tabs__panel {
+  padding: 16px;
+}
+
+/* The caption strip above a composer: Info for Public Comments (§9.3). */
+.tk-thread__strip {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.tk-thread__strip--info {
+  background: var(--tk-info-bg);
+  color: var(--tk-info-text);
+}
+
+/* Internal Notes (§9.4): the whole panel sits on the Warning surface. */
+.tk-tabs__panel--notes {
+  background: var(--tk-warning-bg);
+  border-radius: 0 0 6px 6px;
+}
+.tk-thread__strip--internal {
+  border: 1px solid var(--tk-warning-text);
+  background: var(--tk-surface);
+  color: var(--tk-warning-text);
+  font-weight: 600;
+}
+.tk-tabs__panel--notes .tk-comment {
+  border-top-color: var(--tk-warning-text);
+}
+
+/* Tablet (§9.7): the Operations card is below the information card, its
+   three controls in a row. */
+@media (min-width: 768px) and (max-width: 991px) {
+  .tk-ops__controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Mobile (§9.7, §11): everything stacked, full-width buttons, 44px tap
+   targets. */
+@media (max-width: 767px) {
+  .tk-ops__control .btn,
+  .tk-tabs .tk-comments__post {
+    width: 100%;
+  }
+  .tk-staff-detail .btn,
+  .tk-staff-detail .form-select,
+  .tk-tabs__tab {
+    min-height: 44px;
+  }
+  .tk-breadcrumb a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
 /* ---- Attachment chips (ui-spec.md §3) ---- */
 
 .tk-attachment-chip {

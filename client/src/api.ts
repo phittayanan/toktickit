@@ -138,7 +138,8 @@ export interface TicketDetail extends Ticket {
   requesterResolvedAt: string | null
 }
 
-// A Public Comment (api-spec.md §1.7). `body` is plain text.
+// A Public Comment or an Internal Note (api-spec.md §1.7). `body` is plain
+// text.
 export interface Entry {
   id: number
   body: string
@@ -195,6 +196,41 @@ export interface QueueParams {
 export interface QueueResponse {
   data: QueueTicket[]
   meta: TicketListResponse['meta']
+}
+
+// A Ticket as Staff see it (docs/lab-03/api-spec.md §5.2).
+// `allowedTransitions` are the statuses it can be moved to, none for a
+// finished Ticket. `attachments` are active and soft-removed alike.
+export interface StaffTicket {
+  id: number
+  ticketNumber: string
+  summary: string
+  description: string
+  requester: { id: number; name: string; email: string; isActive: boolean }
+  category: { id: number; name: string }
+  relatedSystem: { id: number; name: string }
+  requestedPriority: Priority
+  itPriority: Priority
+  currentStatus: TicketStatus
+  allowedTransitions: TicketStatus[]
+  owner: { id: number; name: string } | null
+  ownerChangedAt: string | null
+  resolutionSummary: string | null
+  resolvedAt: string | null
+  requesterResolvedAt: string | null
+  publicCommentCount: number
+  internalNoteCount: number
+  attachments: Omit<TicketAttachment, 'ticketId'>[]
+  createdAt: string
+  updatedAt: string
+}
+
+// POST /api/staff/tickets/:id/status: `expectedStatus` is the status the
+// client last saw; `resolutionSummary` goes with RESOLVED and nothing else.
+export interface StatusChange {
+  status: TicketStatus
+  expectedStatus: TicketStatus
+  resolutionSummary?: string
 }
 
 // A User who can be made Ticket Owner (docs/lab-03/api-spec.md §5.3).
@@ -384,7 +420,7 @@ export interface AdminUserInput {
   isActive: boolean
 }
 
-function sendJson(path: string, method: 'POST' | 'PATCH', body: unknown): Promise<Response> {
+function sendJson(path: string, method: 'POST' | 'PATCH' | 'PUT', body: unknown): Promise<Response> {
   return request(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 }
 
@@ -491,6 +527,54 @@ export async function fetchStaffQueue(params: QueueParams = {}): Promise<QueueRe
 // ordered by name.
 export async function fetchEligibleOwners(): Promise<EligibleOwner[]> {
   const res = await request('/api/staff/eligible-owners')
+  return res.json()
+}
+
+// GET /api/staff/tickets/:id. A refusal is an ApiError: 404 NOT_FOUND.
+export async function fetchStaffTicket(id: number): Promise<StaffTicket> {
+  const res = await request(`/api/staff/tickets/${id}`)
+  return res.json()
+}
+
+// PUT /api/staff/tickets/:id/owner: claim, assign, reassign, or unassign
+// (`ownerId` null). `expectedOwnerId` is the owner the client last saw.
+// Refusals are ApiErrors: 400 naming `ownerId`, 404, 409 OWNER_CHANGED or
+// TICKET_FINISHED.
+export async function updateTicketOwner(
+  id: number,
+  ownerId: number | null,
+  expectedOwnerId: number | null,
+): Promise<StaffTicket> {
+  const res = await sendJson(`/api/staff/tickets/${id}/owner`, 'PUT', { ownerId, expectedOwnerId })
+  return res.json()
+}
+
+// PUT /api/staff/tickets/:id/it-priority. Refusals are ApiErrors: 400, 404,
+// 409 TICKET_FINISHED.
+export async function updateItPriority(id: number, itPriority: Priority): Promise<StaffTicket> {
+  const res = await sendJson(`/api/staff/tickets/${id}/it-priority`, 'PUT', { itPriority })
+  return res.json()
+}
+
+// POST /api/staff/tickets/:id/status. Refusals are ApiErrors: 400 naming
+// the field, 404, 409 TICKET_FINISHED, STATUS_CHANGED, INVALID_TRANSITION,
+// or OWNER_REQUIRED.
+export async function updateTicketStatus(id: number, change: StatusChange): Promise<StaffTicket> {
+  const res = await sendJson(`/api/staff/tickets/${id}/status`, 'POST', change)
+  return res.json()
+}
+
+// GET /api/staff/tickets/:id/notes: the Ticket's Internal Notes, newest
+// first.
+export async function fetchInternalNotes(ticketId: number): Promise<Entry[]> {
+  const res = await request(`/api/staff/tickets/${ticketId}/notes`)
+  return res.json()
+}
+
+// POST /api/staff/tickets/:id/notes. Refusals are ApiErrors: 400 naming
+// `body`, 404, or 409 TICKET_FINISHED.
+export async function postInternalNote(ticketId: number, body: string): Promise<Entry> {
+  const res = await sendJson(`/api/staff/tickets/${ticketId}/notes`, 'POST', { body })
   return res.json()
 }
 

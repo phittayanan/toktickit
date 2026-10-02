@@ -48,13 +48,13 @@ export const ENDPOINTS: readonly Endpoint[] = [
 
   // §5 Staff Tickets
   { method: 'GET', path: '/api/staff/tickets', roles: STAFF },
-  { method: 'GET', path: '/api/staff/tickets/:id', roles: STAFF, pendingIssue: 52 },
+  { method: 'GET', path: '/api/staff/tickets/:id', roles: STAFF },
   { method: 'GET', path: '/api/staff/eligible-owners', roles: STAFF },
-  { method: 'PUT', path: '/api/staff/tickets/:id/owner', roles: STAFF, pendingIssue: 52 },
-  { method: 'PUT', path: '/api/staff/tickets/:id/it-priority', roles: STAFF, pendingIssue: 52 },
-  { method: 'POST', path: '/api/staff/tickets/:id/status', roles: STAFF, pendingIssue: 52 },
-  { method: 'GET', path: '/api/staff/tickets/:id/notes', roles: STAFF, pendingIssue: 52 },
-  { method: 'POST', path: '/api/staff/tickets/:id/notes', roles: STAFF, pendingIssue: 52 },
+  { method: 'PUT', path: '/api/staff/tickets/:id/owner', roles: STAFF },
+  { method: 'PUT', path: '/api/staff/tickets/:id/it-priority', roles: STAFF },
+  { method: 'POST', path: '/api/staff/tickets/:id/status', roles: STAFF },
+  { method: 'GET', path: '/api/staff/tickets/:id/notes', roles: STAFF },
+  { method: 'POST', path: '/api/staff/tickets/:id/notes', roles: STAFF },
 
   // §6 Shared ticket resources
   { method: 'GET', path: '/api/tickets/:id/comments', roles: ANY_ROLE },
