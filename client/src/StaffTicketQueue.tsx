@@ -47,6 +47,9 @@ const SORT_LABELS: Record<QueueSortBy, string> = {
 const SORT_FIELDS = Object.keys(SORT_LABELS) as QueueSortBy[]
 
 const SEARCH_DELAY_MS = 300
+// Also the Search field's tooltip: the field cuts a placeholder it cannot
+// fit short with an ellipsis (ui-spec.md §11).
+const SEARCH_PLACEHOLDER = 'Search by ticket number, summary, or requester…'
 
 // What the screen is showing: the value of every control and the page
 // (ui-spec.md §8.2).
@@ -332,7 +335,8 @@ function StaffTicketQueue({ user }: { user: UserIdentity }) {
             id="queue-search"
             type="search"
             className="form-control"
-            placeholder="Search by ticket number, summary, or requester…"
+            placeholder={SEARCH_PLACEHOLDER}
+            title={SEARCH_PLACEHOLDER}
             maxLength={100}
             value={searchText}
             onChange={(e) => typeSearch(e.target.value)}
@@ -380,7 +384,9 @@ function StaffTicketQueue({ user }: { user: UserIdentity }) {
             </label>
             <select
               id="queue-owner"
-              className="form-select"
+              className="form-select tk-queue__owner"
+              // A long name is cut short on tablet; this is its tooltip.
+              title={owners.find((owner) => String(owner.id) === String(view.owner))?.name ?? ''}
               value={view.owner}
               onChange={(e) => show({ owner: readView(new URLSearchParams({ owner: e.target.value })).owner })}
             >

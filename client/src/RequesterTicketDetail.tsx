@@ -51,7 +51,7 @@ function ReadOnlyField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="col-md-6 col-lg-4">
       <div className="form-label mb-1">{label}</div>
-      <div className="form-control bg-body-tertiary" style={{ pointerEvents: 'none' }} aria-readonly="true">
+      <div className="form-control tk-field--readonly" style={{ pointerEvents: 'none' }} aria-readonly="true">
         {value}
       </div>
     </div>
@@ -485,10 +485,15 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
         ← Back to My Tickets
       </button>
 
-      {detail.status === 'loading' && <p role="status">⏳ Loading ticket…</p>}
+      {detail.status === 'loading' && (
+        <p role="status" className="d-flex align-items-center gap-2">
+          <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+          Loading ticket…
+        </p>
+      )}
 
       {detail.status === 'not-found' && (
-        <div className="text-center py-5 border rounded">
+        <div className="card align-items-center text-center px-3 py-5">
           <h1 className="h4 mb-2">Ticket not found</h1>
           <p className="text-muted mb-3">
             This Ticket doesn't exist, or isn't one of {user?.name ?? 'yours'}'s Tickets.
@@ -499,11 +504,7 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
         </div>
       )}
 
-      {detail.status === 'error' && (
-        <p className="text-danger" role="alert">
-          {detail.message}
-        </p>
-      )}
+      {detail.status === 'error' && <InlineAlert variant="error">{detail.message}</InlineAlert>}
 
       {detail.status === 'success' && (
         <>
@@ -529,7 +530,7 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
 
           <div className="mb-4">
             <div className="form-label mb-1">Summary</div>
-            <div className="form-control bg-body-tertiary" style={{ pointerEvents: 'none' }} aria-readonly="true">
+            <div className="form-control tk-field--readonly" style={{ pointerEvents: 'none' }} aria-readonly="true">
               {detail.ticket.summary}
             </div>
           </div>
@@ -537,7 +538,7 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
           <div className="mb-4">
             <div className="form-label mb-1">Description</div>
             <div
-              className="form-control bg-body-tertiary"
+              className="form-control tk-field--readonly"
               style={{ pointerEvents: 'none', minHeight: 120, whiteSpace: 'pre-wrap' }}
               aria-readonly="true"
             >
