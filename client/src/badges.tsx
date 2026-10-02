@@ -1,8 +1,8 @@
 import type { Priority, Role } from './api'
 import { statusLabel } from './statusLabels'
 
-// Shared Priority/Current Status badges (ui-spec.md §10) — used by both
-// MyTickets and RequesterTicketDetail so the two screens render Tickets
+// Shared Priority/Current Status badges (ui-spec.md §10) — used by the
+// Requester and Staff ticket screens alike so they render Tickets
 // identically.
 export function PriorityBadge({ priority }: { priority: Priority | null }) {
   if (!priority) return <span className="text-muted small">Not yet set</span>
