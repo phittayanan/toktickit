@@ -94,8 +94,16 @@ test.describe('visual: Requester Ticket Detail', () => {
     await signInAsUser(page, E2E_USERS.REQUESTER)
     await page.route(`**/api/tickets/${ticket.id}`, (route) => route.abort())
     await page.goto(`/tickets/${ticket.id}`)
-    await expect(page.getByRole('alert')).toHaveClass(/tk-alert--error/)
+    const alert = page.getByRole('alert')
+    await expect(alert).toHaveClass(/tk-alert--error/)
+    // The safe failure of ui-spec.md §2.3, with nothing of the error itself.
+    await expect(alert).toHaveText('Something went wrong. Please try again. Retry')
+    await expect(alert.getByRole('button', { name: 'Retry' })).toBeVisible()
     await takeScreenshot(page, 'requester-ticket-detail', 'desktop-failure')
+    // Retry loads the Ticket once the connection is back.
+    await page.unroute(`**/api/tickets/${ticket.id}`)
+    await alert.getByRole('button', { name: 'Retry' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: ticket.ticketNumber })).toBeVisible()
   })
 
   test('not found at mobile', async ({ page }) => {

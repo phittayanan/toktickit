@@ -95,6 +95,41 @@ describe('RequesterTicketDetail', () => {
     })
   })
 
+  // docs/lab-03/ui-spec.md §2.3: a Ticket that cannot be loaded shows the
+  // safe failure, never the error's own text, and Retry loads it again.
+  it.each([
+    ['a lost connection', new Error('Unable to connect to TokTickIT API')],
+    ['a 500', new api.ApiError(500, 'relation "tickets" does not exist', 'INTERNAL_ERROR')],
+  ])('shows the safe failure with Retry when %s stops the Ticket loading, and loads it on Retry', async (_name, failure) => {
+    const fetchTicket = vi.spyOn(api, 'fetchTicketById').mockRejectedValueOnce(failure).mockResolvedValue(TICKET)
+
+    renderDetail(42)
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toBe('Something went wrong. Please try again. Retry')
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
+
+    fireEvent.click(within(alert).getByRole('button', { name: 'Retry' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'TKT-2026-000123' })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(fetchTicket).toHaveBeenCalledTimes(2)
+    expect(fetchTicket).toHaveBeenLastCalledWith(42)
+  })
+
+  it('keeps the safe failure with Retry when the Ticket cannot be loaded again', async () => {
+    vi.spyOn(api, 'fetchTicketById').mockRejectedValue(new Error('Unable to connect to TokTickIT API'))
+
+    renderDetail(42)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry' }))
+
+    await waitFor(() => expect(api.fetchTicketById).toHaveBeenCalledTimes(2))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Something went wrong. Please try again.')
+    expect(within(alert).getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+  })
+
   it('calls onBack when Back to My Tickets is clicked', async () => {
     vi.spyOn(api, 'fetchTicketById').mockResolvedValue(TICKET)
     const onBack = vi.fn()

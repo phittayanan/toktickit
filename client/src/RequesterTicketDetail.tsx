@@ -36,7 +36,7 @@ type DetailState =
   | { status: 'loading' }
   | { status: 'success'; ticket: TicketDetail }
   | { status: 'not-found' }
-  | { status: 'error'; message: string }
+  | { status: 'error' }
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
@@ -431,6 +431,8 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
   const [categories, setCategories] = useState<Category[]>([])
   const [relatedSystems, setRelatedSystems] = useState<RelatedSystem[]>([])
   const [detail, setDetail] = useState<DetailState>({ status: 'loading' })
+  // How many times Retry has asked for the Ticket again.
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     Promise.all([fetchCategories(), fetchRelatedSystems()])
@@ -454,17 +456,18 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
       })
       .catch((err) => {
         if (cancelled) return
-        const message = err instanceof Error ? err.message : 'Unable to load ticket'
         // AC-03/ADR-0004: a missing-or-not-owned Ticket is a 404 whose
         // body is exactly { error: "Ticket not found" } — that's the
-        // signal for the dedicated not-found state.
-        setDetail(message === 'Ticket not found' ? { status: 'not-found' } : { status: 'error', message })
+        // signal for the dedicated not-found state. Anything else is the
+        // safe failure (ui-spec.md §2.3), whatever the error says.
+        const notFound = err instanceof Error && err.message === 'Ticket not found'
+        setDetail({ status: notFound ? 'not-found' : 'error' })
       })
 
     return () => {
       cancelled = true
     }
-  }, [ticketId])
+  }, [ticketId, attempt])
 
   // After a Conflict: the latest Ticket, in place, so the cards below keep
   // what was typed into them (ui-spec.md §2.3).
@@ -504,7 +507,14 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
         </div>
       )}
 
-      {detail.status === 'error' && <InlineAlert variant="error">{detail.message}</InlineAlert>}
+      {detail.status === 'error' && (
+        <InlineAlert variant="error">
+          {SAFE_FAILURE_MESSAGE}{' '}
+          <button type="button" className="btn btn-link p-0 align-baseline" onClick={() => setAttempt(attempt + 1)}>
+            Retry
+          </button>
+        </InlineAlert>
+      )}
 
       {detail.status === 'success' && (
         <>

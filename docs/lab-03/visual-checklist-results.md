@@ -106,7 +106,7 @@ clipped labels, 9 no overlap, 10 no horizontal scroll, 11 table-to-card,
 | 9 | pass: open menu clear of the content (`desktop-menu.png`) | pass (`tablet-menu.png`) | pass: menu pushes the content down (`mobile-menu.png`) |
 | 10 | pass (`desktop.png`); VIS-06 | pass (`tablet.png`); VIS-06 | pass (`mobile.png`); VIS-06 |
 | 11 | n/a: no table | n/a | n/a |
-| 12 | pass: spinner beside "Loading ticket…" (`desktop-loading.png`); error alert (`desktop-failure.png`) | pass: shown at desktop (`desktop-loading.png`, `desktop-failure.png`) and mobile (`mobile-not-found.png`, `mobile-empty-comments.png`) | pass: "Ticket not found" card (`mobile-not-found.png`); "No comments yet." (`mobile-empty-comments.png`) |
+| 12 | pass: spinner beside "Loading ticket…" (`desktop-loading.png`); safe failure with Retry (`desktop-failure.png`) | pass: shown at desktop (`desktop-loading.png`, `desktop-failure.png`) and mobile (`mobile-not-found.png`, `mobile-empty-comments.png`) | pass: "Ticket not found" card (`mobile-not-found.png`); "No comments yet." (`mobile-empty-comments.png`) |
 
 ### Ticket Queue (`staff-queue/`)
 
@@ -193,7 +193,11 @@ Design consistency (item 1), Bootstrap colours showing through the theme:
 States (item 12), on Requester Ticket Detail
 (`client/src/RequesterTicketDetail.tsx`): the page-load failure was bare
 red text, loading was an emoji with text, and "Ticket not found" was an
-unfilled box. They are now an Error alert, a spinner, and a card.
+unfilled box. They are now an Error alert, a spinner, and a card. The
+alert also showed the error's own text ("Unable to connect to TokTickIT
+API") and had no Retry; it is now the safe failure of `ui-spec.md` §2.3,
+"Something went wrong. Please try again." with a Retry that loads the
+Ticket again (`requester-ticket-detail/desktop-failure.png`).
 
 Clipped or misplaced (items 8 and 9, §8.4, §9.7):
 
@@ -219,13 +223,6 @@ These were seen during the inspection. None is one of the twelve items,
 and each is outside this issue or a matter of taste, so they are recorded
 rather than fixed.
 
-- **Requester Ticket Detail, page-load failure wording**: the alert shows
-  "Unable to connect to TokTickIT API" and has no Retry, where
-  `ui-spec.md` §2.3 gives "Something went wrong. Please try again." with a
-  Retry action. The state is present and styled, which is what item 12
-  asks, but the wording and the missing Retry differ from §2.3. E2E-14
-  covers the Ticket Queue, Staff Ticket Detail, and User Management, not
-  this screen. It needs a decision and its own change.
 - **Tablet filter rows depend on the font**: with the system fonts the
   theme names, the queue's controls take two rows at 900px
   (`staff-queue/tablet.png`). A wider fallback font, as on Linux, can
@@ -235,7 +232,7 @@ rather than fixed.
   change Create Ticket, My Tickets, and the Lab 2 parts of Ticket Detail.
   The images under `artifacts/lab-02/` were not regenerated here.
 - Retry is an outlined button on the Ticket Queue and a link inside the
-  alert on Staff Ticket Detail.
+  alert on Staff Ticket Detail and Requester Ticket Detail.
 - On mobile, a long link in a comment breaks in the middle of a word. It
   stays inside its card.
 - On Requester Ticket Detail the In Progress badge and the read-only
