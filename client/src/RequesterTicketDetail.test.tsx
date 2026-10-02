@@ -526,7 +526,8 @@ describe('RequesterTicketDetail Public Comments', () => {
       .mockReturnValue(new Promise((resolve) => (answer = resolve)))
     await renderTicket({ currentStatus: 'IN_PROGRESS' })
 
-    expect(fetchSpy).toHaveBeenCalledWith(42)
+    // The skeleton is in the document before the effect that asks has run.
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(42))
     expect(within(commentsCard()).getByRole('status')).toHaveTextContent('Loading comments…')
     expect(commentsCard().querySelectorAll('.tk-skeleton').length).toBeGreaterThan(0)
     expect(commentItems()).toHaveLength(0)
