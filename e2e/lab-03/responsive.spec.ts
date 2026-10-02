@@ -140,6 +140,15 @@ test.describe('responsive: Lab 3 screens', () => {
     })
   }
 
+  test('Requester Ticket Detail that cannot load has 44px tap targets at mobile', async ({ page }) => {
+    await page.setViewportSize(BREAKPOINTS.mobile)
+    await signInAsUser(page, E2E_USERS.REQUESTER)
+    await page.route(`**/api/tickets/${ticket.id}`, (route) => route.abort())
+    await page.goto(`/tickets/${ticket.id}`)
+    await expect(page.getByRole('alert').getByRole('button', { name: 'Retry' })).toBeVisible()
+    await expectTapTargets(page)
+  })
+
   for (const [name, size] of Object.entries(BREAKPOINTS)) {
     const layout = name === 'mobile' ? 'cards' : 'a table'
 

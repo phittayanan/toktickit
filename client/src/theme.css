@@ -612,6 +612,9 @@ button:focus-visible {
   .requester-ticket-detail .btn {
     min-height: 44px;
   }
+  .requester-ticket-detail > .tk-alert .btn-link {
+    min-width: 44px;
+  }
   .requester-ticket-detail input[type='file'] {
     --tk-file-padding: 9px;
     min-height: 44px;

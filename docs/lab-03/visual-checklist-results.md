@@ -214,8 +214,8 @@ Clipped or misplaced (items 8 and 9, §8.4, §9.7):
   Ticket Number beside it.
 
 Tap targets (§11), under 44px on mobile: the header wordmark link, "Back
-to My Tickets" and the file chooser on Requester Ticket Detail, and the
-button of the Forbidden page.
+to My Tickets", the file chooser, and the Retry of a Ticket that cannot
+load on Requester Ticket Detail, and the button of the Forbidden page.
 
 ## Observed and not changed
 
