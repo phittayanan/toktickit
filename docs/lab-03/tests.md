@@ -282,23 +282,35 @@ npx playwright test e2e/lab-02
 
 ## 6. Final Results
 
-Run on 2026-10-03 on the branch of Issue #56, whose code is that of
-`lab3-staging` at `1608cc2` (every Sprint 3 Issue from #45 to #55
-merged); Issue #56 changes documentation only. Local run on Node 26.8.1,
-PostgreSQL 16.15, and Playwright 1.62.1 with Chromium, against databases
-created for the run. CI runs the same suites on every pull request and on
-every push to `lab3-staging` and `main`.
+Recorded on 2026-10-03 for the final code of Sprint 3: `lab3-staging` at
+`1608cc2` (every Sprint 3 Issue from #45 to #55 merged) plus the pull
+request of Issue #56. Besides documentation, that pull request carries
+three small fixes made while it was validated: an empty `UPLOAD_DIR` now
+falls back to `server/uploads` (as `server/.env.example` leaves it
+empty), and two Resolve dialog focus fixes in `client/src/` (ui-spec.md
+§12), each with a regression test.
+
+Two runs, both passing:
+
+- **CI** on the pull request's code at `e302fe5`
+  ([run](https://github.com/phittayanan/toktickit/actions/runs/37079377976)):
+  the counts below.
+- **Local**, earlier the same day on the code at `1608cc2`, on Node 26.8.1,
+  PostgreSQL 16.15, and Playwright 1.62.1 with Chromium, against
+  databases created for the run: the same results, less the two
+  regression tests added afterwards (728 server and 355 client tests),
+  with the Playwright suites run separately (Lab 3: 166 passed; Lab 2: 12
+  passed).
 
 | Suite | Command | Result |
 |---|---|---|
 | Server type check | `npm run build` | No errors |
-| Server tests | `npm test` | 27 files, 728 tests: 728 passed, 0 failed, 0 skipped |
+| Server tests | `npm test` | 28 files, 729 tests: 729 passed, 0 failed, 0 skipped |
 | Client lint | `npm run lint` | 0 errors, 2 warnings |
 | Client type check and build | `npm run build` | No errors |
-| Client tests | `npm test` | 11 files, 355 tests: 355 passed, 0 failed, 0 skipped |
+| Client tests | `npm test` | 11 files, 356 tests: 356 passed, 0 failed, 0 skipped |
 | E2E spec type check | `npm run typecheck` | No errors |
-| Playwright, Lab 3 | `npx playwright test e2e/lab-03` | 11 files, 166 tests: 166 passed, 0 failed, 0 skipped, 0 flaky |
-| Playwright, Lab 2 | `npx playwright test e2e/lab-02` | 5 files, 12 tests: 12 passed, 0 failed, 0 skipped, 0 flaky |
+| Playwright, Lab 3 and Lab 2 | `npx playwright test` | 16 files, 178 tests: 178 passed, 0 failed (Lab 3: 11 files, 166 tests; Lab 2: 5 files, 12 tests) |
 
 No test in any suite is skipped. MIG-04, which was skipped until the
 Administrator initial-password endpoint existed, ran and passed.
@@ -313,7 +325,7 @@ Server tests by folder:
 |---|---|---|---|
 | `server/tests/lab-01` | 2 | 2 | 2 |
 | `server/tests/lab-02` | 8 | 44 | 44 |
-| `server/tests/lab-03` | 17 | 682 | 682 |
+| `server/tests/lab-03` | 18 | 683 | 683 |
 
 Server tests in `server/tests/lab-03` by file:
 
@@ -336,6 +348,7 @@ Server tests in `server/tests/lab-03` by file:
 | `clock.unit.test.ts` | 3 | Supports UNIT-04 and API-10 (the injectable clock of §1) |
 | `endpoints.unit.test.ts` | 5 | Supports API-13 to API-15 (the endpoint table of §1) |
 | `sign-in-helper.api.test.ts` | 3 | Supports the API rows (the shared sign-in helper of §1) |
+| `upload-dir.unit.test.ts` | 1 | Regression: an empty `UPLOAD_DIR` falls back to `server/uploads` |
 
 Client tests by file:
 
@@ -346,7 +359,7 @@ Client tests by file:
 | `AppShell.test.tsx` | 35 | UI-07 to UI-09 |
 | `RequesterTicketDetail.test.tsx` | 56 | UI-10 to UI-14, REG-08 |
 | `StaffTicketQueue.test.tsx` | 75 | UI-15 to UI-18 |
-| `StaffTicketDetail.test.tsx` | 35 | UI-19 to UI-25 |
+| `StaffTicketDetail.test.tsx` | 36 | UI-19 to UI-25 |
 | `UserManagement.test.tsx` | 63 | UI-26 to UI-31 |
 | `badges.test.tsx` | 19 | UI-32 |
 | `CreateTicket.test.tsx` | 7 | REG-08 |
