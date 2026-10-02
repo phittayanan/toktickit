@@ -105,7 +105,19 @@ npm test
 # Frontend (Vitest)
 cd client
 npm test
+
+# End to end (Playwright), from the repository root, with the server on
+# :4000 and the client on :5173 running against a migrated and seeded
+# database. The suites create the users they sign in as (`e2e.` addresses)
+# in the database named by the server's DATABASE_URL, and run one at a time.
+npm install
+npx playwright install chromium
+npx playwright test
 ```
+
+Set `CLIENT_URL` and `API_URL` when the client or the server runs on
+another port. CI runs the same suites on every pull request and uploads the
+Playwright report when one fails.
 
 ## Git Workflow
 
