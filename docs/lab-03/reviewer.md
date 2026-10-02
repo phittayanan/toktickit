@@ -2,8 +2,9 @@
 
 ## Reviewer
 
+- **Reviewer name:** Thira Rungruangkaset
+- **Student ID:** 67070503419
 - **GitHub username:** [HolyThiccDaddy](https://github.com/HolyThiccDaddy)
-- **Reviewer name and student ID:** `TO BE FILLED IN BY THE AUTHOR`
 
 Every Lab 3 pull request into `lab3-staging` was opened by
 [phittayanan](https://github.com/phittayanan) and reviewed and merged by
