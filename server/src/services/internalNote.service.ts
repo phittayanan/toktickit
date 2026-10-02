@@ -30,9 +30,12 @@ export function listInternalNotes(ticketId: number) {
 // and the time is the server's. The Ticket row is locked while its status
 // is checked, so a Ticket finished at the same moment takes no note, and it
 // is not written: a note changes nothing a Requester can see, the Ticket's
-// last-updated time included (BR-37).
+// last-updated time included (BR-37). The author's row is locked first, as
+// the note's author reference needs, so the rows are taken user then Ticket,
+// the order User Management takes them in (BR-25).
 export async function createInternalNote(ticketId: number, author: User, body: string) {
   return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${author.id} FOR KEY SHARE`
     await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = ${ticketId} FOR UPDATE`
 
     const ticket = await tx.ticket.findUnique({ where: { id: ticketId } })
