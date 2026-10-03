@@ -776,6 +776,23 @@ describe('Staff Ticket Detail: Current Status', () => {
     expect(updateTicketStatus).toHaveBeenCalledTimes(3)
   })
 
+  // ui-spec.md §12: the summary takes the focus, and Escape gives it back to
+  // the button that opened the dialog.
+  it('returns the focus to Update Status when the Resolved dialog is dismissed with Escape', async () => {
+    await openLoaded()
+    const updateStatus = operations().getByRole('button', { name: 'Update Status' })
+
+    fireEvent.change(statusSelect(), { target: { value: 'RESOLVED' } })
+    updateStatus.focus()
+    fireEvent.click(updateStatus)
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('textbox', { name: 'Resolution Summary' })).toHaveFocus()
+
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(updateStatus).toHaveFocus()
+  })
+
   // UI-23 (AC-35, BR-29): without an owner
   it('Resolved on a Ticket with no owner explains that it needs one and offers Claim', async () => {
     const unowned = ticket({ owner: null, ownerChangedAt: null })

@@ -9,7 +9,7 @@ import { isAllowedMimeType, MAX_ATTACHMENT_SIZE_BYTES } from './schemas/attachme
 // file is named `<uuid>.<ext>` (specification.md §7), independent of the
 // Requester-supplied original filename, so a hostile filename can never
 // collide with another Attachment or escape the uploads directory.
-export const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(__dirname, '..', 'uploads')
+export const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads')
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true })
 

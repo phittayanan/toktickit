@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import {
   ApiError,
@@ -153,8 +153,9 @@ function ResolveDialog({
 
   // Claim leaves the dialog as the Ticket gets its owner, and would take
   // the focus with it: the summary takes it, so it stays inside the dialog
-  // (ui-spec.md §12).
-  useEffect(() => {
+  // (ui-spec.md §12). It moves as the summary appears, so no moment leaves it
+  // on the page.
+  useLayoutEffect(() => {
     if (hasOwner) textareaRef.current?.focus()
   }, [hasOwner])
 
