@@ -10,9 +10,8 @@ import {
   type TicketListResponse,
 } from './api'
 import { PriorityBadge, StatusBadge } from './badges'
-
-const PAGE_SIZES = [10, 25, 50] as const
-type PageSize = (typeof PAGE_SIZES)[number]
+import PaginationControls from './PaginationControls'
+import type { PageSize } from './pageSizes'
 
 const CURRENT_STATUSES = ['NEW'] as const // the only status value in scope for Lab 2 (ui-spec.md §10)
 
@@ -355,68 +354,6 @@ function MyTickets({
         </>
       )}
     </div>
-  )
-}
-
-function PaginationControls({
-  meta,
-  onPageChange,
-  pageSize,
-  onPageSizeChange,
-}: {
-  meta: TicketListResponse['meta']
-  onPageChange: (page: number) => void
-  pageSize: PageSize
-  onPageSizeChange: (pageSize: PageSize) => void
-}) {
-  const from = (meta.page - 1) * meta.pageSize + 1
-  const to = Math.min(meta.page * meta.pageSize, meta.totalItems)
-
-  return (
-    <nav
-      className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"
-      aria-label="Ticket list pagination"
-    >
-      <span className="text-muted small">
-        Showing {from} to {to} of {meta.totalItems} tickets
-      </span>
-      <div className="d-flex align-items-center gap-2">
-        <label htmlFor="my-tickets-page-size" className="visually-hidden">
-          Tickets per page
-        </label>
-        <select
-          id="my-tickets-page-size"
-          className="form-select form-select-sm w-auto"
-          value={pageSize}
-          onChange={(e) => onPageSizeChange(Number(e.target.value) as PageSize)}
-        >
-          {PAGE_SIZES.map((size) => (
-            <option key={size} value={size}>
-              {size} / page
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className="btn btn-outline-secondary btn-sm"
-          disabled={meta.page <= 1}
-          onClick={() => onPageChange(meta.page - 1)}
-        >
-          Previous
-        </button>
-        <span className="small">
-          Page {meta.page} of {Math.max(meta.totalPages, 1)}
-        </span>
-        <button
-          type="button"
-          className="btn btn-outline-secondary btn-sm"
-          disabled={meta.page >= Math.max(meta.totalPages, 1)}
-          onClick={() => onPageChange(meta.page + 1)}
-        >
-          Next
-        </button>
-      </div>
-    </nav>
   )
 }
 

@@ -2,8 +2,11 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import request from 'supertest'
 import app from '../../src/app'
 import prisma from '../../src/prisma'
+import { signInAs } from '../lab-03/support/signIn'
 
 let activeRequesterId: number
+// Lab 3: the acting Requester is the signed-in user (BR-03).
+let cookie: string
 let activeCategoryId: number
 let inactiveCategoryId: number
 let activeRelatedSystemId: number
@@ -17,8 +20,9 @@ const VALID_BODY = () => ({
 })
 
 beforeAll(async () => {
-  const requester = await prisma.requesterUser.findFirstOrThrow({ where: { isActive: true } })
-  activeRequesterId = requester.id
+  const requester = await signInAs('REQUESTER')
+  activeRequesterId = requester.user.id
+  cookie = requester.cookie
 
   const category = await prisma.category.findFirstOrThrow({ where: { isActive: true } })
   activeCategoryId = category.id
@@ -39,7 +43,7 @@ describe('POST /api/tickets', () => {
   it('creates a Ticket with Current Status NEW and a TKT-YYYY-NNNNNN number', async () => {
     const res = await request(app)
       .post('/api/tickets')
-      .set('X-Requester-Id', String(activeRequesterId))
+      .set('Cookie', cookie)
       .send(VALID_BODY())
 
     expect(res.status).toBe(201)
@@ -54,7 +58,7 @@ describe('POST /api/tickets', () => {
 
     const res = await request(app)
       .post('/api/tickets')
-      .set('X-Requester-Id', String(activeRequesterId))
+      .set('Cookie', cookie)
       .send(bodyWithoutSummary)
 
     expect(res.status).toBe(400)
@@ -65,15 +69,8 @@ describe('POST /api/tickets', () => {
   it('rejects an inactive categoryId with a 400', async () => {
     const res = await request(app)
       .post('/api/tickets')
-      .set('X-Requester-Id', String(activeRequesterId))
+      .set('Cookie', cookie)
       .send({ ...VALID_BODY(), categoryId: inactiveCategoryId })
-
-    expect(res.status).toBe(400)
-  })
-
-  // API-09: missing X-Requester-Id rejected 400
-  it('rejects a request with no X-Requester-Id header', async () => {
-    const res = await request(app).post('/api/tickets').send(VALID_BODY())
 
     expect(res.status).toBe(400)
   })
@@ -82,11 +79,11 @@ describe('POST /api/tickets', () => {
   it('assigns sequential Ticket Numbers to two sequential creates', async () => {
     const first = await request(app)
       .post('/api/tickets')
-      .set('X-Requester-Id', String(activeRequesterId))
+      .set('Cookie', cookie)
       .send(VALID_BODY())
     const second = await request(app)
       .post('/api/tickets')
-      .set('X-Requester-Id', String(activeRequesterId))
+      .set('Cookie', cookie)
       .send(VALID_BODY())
 
     const firstSeq = Number(first.body.ticketNumber.split('-')[2])

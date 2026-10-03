@@ -1,24 +1,43 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { Router } from 'express'
-import { requireRequester, type RequesterRequest } from '../middleware/requireRequester'
+import { Router, type NextFunction, type Response } from 'express'
+import { parseJsonBody } from '../middleware/parseJsonBody'
+import { requireRequesterRole } from '../middleware/requireRole'
+import type { SessionRequest } from '../middleware/requireSession'
 import { uploadSingleFile, UnsupportedFileTypeError, UPLOAD_DIR } from '../upload'
 import { validateRemovalReason } from '../schemas/attachment.schema'
+import { sendError } from '../apiError'
 import {
   uploadAttachment,
   getDownloadableAttachment,
   removeAttachment,
+  isOwnAttachmentTicketFinished,
+  isOwnTicketFinished,
+  TicketFinishedError,
   TicketNotFoundError,
   AttachmentLimitReachedError,
   AttachmentNotFoundError,
 } from '../services/attachment.service'
+import { rowIdOf } from './rowId'
 
 const router = Router()
 
-router.post('/tickets/:id/attachments', requireRequester, (req: RequesterRequest, res) => {
-  const ticketId = Number(req.params.id)
-  if (!Number.isInteger(ticketId) || ticketId <= 0) {
+// docs/lab-03/api-spec.md §4.1 (BR-31): no Attachment is added to, or
+// removed from, a Closed or Cancelled Ticket.
+function sendTicketFinished(res: Response) {
+  sendError(res, 409, 'TICKET_FINISHED', new TicketFinishedError().message)
+}
+
+router.post('/tickets/:id/attachments', requireRequesterRole, async (req: SessionRequest, res) => {
+  const ticketId = rowIdOf(req.params.id)
+  if (ticketId === null) {
     res.status(404).json({ error: 'Ticket not found' })
+    return
+  }
+
+  // Before the upload is read at all (api-spec.md §1.5).
+  if (await isOwnTicketFinished(ticketId, req.user!.id)) {
+    sendTicketFinished(res)
     return
   }
 
@@ -44,7 +63,7 @@ router.post('/tickets/:id/attachments', requireRequester, (req: RequesterRequest
     }
 
     try {
-      const attachment = await uploadAttachment(ticketId, req.requesterId!, req.file)
+      const attachment = await uploadAttachment(ticketId, req.user!.id, req.file)
       res.status(201).json({
         id: attachment.id,
         ticketId: attachment.ticketId,
@@ -62,6 +81,10 @@ router.post('/tickets/:id/attachments', requireRequester, (req: RequesterRequest
         res.status(404).json({ error: serviceErr.message })
         return
       }
+      if (serviceErr instanceof TicketFinishedError) {
+        sendTicketFinished(res)
+        return
+      }
       if (serviceErr instanceof AttachmentLimitReachedError) {
         res.status(400).json({ error: serviceErr.message })
         return
@@ -72,15 +95,18 @@ router.post('/tickets/:id/attachments', requireRequester, (req: RequesterRequest
   })
 })
 
-router.get('/attachments/:id/download', requireRequester, async (req: RequesterRequest, res) => {
-  const attachmentId = Number(req.params.id)
-  if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
+// Any role may ask (specification.md §5.3); what the caller reaches is
+// decided by the lookup. A Requester reaches their own Tickets' Attachments,
+// Staff those of any Ticket.
+router.get('/attachments/:id/download', async (req: SessionRequest, res) => {
+  const attachmentId = rowIdOf(req.params.id)
+  if (attachmentId === null) {
     res.status(404).json({ error: 'Attachment not found' })
     return
   }
 
   try {
-    const attachment = await getDownloadableAttachment(attachmentId, req.requesterId!)
+    const attachment = await getDownloadableAttachment(attachmentId, req.user!)
     res.download(path.join(UPLOAD_DIR, attachment.storedFilename), attachment.originalFilename, (err) => {
       if (err) {
         console.error('GET /api/attachments/:id/download failed', err)
@@ -103,9 +129,21 @@ router.get('/attachments/:id/download', requireRequester, async (req: RequesterR
   }
 })
 
-router.post('/attachments/:id/remove', requireRequester, async (req: RequesterRequest, res) => {
-  const attachmentId = Number(req.params.id)
-  if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
+// Before the body is read or the reason validated (api-spec.md §1.5).
+async function refuseFinished(req: SessionRequest, res: Response, next: NextFunction) {
+  const attachmentId = rowIdOf(req.params.id)
+
+  if (attachmentId !== null && (await isOwnAttachmentTicketFinished(attachmentId, req.user!.id))) {
+    sendTicketFinished(res)
+    return
+  }
+
+  next()
+}
+
+router.post('/attachments/:id/remove', requireRequesterRole, refuseFinished, parseJsonBody, async (req: SessionRequest, res) => {
+  const attachmentId = rowIdOf(req.params.id)
+  if (attachmentId === null) {
     res.status(404).json({ error: 'Attachment not found' })
     return
   }
@@ -120,7 +158,7 @@ router.post('/attachments/:id/remove', requireRequester, async (req: RequesterRe
   }
 
   try {
-    const attachment = await removeAttachment(attachmentId, req.requesterId!, removalReason)
+    const attachment = await removeAttachment(attachmentId, req.user!.id, removalReason)
     res.status(200).json({
       id: attachment.id,
       removedAt: attachment.removedAt,
@@ -130,6 +168,10 @@ router.post('/attachments/:id/remove', requireRequester, async (req: RequesterRe
   } catch (serviceErr) {
     if (serviceErr instanceof AttachmentNotFoundError) {
       res.status(404).json({ error: serviceErr.message })
+      return
+    }
+    if (serviceErr instanceof TicketFinishedError) {
+      sendTicketFinished(res)
       return
     }
     console.error('POST /api/attachments/:id/remove failed', serviceErr)

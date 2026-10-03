@@ -1,9 +1,5 @@
 import { Router } from 'express'
-import {
-  getActiveCategories,
-  getActiveRelatedSystems,
-  getActiveRequesters,
-} from '../services/referenceData.service'
+import { getActiveCategories, getActiveRelatedSystems } from '../services/referenceData.service'
 
 const router = Router()
 
@@ -24,18 +20,6 @@ router.get('/related-systems', async (_req, res) => {
   } catch (err) {
     console.error('GET /api/related-systems failed', err)
     res.status(500).json({ error: 'Unable to load related systems' })
-  }
-})
-
-// The one route that does not require X-Requester-Id — it's how the client
-// discovers who it can act as (api-spec.md "GET /api/requesters" note).
-router.get('/requesters', async (_req, res) => {
-  try {
-    const requesters = await getActiveRequesters()
-    res.status(200).json(requesters)
-  } catch (err) {
-    console.error('GET /api/requesters failed', err)
-    res.status(500).json({ error: 'Unable to load requesters' })
   }
 })
 

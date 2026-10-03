@@ -20,6 +20,19 @@ enum Priority {
 
 enum TicketStatus {
   NEW
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_REQUESTER
+  RESOLVED
+  CLOSED
+  REOPENED
+  CANCELLED
+}
+
+enum Role {
+  REQUESTER
+  IT_STAFF
+  ADMINISTRATOR
 }
 
 model Category {
@@ -31,16 +44,45 @@ model Category {
   tickets Ticket[]
 }
 
-model RequesterUser {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+model User {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  email              String   @unique
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  role               Role     @default(REQUESTER)
+  passwordHash       String?
+  mustChangePassword Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
 
-  tickets            Ticket[]     @relation("TicketRequester")
-  uploadedAttachments Attachment[] @relation("AttachmentUploadedBy")
-  removedAttachments  Attachment[] @relation("AttachmentRemovedBy")
+  tickets             Ticket[]        @relation("TicketRequester")
+  ownedTickets        Ticket[]        @relation("TicketOwner")
+  uploadedAttachments Attachment[]    @relation("AttachmentUploadedBy")
+  removedAttachments  Attachment[]    @relation("AttachmentRemovedBy")
+  sessions            Session[]
+  publicComments      PublicComment[]
+  internalNotes       InternalNote[]
+}
+
+model Session {
+  id         Int      @id @default(autoincrement())
+  tokenHash  String   @unique
+  userId     Int
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime
+  expiresAt  DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Keyed by the normalised email, not by User, so an email that matches no
+// User is throttled identically (BR-12).
+model LoginThrottle {
+  email       String     @id
+  failedAt    DateTime[]
+  lockedUntil DateTime?
 }
 
 model RelatedSystem {
@@ -53,45 +95,83 @@ model RelatedSystem {
 }
 
 model Ticket {
-  id                Int          @id @default(autoincrement())
-  ticketNumber      String       @unique
-  requesterId       Int
-  categoryId        Int
-  relatedSystemId   Int
-  summary           String
-  description       String
-  requestedPriority Priority
-  itPriority        Priority?
-  currentStatus     TicketStatus @default(NEW)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  id                  Int          @id @default(autoincrement())
+  ticketNumber        String       @unique
+  requesterId         Int
+  categoryId          Int
+  relatedSystemId     Int
+  summary             String
+  description         String
+  requestedPriority   Priority
+  itPriority          Priority
+  currentStatus       TicketStatus @default(NEW)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  ownerId             Int?
+  ownerChangedAt      DateTime?
+  resolutionSummary   String?
+  resolvedAt          DateTime?
+  requesterResolvedAt DateTime?
 
-  requester     RequesterUser @relation("TicketRequester", fields: [requesterId], references: [id])
-  category      Category      @relation(fields: [categoryId], references: [id])
-  relatedSystem RelatedSystem @relation(fields: [relatedSystemId], references: [id])
-  attachments   Attachment[]
+  requester      User            @relation("TicketRequester", fields: [requesterId], references: [id])
+  owner          User?           @relation("TicketOwner", fields: [ownerId], references: [id])
+  category       Category        @relation(fields: [categoryId], references: [id])
+  relatedSystem  RelatedSystem   @relation(fields: [relatedSystemId], references: [id])
+  attachments    Attachment[]
+  publicComments PublicComment[]
+  internalNotes  InternalNote[]
 
   @@index([requesterId])
+  @@index([ownerId])
+  @@index([currentStatus])
 }
 
 model Attachment {
-  id                     Int       @id @default(autoincrement())
-  ticketId               Int
-  uploadedByRequesterId  Int
-  originalFilename       String
-  storedFilename         String    @unique
-  mimeType               String
-  sizeBytes              Int
-  createdAt              DateTime  @default(now())
-  removedAt              DateTime?
-  removedByRequesterId   Int?
-  removalReason          String?
+  id                    Int       @id @default(autoincrement())
+  ticketId              Int
+  uploadedByRequesterId Int
+  originalFilename      String
+  storedFilename        String    @unique
+  mimeType              String
+  sizeBytes             Int
+  createdAt             DateTime  @default(now())
+  removedAt             DateTime?
+  removedByRequesterId  Int?
+  removalReason         String?
 
-  ticket             Ticket        @relation(fields: [ticketId], references: [id])
-  uploadedByRequester RequesterUser @relation("AttachmentUploadedBy", fields: [uploadedByRequesterId], references: [id])
-  removedByRequester  RequesterUser? @relation("AttachmentRemovedBy", fields: [removedByRequesterId], references: [id])
+  ticket              Ticket @relation(fields: [ticketId], references: [id])
+  uploadedByRequester User   @relation("AttachmentUploadedBy", fields: [uploadedByRequesterId], references: [id])
+  removedByRequester  User?  @relation("AttachmentRemovedBy", fields: [removedByRequesterId], references: [id])
 
   @@index([ticketId])
+}
+
+// Public Comments and Internal Notes are two tables, so that no
+// Requester-reachable code path reads a note at all (ADR-0010).
+model PublicComment {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  authorId  Int
+  body      String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId, createdAt])
+}
+
+model InternalNote {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  authorId  Int
+  body      String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId, createdAt])
 }
 
 model TicketCounter {

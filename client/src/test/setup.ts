@@ -1,10 +1,11 @@
 import '@testing-library/jest-dom/vitest'
+import { beforeEach } from 'vitest'
 
 // Node's own built-in `localStorage` global (present since Node 22,
 // gated behind --localstorage-file) shadows jsdom's window.localStorage
 // under Vitest's jsdom environment, leaving both undefined. Replace it
-// with a minimal in-memory implementation so requesterStore.ts (and any
-// other localStorage usage) works the same in tests as in a real browser.
+// with a minimal in-memory implementation so localStorage works the same
+// in tests as in a real browser.
 class MemoryStorage implements Storage {
   private store = new Map<string, string>()
 
@@ -42,4 +43,10 @@ Object.defineProperty(window, 'localStorage', {
   value: globalThis.localStorage,
   configurable: true,
   writable: true,
+})
+
+// Each test starts at the same URL with empty storage.
+beforeEach(() => {
+  window.localStorage.clear()
+  window.history.replaceState({}, '', '/')
 })

@@ -1,6 +1,9 @@
 # Requester identity transport
 
-Status: accepted.
+Status: superseded in Lab 3 by
+[ADR-0007](./0007-server-side-session-authentication.md). The header was
+the Lab 2 transport; the forecast below that real auth would arrive as an
+`Authorization` header did not hold.
 
 Three options were on the table for how the current Requester's identity
 reaches the backend on every request:

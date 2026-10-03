@@ -1,9 +1,10 @@
 /*
- * Zen Green theme (docs/lab-02/ui-spec.md).
+ * Zen Green theme (docs/lab-02/ui-spec.md, continued in
+ * docs/lab-03/ui-spec.md).
  *
- * Applied as an override layer on top of Bootstrap so every screen
- * (Selector, Create Ticket, My Tickets, Ticket Detail) shares one token
- * set without re-implementing Bootstrap's components from scratch.
+ * Applied as an override layer on top of Bootstrap so every screen shares
+ * one token set without re-implementing Bootstrap's components from
+ * scratch.
  */
 
 :root {
@@ -21,6 +22,11 @@
   --tk-warning-bg: #fff6e0;
   --tk-success-text: #0b7a46;
   --tk-success-bg: #eaf6ef;
+  /* docs/lab-03/ui-spec.md §2.1 */
+  --tk-info-text: #1f5e99;
+  --tk-info-bg: #e7f0fa;
+  --tk-neutral-text: #4f5f59;
+  --tk-neutral-bg: #f1f3f1;
 
   --bs-font-sans-serif: -apple-system, 'Segoe UI', Roboto, sans-serif;
   --bs-body-font-family: var(--bs-font-sans-serif);
@@ -30,7 +36,13 @@
   --bs-primary-rgb: 0, 107, 60;
   --bs-link-color: var(--tk-secondary-green);
   --bs-link-hover-color: var(--tk-secondary-green);
+  /* Bootstrap colours a plain link from the -rgb pair. */
+  --bs-link-color-rgb: 11, 122, 70;
+  --bs-link-hover-color-rgb: 11, 122, 70;
   --bs-border-color: var(--tk-surface-border);
+  /* Muted text and placeholders; the file chooser's button. */
+  --bs-secondary-color: var(--tk-neutral-text);
+  --bs-tertiary-bg: var(--tk-readonly-bg);
   --bs-danger: var(--tk-error);
   --bs-danger-rgb: 179, 38, 30;
 }
@@ -66,8 +78,96 @@ body {
   text-decoration-thickness: 2px !important;
 }
 
-.app-shell__requester {
+a.app-shell__brand:hover,
+a.app-shell__brand:focus {
   color: #fff;
+}
+
+.app-shell__header .btn:focus-visible,
+.app-shell__header a:focus-visible {
+  outline-color: #fff;
+}
+
+/* User menu (docs/lab-03/ui-spec.md §4.1) */
+
+.app-shell__user-button {
+  color: #fff;
+  border-color: transparent;
+  max-width: 100%;
+}
+.app-shell__user-button:hover,
+.app-shell__user-button[aria-expanded='true'] {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.app-shell__user-name {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-shell__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  min-width: 200px;
+  padding: 4px;
+}
+
+.app-shell__menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: var(--tk-text);
+  border-color: transparent;
+}
+.app-shell__menu-item:hover {
+  background: var(--tk-pale-green);
+  color: var(--tk-primary-green);
+}
+
+/* Mobile header (docs/lab-03/ui-spec.md §4.4): 44px tap targets. */
+
+.app-shell__menu-toggle {
+  --bs-btn-color: #fff;
+  --bs-btn-border-color: #fff;
+  min-height: 44px;
+}
+
+@media (max-width: 767px) {
+  a.app-shell__brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+.app-shell__mobile-panel {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.app-shell__mobile-panel .app-shell__nav-link {
+  min-height: 44px;
+  text-align: left;
+}
+
+.app-shell__mobile-user {
+  color: #fff;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 8px 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.app-shell__mobile-user .app-shell__user-name {
+  max-width: 100%;
 }
 
 .app-shell__main {
@@ -112,6 +212,13 @@ body {
   border-color: var(--tk-primary-green);
   color: var(--tk-primary-green);
 }
+.btn-outline-primary:disabled,
+.btn-secondary:disabled,
+.btn-outline-secondary:disabled {
+  background: #fff;
+  border-color: var(--tk-primary-green);
+  color: var(--tk-primary-green);
+}
 .btn-outline-primary:hover,
 .btn-secondary:hover,
 .btn-outline-secondary:hover {
@@ -150,25 +257,52 @@ button:focus-visible {
 
 /* ---- Fields (ui-spec.md §3) ---- */
 
+/* Bootstrap paints a focused field with the page background, which here is
+   the read-only grey; an editable field stays white while focused. */
+.form-control:focus:not([readonly]),
+.form-select:focus {
+  background-color: #fff;
+}
+
+/* `background-color`, not the shorthand: a select keeps its arrow. */
 .form-control,
 .form-select {
-  background: #fff;
+  background-color: #fff;
   border: 1px solid var(--tk-field-border);
   color: var(--tk-text);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--tk-secondary-green);
 }
 
 .form-control[readonly],
 .form-control:disabled,
 .form-select:disabled,
 .tk-field--readonly {
-  background: var(--tk-readonly-bg);
+  background-color: var(--tk-readonly-bg);
   color: var(--tk-text);
   opacity: 1;
 }
 
+/* Bootstrap draws an invalid field and its icon in its own red; both use
+   the Error token here, focused or not. */
 .form-control.is-invalid,
 .form-select.is-invalid {
+  --tk-invalid-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23b3261e'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23b3261e' stroke='none'/%3e%3c/svg%3e");
   border-color: var(--tk-error);
+}
+.form-control.is-invalid:focus,
+.form-select.is-invalid:focus {
+  border-color: var(--tk-error);
+  box-shadow: none;
+}
+.form-control.is-invalid {
+  background-image: var(--tk-invalid-icon);
+}
+.form-select.is-invalid:not([multiple]):not([size]) {
+  --bs-form-select-bg-icon: var(--tk-invalid-icon);
 }
 
 .invalid-feedback {
@@ -210,13 +344,817 @@ button:focus-visible {
   font-weight: 600;
 }
 
+/* Role badges (docs/lab-03/ui-spec.md §2.2) */
+.tk-badge--neutral {
+  background-color: var(--tk-neutral-bg);
+  color: var(--tk-neutral-text);
+}
+.tk-badge--info {
+  background-color: var(--tk-info-bg);
+  color: var(--tk-info-text);
+}
+.tk-badge--outline {
+  background-color: var(--tk-surface);
+  color: var(--tk-primary-green);
+  box-shadow: inset 0 0 0 1px var(--tk-primary-green);
+}
+
+/* Status badges (docs/lab-03/ui-spec.md §2.2) */
+.tk-badge--in-progress {
+  background-color: var(--tk-pale-green);
+  color: var(--tk-primary-green);
+}
+.tk-badge--warning {
+  background-color: var(--tk-warning-bg);
+  color: var(--tk-warning-text);
+}
+.tk-badge--success {
+  background-color: var(--tk-success-bg);
+  color: var(--tk-success-text);
+}
+.tk-badge--error {
+  background-color: #fbe9e7;
+  color: var(--tk-error);
+}
+.tk-badge--outlined {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+/* Flag badge (docs/lab-03/ui-spec.md §2.2) */
+.tk-badge--success-outline {
+  background-color: var(--tk-surface);
+  color: var(--tk-success-text);
+  box-shadow: inset 0 0 0 1px var(--tk-success-text);
+}
+.tk-badge__icon {
+  margin-right: 4px;
+}
+
+/* ---- Shared feedback (docs/lab-03/ui-spec.md §2.3) ---- */
+
+.tk-alert {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.tk-alert--error {
+  background: #fbe9e7;
+  color: var(--tk-error);
+}
+.tk-alert--warning {
+  background: var(--tk-warning-bg);
+  color: var(--tk-warning-text);
+}
+.tk-alert--info {
+  background: var(--tk-info-bg);
+  color: var(--tk-info-text);
+}
+.tk-alert--success {
+  background: var(--tk-success-bg);
+  color: var(--tk-success-text);
+}
+
+.tk-feedback-page {
+  max-width: 480px;
+  margin-top: 48px;
+}
+/* §11: 44px tap targets on mobile. */
+@media (max-width: 767px) {
+  .tk-feedback-page .btn,
+  .tk-feedback-page a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+.tk-page-loading {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tk-neutral-text);
+}
+
+/* ---- Login (docs/lab-03/ui-spec.md §5) ---- */
+
+.tk-auth-page {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.tk-auth-page__wordmark {
+  margin-bottom: 16px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--tk-primary-green);
+}
+
+.tk-auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.tk-password-toggle {
+  display: flex;
+  align-items: center;
+  border-color: var(--tk-field-border);
+}
+
+@media (max-width: 767px) {
+  .tk-auth-card .btn,
+  .tk-auth-card .form-control,
+  .tk-change-password .btn,
+  .tk-change-password .form-control {
+    min-height: 44px;
+  }
+}
+
+/* ---- Change Password (docs/lab-03/ui-spec.md §6) ---- */
+
+.tk-change-password {
+  max-width: 480px;
+}
+
+.tk-checklist {
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--tk-pale-green);
+  font-size: 14px;
+}
+
+.tk-checklist__title {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.tk-checklist__rule {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--tk-neutral-text);
+}
+
+.tk-checklist__mark {
+  width: 16px;
+  flex: none;
+  text-align: center;
+}
+.tk-checklist__mark::before {
+  content: '•';
+}
+
+.tk-checklist__rule--met {
+  color: var(--tk-success-text);
+}
+.tk-checklist__rule--met .tk-checklist__mark::before {
+  content: '✓';
+  font-weight: 700;
+}
+
+/* ---- Requester Ticket Detail additions (docs/lab-03/ui-spec.md §7) ---- */
+
+/* Resolution Summary: a read-only text block on the Success tint. */
+.tk-resolution {
+  padding: 12px 16px;
+  border: 1px solid var(--tk-success-text);
+  border-radius: 6px;
+  background: var(--tk-success-bg);
+}
+.tk-resolution__title {
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tk-success-text);
+}
+.tk-resolution__text {
+  margin-bottom: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Problem Appears Resolved: Success-tinted once indicated. */
+.tk-resolved-card--indicated {
+  border-color: var(--tk-success-text);
+  background: var(--tk-success-bg);
+}
+.tk-resolved-card__info {
+  color: var(--tk-info-text);
+}
+
+/* Public Comments (docs/lab-03/ui-spec.md §7.3) */
+.tk-comment {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--tk-surface-border);
+}
+.tk-comment__avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tk-pale-green);
+  color: var(--tk-primary-green);
+  font-size: 13px;
+  font-weight: 600;
+}
+.tk-comment__content {
+  /* Lets a long unbroken word wrap instead of widening the page. */
+  min-width: 0;
+  flex: 1;
+}
+.tk-comment__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: 4px;
+}
+.tk-comment__body {
+  margin-bottom: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* In place of the composer on a finished Ticket: Neutral text. */
+.tk-comments__finished {
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--tk-neutral-bg);
+  color: var(--tk-neutral-text);
+}
+.tk-comments__count {
+  flex: none;
+  margin-left: auto;
+}
+/* ui-spec.md §7.5 and §11: on mobile Post Comment is full width, and the
+   buttons of both cards are 44px tap targets. */
+@media (max-width: 767px) {
+  .tk-comments__post {
+    width: 100%;
+  }
+  .tk-comments .btn-primary,
+  .tk-resolved-card .btn {
+    min-height: 44px;
+  }
+  .requester-ticket-detail .btn {
+    min-height: 44px;
+  }
+  .requester-ticket-detail > .tk-alert .btn-link {
+    min-width: 44px;
+  }
+  .requester-ticket-detail input[type='file'] {
+    --tk-file-padding: 9px;
+    min-height: 44px;
+    padding-top: var(--tk-file-padding);
+    padding-bottom: var(--tk-file-padding);
+  }
+  .requester-ticket-detail input[type='file']::file-selector-button {
+    margin-top: calc(-1 * var(--tk-file-padding));
+    margin-bottom: calc(-1 * var(--tk-file-padding));
+    padding-top: var(--tk-file-padding);
+    padding-bottom: var(--tk-file-padding);
+  }
+}
+
+/* Loading placeholder rows */
+.tk-skeleton {
+  height: 16px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  background: var(--tk-readonly-bg);
+}
+.tk-skeleton:nth-child(odd) {
+  width: 60%;
+}
+
+/* ---- Dialogs (docs/lab-03/ui-spec.md §2.3, §12) ---- */
+
+.tk-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(26, 46, 39, 0.5);
+  overflow-y: auto;
+}
+
+.tk-dialog {
+  width: 100%;
+  max-width: 480px;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.tk-dialog:focus {
+  outline: none;
+}
+
+.tk-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* ---- User Management (docs/lab-03/ui-spec.md §10) ---- */
+
+/* §10.3: the panel opens beside the list, which keeps about three fifths
+   of the width. */
+.tk-users__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.tk-users--with-panel .tk-users__layout {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+
+/* Search takes the width the role filter and Clear Filters leave, and has
+   a row to itself when there is not enough. */
+.tk-users__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.tk-users__search {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.tk-users__role {
+  flex: 1 1 160px;
+  max-width: 220px;
+}
+
+.tk-users__skeleton-row {
+  display: flex;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--tk-surface-border);
+}
+.tk-users__skeleton-row .placeholder,
+.tk-queue__skeleton-row .placeholder {
+  border-radius: 6px;
+  background-color: var(--tk-readonly-bg);
+  opacity: 1;
+  animation: none;
+}
+
+.tk-users__panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tk-info-panel {
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--tk-info-bg);
+  color: var(--tk-info-text);
+  font-size: 14px;
+}
+
+/* The Active switch: Primary green when on, and the theme's focus ring in
+   place of Bootstrap's blue one. */
+.tk-switch .form-check-input,
+.tk-queue__check .form-check-input {
+  border-color: var(--tk-field-border);
+}
+.tk-queue__check .form-check-input:not(:checked) {
+  background-color: var(--tk-surface);
+}
+.tk-switch .form-check-input:checked,
+.tk-queue__check .form-check-input:checked {
+  background-color: var(--tk-primary-green);
+  border-color: var(--tk-primary-green);
+}
+.tk-switch .form-check-input:focus {
+  box-shadow: none;
+}
+.tk-switch .form-check-input:focus:not(:checked) {
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
+}
+.tk-switch .form-check-input:focus-visible {
+  outline: 2px solid var(--tk-secondary-green);
+  outline-offset: 1px;
+}
+.tk-switch__state {
+  margin-left: 8px;
+  color: var(--tk-neutral-text);
+}
+
+.tk-one-time-password {
+  font-family: var(--bs-font-monospace);
+}
+.tk-one-time-password__copied {
+  min-height: 20px;
+  margin-bottom: 8px;
+  color: var(--tk-success-text);
+}
+
+.tk-dialog--panel {
+  max-width: 560px;
+}
+
+@media (max-width: 767px) {
+  /* §10.3: on mobile the panel is a full-screen dialog with full-width
+     buttons. */
+  .tk-dialog-backdrop:has(> .tk-dialog--panel) {
+    align-items: stretch;
+    padding: 0;
+  }
+  .tk-dialog--panel {
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+  }
+  .tk-users__panel-actions .btn {
+    width: 100%;
+  }
+
+  /* §11: 44px tap targets. */
+  .tk-users .btn,
+  .tk-users .form-control,
+  .tk-users .form-select,
+  .tk-dialog .btn,
+  .tk-dialog .form-control {
+    min-height: 44px;
+  }
+  .tk-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+  }
+}
+
 /* ---- My Tickets table / mobile cards (ui-spec.md §8, §11) ---- */
 
+/* Bootstrap colours the cells from this variable, not from `.table`. */
 .table {
+  --bs-table-color: var(--tk-text);
   color: var(--tk-text);
 }
 .table thead th {
   border-bottom: 2px solid var(--tk-surface-border);
+}
+
+/* ---- Pagination page numbers (docs/lab-03/ui-spec.md §8.2) ---- */
+
+.tk-pagination__pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tk-pagination__page {
+  min-width: 32px;
+}
+.tk-pagination__gap {
+  padding: 0 4px;
+  color: var(--tk-neutral-text);
+}
+
+/* ---- Ticket Queue (docs/lab-03/ui-spec.md §8) ---- */
+
+/* The search, the filters, and the sort in one wrapping row. */
+.tk-queue__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+}
+.tk-queue__controls .form-label {
+  margin-bottom: 4px;
+}
+.tk-queue__search {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.tk-queue__search .form-control {
+  text-overflow: ellipsis;
+}
+
+/* The table sits on the card surface, not on the page background. */
+.tk-queue__table,
+.tk-users__table {
+  --bs-table-bg: transparent;
+}
+.tk-queue__table th {
+  white-space: nowrap;
+}
+.tk-queue__filters {
+  display: contents;
+}
+.tk-queue__check {
+  margin-bottom: 0;
+  padding-bottom: 7px;
+}
+
+/* A sortable column header is a button that reads as the header. */
+.tk-queue__sort-header {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font-weight: inherit;
+  text-align: left;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+/* Tablet (§8.4): a narrower Search, and an Owner select that a long name
+   cannot widen, let the controls wrap to two rows. */
+@media (min-width: 768px) and (max-width: 991px) {
+  .tk-queue__search {
+    flex-basis: 180px;
+  }
+  .tk-queue__owner {
+    max-width: 240px;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Mobile (§8.4): the filters open as a panel, and every control is a
+   44px tap target. */
+@media (max-width: 767px) {
+  .tk-queue__filters {
+    display: none;
+  }
+  .tk-queue__filters.is-open {
+    display: flex;
+    flex: 1 1 100%;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--tk-surface-border);
+    border-radius: 6px;
+    background: var(--tk-surface);
+  }
+  .tk-queue__search,
+  .tk-queue__sort {
+    flex: 1 1 100%;
+  }
+  .tk-queue .btn,
+  .tk-queue .form-control,
+  .tk-queue .form-select {
+    min-height: 44px;
+  }
+  .tk-queue .tk-pagination__page {
+    min-width: 44px;
+  }
+  .tk-queue__check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding-bottom: 0;
+  }
+  .tk-queue__card a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+.tk-queue__row,
+.tk-queue__card {
+  cursor: pointer;
+}
+.tk-queue__row:hover > td {
+  background: var(--tk-pale-green);
+}
+
+/* A long Summary or name wraps instead of widening the page (§11). */
+.tk-queue__summary {
+  overflow-wrap: anywhere;
+}
+
+.tk-queue__message {
+  align-items: center;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.tk-queue__skeleton-row {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--tk-surface-border);
+  color: var(--tk-neutral-text);
+}
+.tk-queue__skeleton-row:last-child {
+  border-bottom: 0;
+}
+
+.tk-queue__unassigned {
+  color: var(--tk-neutral-text);
+  font-style: italic;
+}
+
+/* ---- IT Staff Ticket Detail (docs/lab-03/ui-spec.md §9) ---- */
+
+/* Header row (§9.1): the breadcrumb, the status badges, and Back to
+   Queue at the far end. It wraps on a narrow screen. */
+.tk-staff-detail__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+}
+.tk-staff-detail__back {
+  margin-left: auto;
+}
+.tk-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.tk-breadcrumb li + li::before {
+  content: '>';
+  margin-right: 8px;
+  color: var(--tk-neutral-text);
+}
+.tk-staff-detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A read-only value: as tall as its text, which wraps and never widens
+   the page (§11). */
+.tk-staff-detail__value {
+  height: auto;
+  min-height: 38px;
+  overflow-wrap: anywhere;
+}
+.tk-staff-detail__description {
+  white-space: pre-wrap;
+}
+.tk-staff-detail__wrap {
+  overflow-wrap: anywhere;
+}
+
+/* The Operations card (§9.2): the only editable part of the screen, set
+   apart from the information card by its Primary green edge. */
+.tk-ops {
+  border-top: 3px solid var(--tk-primary-green);
+}
+.tk-ops__controls {
+  display: grid;
+  gap: 24px;
+}
+.tk-ops__control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.tk-ops__control .form-label,
+.tk-ops__control .tk-alert {
+  margin-bottom: 0;
+}
+.tk-ops__control .form-select {
+  width: 100%;
+}
+.tk-ops__current {
+  margin: 0;
+  font-size: 14px;
+  color: var(--tk-neutral-text);
+  overflow-wrap: anywhere;
+}
+.tk-ops__values dt {
+  font-size: 14px;
+  font-weight: 600;
+}
+.tk-ops__values dd {
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+.tk-ops__values dd:last-child {
+  margin-bottom: 0;
+}
+
+/* The tabs (§9.1, §12). The bar scrolls within itself when it does not
+   fit, so the page never scrolls sideways (§9.7). */
+.tk-tabs__list {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--tk-surface-border);
+}
+.tk-tabs__tab {
+  flex: none;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--tk-neutral-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tk-tabs__tab[aria-selected='true'] {
+  border-bottom-color: var(--tk-primary-green);
+  color: var(--tk-primary-green);
+}
+.tk-tabs__tab:focus-visible {
+  outline-offset: -2px;
+}
+.tk-tabs__panel {
+  padding: 16px;
+}
+
+/* The caption strip above a composer: Info for Public Comments (§9.3). */
+.tk-thread__strip {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.tk-thread__strip--info {
+  background: var(--tk-info-bg);
+  color: var(--tk-info-text);
+}
+
+/* Internal Notes (§9.4): the whole panel sits on the Warning surface. */
+.tk-tabs__panel--notes {
+  background: var(--tk-warning-bg);
+  border-radius: 0 0 6px 6px;
+}
+.tk-thread__strip--internal {
+  border: 1px solid var(--tk-warning-text);
+  background: var(--tk-surface);
+  color: var(--tk-warning-text);
+  font-weight: 600;
+}
+.tk-tabs__panel--notes .tk-comment {
+  border-top-color: var(--tk-warning-text);
+}
+
+/* Tablet (§9.7): the Operations card is below the information card, its
+   three controls in a row. */
+@media (min-width: 768px) and (max-width: 991px) {
+  /* Current Status has the longest text, "Choose a new status…", and IT
+     Priority the shortest: the columns are sized to match, so the text
+     fits beside the arrow whatever the system font. */
+  .tk-ops__controls {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 16px;
+  }
+  /* `margin-top: auto` keeps the three selects level when the line above
+     one of them wraps. */
+  .tk-ops__control .form-select {
+    margin-top: auto;
+    padding-left: 8px;
+    padding-right: 28px;
+    background-position: right 8px center;
+  }
+}
+
+/* Mobile (§9.7, §11): everything stacked, full-width buttons, 44px tap
+   targets. */
+@media (max-width: 767px) {
+  .tk-ops__control .btn,
+  .tk-tabs .tk-comments__post {
+    width: 100%;
+  }
+  .tk-staff-detail .btn,
+  .tk-staff-detail .form-select,
+  .tk-tabs__tab {
+    min-height: 44px;
+  }
+  .tk-breadcrumb a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
 /* ---- Attachment chips (ui-spec.md §3) ---- */
