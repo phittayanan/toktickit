@@ -1,5 +1,5 @@
 import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test'
-import { apiSessionFor, createTicketFor, type ArrangedTicket } from './api'
+import { addDoneAction, apiSessionFor, createTicketFor, type ArrangedTicket } from './api'
 import { ensureUsers } from './database'
 import { E2E_USERS, type E2EUser } from './users'
 
@@ -42,8 +42,9 @@ export function createNewTicket(): Promise<ArrangedTicket> {
 }
 
 // A Ticket that is being worked: owned by the E2E IT Staff user and In
-// Progress, with Public Comments from both sides, Internal Notes, and the
-// Requester's indication that the problem appears resolved.
+// Progress, with Public Comments from both sides, Internal Notes, a Done
+// Action Taken, and the Requester's indication that the problem appears
+// resolved.
 export async function createWorkedTicket(): Promise<ArrangedTicket> {
   const ticket = await createNewTicket()
 
@@ -68,6 +69,7 @@ export async function createWorkedTicket(): Promise<ArrangedTicket> {
     body: `Vendor reference for the renewal: ${LINK}`,
   })
   await staff.dispose()
+  await addDoneAction(E2E_USERS.IT_STAFF, ticket.id)
 
   await send(requester, 'put', `/api/tickets/${ticket.id}/resolution-indication`)
   await requester.dispose()
