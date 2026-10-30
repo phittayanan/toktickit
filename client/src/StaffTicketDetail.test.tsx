@@ -53,6 +53,7 @@ beforeEach(() => {
   vi.spyOn(api, 'fetchEligibleOwners').mockResolvedValue(ELIGIBLE_OWNERS)
   vi.spyOn(api, 'fetchPublicComments').mockResolvedValue([])
   vi.spyOn(api, 'fetchInternalNotes').mockResolvedValue([])
+  vi.spyOn(api, 'fetchActionsTaken').mockResolvedValue([])
 })
 
 afterEach(() => {
