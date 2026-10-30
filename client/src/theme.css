@@ -386,6 +386,11 @@ button:focus-visible {
   color: var(--tk-success-text);
   box-shadow: inset 0 0 0 1px var(--tk-success-text);
 }
+.tk-badge--warning-outline {
+  background-color: var(--tk-surface);
+  color: var(--tk-warning-text);
+  box-shadow: inset 0 0 0 1px var(--tk-warning-text);
+}
 .tk-badge__icon {
   margin-right: 4px;
 }
@@ -1276,5 +1281,163 @@ a.tk-metric:hover {
   .tk-link-table th,
   .tk-link-table td {
     height: 44px;
+  }
+}
+
+/* ---- Actions Taken card (docs/lab-04/ui-spec.md §8) ---- */
+
+.tk-actions {
+  scroll-margin-top: 16px;
+}
+.tk-actions:focus {
+  outline: none;
+}
+.tk-actions__table {
+  table-layout: fixed;
+}
+.tk-actions__date {
+  width: 180px;
+}
+.tk-actions__status {
+  width: 190px;
+}
+.tk-actions__buttons-column {
+  width: 250px;
+}
+/* The Description stays on one line; the full text is its tooltip and the
+   open row. */
+.tk-actions__disclosure {
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: none;
+  color: var(--tk-primary-green);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tk-actions__disclosure:hover {
+  text-decoration: underline;
+}
+.tk-actions__badges,
+.tk-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.tk-actions__details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--tk-readonly-bg);
+}
+.tk-actions__details dt {
+  font-size: 14px;
+  font-weight: 600;
+}
+.tk-actions__details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.tk-actions__form {
+  padding: 16px;
+  border: 1px solid var(--tk-surface-border);
+  border-radius: 6px;
+}
+.tk-actions__form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Tablet (§8.9): the table keeps its columns, narrower. */
+@media (max-width: 991px) {
+  .tk-actions__date {
+    width: 130px;
+  }
+  .tk-actions__status {
+    width: 150px;
+  }
+  .tk-actions__buttons-column {
+    width: 200px;
+  }
+}
+
+/* Mobile (§8.9): each Action Taken is a stacked card, and every control a
+   44px tap target. */
+@media (max-width: 767px) {
+  .tk-actions__table,
+  .tk-actions__table tbody {
+    display: block;
+  }
+  .tk-actions__table thead {
+    display: none;
+  }
+  .tk-actions__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--tk-surface-border);
+    border-radius: 6px;
+  }
+  .tk-actions__row > td {
+    padding: 0;
+    border: 0;
+  }
+  .tk-actions__row > .tk-actions__description-cell,
+  .tk-actions__row > .tk-actions__buttons-cell {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .tk-actions__row > .tk-actions__buttons-cell {
+    grid-row: 3;
+  }
+  .tk-actions__badges {
+    justify-content: flex-end;
+  }
+  .tk-actions__wide-row,
+  .tk-actions__wide-row > td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+  .tk-actions__wide-row > td {
+    margin-top: 8px;
+  }
+  .tk-actions__details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tk-actions__disclosure {
+    min-height: 44px;
+  }
+  .tk-actions__buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .tk-actions .btn,
+  .tk-actions .form-control,
+  .tk-actions .form-select,
+  .tk-dialog .tk-actions__keep {
+    min-height: 44px;
+  }
+  .tk-actions .btn:not(.btn-link),
+  .tk-actions__form-buttons {
+    width: 100%;
+  }
+  .tk-actions__form-buttons {
+    flex-direction: column-reverse;
+  }
+  .tk-actions__header .btn {
+    width: auto;
   }
 }

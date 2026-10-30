@@ -16,6 +16,7 @@ import {
 } from './api'
 import { MAX_ACTIVE_ATTACHMENTS, validateAttachmentFile } from './attachmentRules'
 import { useSession } from './useSession'
+import ActionsTaken from './ActionsTaken'
 import { PriorityBadge, StatusBadge } from './badges'
 import { ConflictNotice, InlineAlert, SAFE_FAILURE_MESSAGE, SuccessNotice } from './feedback'
 import PublicComments from './PublicComments'
@@ -606,6 +607,14 @@ function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack:
               )
             }}
           />
+
+          <div className="mb-4">
+            <ActionsTaken
+              key={detail.ticket.id}
+              ticketId={detail.ticket.id}
+              finishedAs={FINISHED_AS[detail.ticket.currentStatus]}
+            />
+          </div>
 
           <PublicComments
             key={detail.ticket.id}

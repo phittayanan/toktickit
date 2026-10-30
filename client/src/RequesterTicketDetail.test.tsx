@@ -42,6 +42,7 @@ beforeEach(() => {
   vi.spyOn(api, 'fetchCategories').mockResolvedValue(CATEGORIES)
   vi.spyOn(api, 'fetchRelatedSystems').mockResolvedValue(RELATED_SYSTEMS)
   vi.spyOn(api, 'fetchPublicComments').mockResolvedValue([])
+  vi.spyOn(api, 'fetchActionsTaken').mockResolvedValue([])
 })
 
 afterEach(() => {
