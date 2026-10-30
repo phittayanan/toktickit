@@ -6,24 +6,15 @@ import {
   type Role,
   type StaffDashboard as Dashboard,
   type StaffDashboardTicket,
-  type TicketStatus,
   type UserIdentity,
 } from './api'
 import { PriorityBadge, StatusBadge } from './badges'
 import { DashboardFailure, DashboardList, DashboardSkeleton, LinkTable, MetricCard } from './dashboard'
 import { formatDateTime } from './dateFormat'
 import { ForbiddenPage } from './feedback'
-import { statusLabel } from './statusLabels'
+import { statusLabel, UNFINISHED_STATUSES } from './statusLabels'
 import { useLoaded } from './useLoaded'
 
-const UNFINISHED_STATUSES: TicketStatus[] = [
-  'NEW',
-  'OPEN',
-  'IN_PROGRESS',
-  'WAITING_FOR_REQUESTER',
-  'RESOLVED',
-  'REOPENED',
-]
 const PRIORITIES: { value: Priority; label: string }[] = [
   { value: 'HIGH', label: 'High' },
   { value: 'MEDIUM', label: 'Medium' },

@@ -20,6 +20,7 @@ import { AppearsResolvedBadge, PriorityBadge, StatusBadge } from './badges'
 import { ForbiddenPage, InlineAlert, SAFE_FAILURE_MESSAGE } from './feedback'
 import PaginationControls from './PaginationControls'
 import { PAGE_SIZES, type PageSize } from './pageSizes'
+import { UNFINISHED_STATUSES } from './statusLabels'
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
   NEW: 'New',
@@ -32,8 +33,6 @@ const STATUS_LABELS: Record<TicketStatus, string> = {
   CANCELLED: 'Cancelled',
 }
 const STATUSES = Object.keys(STATUS_LABELS) as TicketStatus[]
-// Every status except Closed and Cancelled.
-const UNFINISHED = STATUSES.filter((status) => status !== 'CLOSED' && status !== 'CANCELLED')
 
 const PRIORITY_LABELS: Record<Priority, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' }
 const PRIORITIES = Object.keys(PRIORITY_LABELS) as Priority[]
@@ -125,7 +124,7 @@ function toRequest(view: View): QueueParams {
     page: view.page,
     pageSize: view.pageSize,
     search: view.search || undefined,
-    status: view.status === 'all' ? undefined : view.status === 'unfinished' ? UNFINISHED : [view.status],
+    status: view.status === 'all' ? undefined : view.status === 'unfinished' ? UNFINISHED_STATUSES : [view.status],
     owner: view.owner === 'any' ? undefined : view.owner,
     itPriority: view.itPriority || undefined,
     categoryId: view.categoryId ?? undefined,

@@ -10,6 +10,7 @@ import {
   type TicketListResponse,
 } from './api'
 import { PriorityBadge, StatusBadge } from './badges'
+import { formatDate } from './dateFormat'
 import PaginationControls from './PaginationControls'
 import type { PageSize } from './pageSizes'
 
@@ -44,10 +45,6 @@ type ListState =
   | { status: 'loading' }
   | { status: 'success'; response: TicketListResponse }
   | { status: 'error'; message: string }
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-}
 
 // The My Tickets list (ui-spec.md §8, ticket #20): paginated, searchable,
 // filterable, sortable list of the selected Requester's own Tickets.

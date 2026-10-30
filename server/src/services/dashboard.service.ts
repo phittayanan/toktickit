@@ -2,7 +2,7 @@ import type { Prisma, Role, TicketStatus } from '../../generated/prisma/client'
 import { now } from '../clock'
 import prisma from '../prisma'
 import { recentWindowStart } from './dashboardWindow'
-import { UNFINISHED } from './statusTransitions.service'
+import { isFinished, TICKET_STATUSES, UNFINISHED } from './statusTransitions.service'
 
 // The dashboards of Lab 4 api-spec.md §5. Every metric is read from the
 // rows on each request (BR-27), and each query selects the documented
@@ -10,7 +10,7 @@ import { UNFINISHED } from './statusTransitions.service'
 
 const LIST_LIMIT = 5
 const OPEN_STATUSES: TicketStatus[] = ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED']
-const STAFF_STATUSES = ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'RESOLVED', 'REOPENED'] as const
+const STAFF_STATUSES = TICKET_STATUSES.filter((status) => !isFinished(status))
 const IT_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'] as const
 const ROLES: readonly Role[] = ['REQUESTER', 'IT_STAFF', 'ADMINISTRATOR']
 
@@ -118,7 +118,7 @@ export async function staffDashboard(userId: number) {
     myPlannedActionsTakenCount,
     byStatus: countsByKey(
       STAFF_STATUSES,
-      perStatus.map((row) => ({ key: row.currentStatus as (typeof STAFF_STATUSES)[number], count: row._count })),
+      perStatus.map((row) => ({ key: row.currentStatus, count: row._count })),
     ),
     byItPriority: countsByKey(
       IT_PRIORITIES,
