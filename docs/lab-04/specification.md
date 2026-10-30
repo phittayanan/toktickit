@@ -94,7 +94,7 @@ work leaves no reliable trace. The stakeholder wants that closed:
   Public Comments, and Internal Notes stay valid. Existing Tickets get no
   placeholder Actions Taken.
 - **Tests.** The Lab 1, Lab 2, and Lab 3 suites stay and must pass. They
-  change only where BR-33 replaces a rule.
+  change only as `tests.md` §1 lists.
 - **Design.** Zen Green tokens, components, and responsive rules from
   Labs 2 and 3 are reused; there is no second visual system.
 
@@ -665,7 +665,7 @@ New `409` codes: `ACTION_TAKEN_CHANGED` (stale version),
 ### Hardening and presentation
 
 - **AC-42** Given the Lab 1, Lab 2, and Lab 3 suites, when run against the
-  final code, then all pass, changed only where BR-33 replaces a rule.
+  final code, then all pass, changed only as `tests.md` §1 lists.
 - **AC-43** Given each role, when the user signs in, then their Dashboard is
   the landing screen and the first navigation entry, it shows the active page,
   and every Lab 3 entry remains.
@@ -710,8 +710,8 @@ the final `main` branch:
       authorization test's endpoint table.
 - [ ] The migration applies cleanly to a Lab 3 database and to an empty one,
       and the rollback is proven by test.
-- [ ] The Lab 1, Lab 2, and Lab 3 suites pass, changed only where BR-33
-      replaces a rule.
+- [ ] The Lab 1, Lab 2, and Lab 3 suites pass, changed only as `tests.md` §1
+      lists.
 - [ ] The seed runs twice without change and provides the §7.5 data.
 - [ ] Selected dashboard metrics are shown to match direct database queries.
 - [ ] Screenshots of every Lab 4 screen at desktop, tablet, and mobile are

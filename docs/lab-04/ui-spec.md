@@ -42,8 +42,7 @@ colour.
 - **Link table**: a two-column table of a label (a badge where one exists)
   and a count, each row one link.
 - **Dashboard list**: a titled card of at most five rows. Each row is a link
-  to the item, showing the Ticket Number, Summary, and a Status badge, with
-  extra fields as each screen states.
+  to the item, showing the fields each screen states.
 - **Action conflict notice**: for `ACTION_TAKEN_CHANGED`, a Warning alert at
   the top of the form, "This action was changed by someone else. Reload to
   see the latest version.", with a **Reload** button (Secondary).

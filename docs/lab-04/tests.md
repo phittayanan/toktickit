@@ -26,10 +26,13 @@ never a private function call or a query shape.
   rows, applies the Lab 4 migration, and inspects it, then applies the
   rollback and `migrate deploy` again. `seed.test.ts` runs the real seed twice.
 - **Regression**: the Lab 1, Lab 2, and Lab 3 suites stay and must pass. They
-  change only where `specification.md` BR-33 replaces a rule: expectations of
-  landing on My Tickets, the Queue, or User Management after sign-in, of the exact navigation
-  entries, and of resolving a Ticket with no Done Action Taken. Those tests
-  move to the new behaviour; their other assertions stay.
+  change in two ways only. Where `specification.md` BR-33 replaces a rule:
+  expectations of landing on My Tickets, the Queue, or User Management after
+  sign-in, of the exact navigation entries, and of resolving a Ticket with no
+  Done Action Taken. And where a new endpoint joins the Lab 3 endpoint table:
+  `server/tests/lab-03/support/endpoints.ts` and the endpoint counts in
+  `endpoints.unit.test.ts`. Those tests move to the new behaviour; their other
+  assertions stay.
 - **UI component**: Vitest and Testing Library rendering real components with
   only `client/src/api.ts` mocked, in `client/src/lab-04/`, using the file names
   the handout lists.
