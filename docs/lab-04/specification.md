@@ -761,8 +761,10 @@ owner on 2026-10-30; the rest are defaults taken while writing this contract.
 17. **Dashboards are metric cards, link tables, and lists**, one column on
     mobile, with no charts.
 18. **Dashboard is the first navigation entry and the landing screen** for
-    every role. Lab 3 tests that expect My Tickets, the Queue, or User
-    Management after sign-in change with it (BR-33).
+    every role (BR-33). Any earlier test that asserts which screen is a
+    role's landing screen, or the entry that links to it, wherever that is
+    observed, moves to the Lab 4 landing table in `ui-spec.md` §4.1. The Not
+    Found link is not such an entry.
 19. **Requester Ticket Detail reuses the same card**, read-only.
 20. **A Planned row offers Edit, Mark Done, and Cancel action** to permitted
     users; Mark Done opens the form requiring Result, and Cancel action asks

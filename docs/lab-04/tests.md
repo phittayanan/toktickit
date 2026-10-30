@@ -28,9 +28,10 @@ never a private function call or a query shape.
 - **Regression**: the Lab 1, Lab 2, and Lab 3 suites stay and must pass. They
   change only in these expectations, which move to the new behaviour; their
   other assertions stay:
-  - The landing screen (`specification.md` BR-33): My Tickets, the Queue, or
-    User Management after sign-in, on the wordmark, and on the Forbidden page
-    button.
+  - The landing screen (`specification.md` BR-33). Any earlier test that
+    asserts which screen is a role's landing screen, or the entry that links
+    to it, wherever that is observed, moves to the Lab 4 landing table in
+    `ui-spec.md` §4.1. The Not Found link is not such an entry.
   - The exact navigation entries (BR-33).
   - Resolving a Ticket with no Done Action Taken (BR-33).
   - The Lab 3 endpoint table: `server/tests/lab-03/support/endpoints.ts` and
