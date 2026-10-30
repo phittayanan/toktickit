@@ -375,7 +375,7 @@ new token.
 | Administrator Dashboard | `/staff/dashboard` | Administrator | View, with an Active accounts section |
 | Staff Ticket Detail | `/staff/tickets/:id` | IT Staff, Administrator | Adds the Actions Taken card: list, view, create, edit, Mark Done, Cancel action |
 | Requester Ticket Detail | `/tickets/:id` | Requester | Adds the same card, read-only |
-| My Tickets | `/tickets` | Requester | Adds an Open Tickets filter and reads the status filter from the URL |
+| My Tickets | `/tickets` | Requester | Adds Open Tickets and Waiting for Requester filters and reads the status filter from the URL |
 | User Management | `/admin/users` | Administrator | Reads the role filter from the URL |
 
 - **Shell**: Dashboard is the first navigation entry and the landing screen
@@ -473,7 +473,7 @@ directions.
 
 The seed stays idempotent (L3 BR-47) and keeps every Lab 3 guarantee. New
 Tickets are appended to `SEED_TICKETS`, continuing the reserved block at
-`TKT-2026-900026`, and each one's Actions Taken are created only together
+`TKT-2026-900025`, and each one's Actions Taken are created only together
 with it. Existing seed Tickets receive none, so they demonstrate zero
 Actions Taken and legacy behaviour.
 
@@ -819,7 +819,8 @@ owner on 2026-10-30; the rest are defaults taken while writing this contract.
     buttons a Requester does not get.
 39. **The form's Status offers Planned and Done only.** Cancelled is reached
     only through Cancel action, so it always has its confirmation.
-40. **My Tickets gains an "Open Tickets" filter option**, the one small
-    addition needed for its drill-down, since its select holds one status.
+40. **My Tickets gains "Open Tickets" and "Waiting for Requester" filter
+    options**, the small addition its two drill-downs need, since its select
+    holds one status and otherwise offers only New.
 41. **The Administrator's Active accounts section sits under the metric
     cards** and loads on its own, so a failure there leaves the rest usable.

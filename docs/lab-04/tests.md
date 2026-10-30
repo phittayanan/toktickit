@@ -26,16 +26,21 @@ never a private function call or a query shape.
   rows, applies the Lab 4 migration, and inspects it, then applies the
   rollback and `migrate deploy` again. `seed.test.ts` runs the real seed twice.
 - **Regression**: the Lab 1, Lab 2, and Lab 3 suites stay and must pass. They
-  change in three ways only. Where `specification.md` BR-33 replaces a rule:
-  expectations of landing on My Tickets, the Queue, or User Management after
-  sign-in, of the exact navigation entries, and of resolving a Ticket with no
-  Done Action Taken. Where a new endpoint joins the Lab 3 endpoint table:
-  `server/tests/lab-03/support/endpoints.ts` and the endpoint counts in
-  `endpoints.unit.test.ts`. And where a Ticket Detail response or screen gains
-  Lab 4 data: the additive `actionTakenCounts` field in exact `StaffTicket`
-  assertions and client fixtures, and the mocked API calls the Actions Taken
-  card makes on the two Ticket Detail screens. Those tests move to the new
-  behaviour; their other assertions stay.
+  change only in these expectations, which move to the new behaviour; their
+  other assertions stay:
+  - The landing screen (`specification.md` BR-33): My Tickets, the Queue, or
+    User Management after sign-in, on the wordmark, and on the Forbidden page
+    button.
+  - The exact navigation entries (BR-33).
+  - Resolving a Ticket with no Done Action Taken (BR-33).
+  - The Lab 3 endpoint table: `server/tests/lab-03/support/endpoints.ts` and
+    the endpoint counts in `endpoints.unit.test.ts`.
+  - The additive `actionTakenCounts` field in exact `StaffTicket` assertions
+    and client fixtures.
+  - The mocked API calls the Actions Taken card makes on the two Ticket Detail
+    screens.
+  - The seed Ticket total: `SEED_TICKET_COUNT` and the page expectations
+    derived from it in `e2e/lab-03/staff-ticket-flow.spec.ts`.
 - **UI component**: Vitest and Testing Library rendering real components with
   only `client/src/api.ts` mocked, in `client/src/lab-04/`, using the file names
   the handout lists.
@@ -131,7 +136,7 @@ The Ticket Change module has its own tests from #74,
 | UI-16 | UI | AC-30, AC-31, AC-32, AC-34 | IT Staff Dashboard: cards, link tables, lists | Each link's target is as `ui-spec.md` §6.1; My Planned moves focus to its list | `client/src/lab-04/StaffDashboard.test.tsx` | Planned |
 | UI-17 | UI | AC-35, AC-38 | IT Staff Dashboard: loading, empty, forbidden, failure | Four distinct states | `client/src/lab-04/StaffDashboard.test.tsx` | Planned |
 | UI-18 | UI | AC-33 | Dashboard for an Administrator and for IT Staff; account request fails | Active accounts only for the Administrator, linking to User Management; its failure leaves the rest usable | `client/src/lab-04/StaffDashboard.test.tsx` | Planned |
-| UI-19 | UI | AC-34 | My Tickets and User Management opened with URL filters | The matching filter is applied; "Open Tickets" sends the five statuses | `client/src/lab-04/RequesterDashboard.test.tsx` | Planned |
+| UI-19 | UI | AC-34 | My Tickets and User Management opened with URL filters | The matching filter is applied and its control shows it; "Open Tickets" sends the five statuses | `client/src/lab-04/RequesterDashboard.test.tsx` | Planned |
 | UI-20 | UI | AC-43 | Shell for each role; sign-in; Forbidden page button | Dashboard first and active; Lab 3 entries stay; landing is the Dashboard | `client/src/lab-04/StaffDashboard.test.tsx` | Planned |
 | UI-21 | UI style | AC-48 | Action status and Follow-up badge components | Label, icon, and style class match `ui-spec.md` §2.2 | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
 | UI-22 | UI | AC-11 | Edit a field after a failed or lost response, then Save | The request carries a new `clientRequestId` | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |

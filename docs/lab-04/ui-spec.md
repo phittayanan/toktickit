@@ -320,9 +320,10 @@ reload shows the gate is met. The backend enforces the rule regardless.
 ## 10. Drill-down additions
 
 - **My Tickets** (`/tickets`) reads `currentStatus` from the URL when it opens.
-  Its Current Status select gains an "Open Tickets" option, meaning the five
-  statuses of BR-29, shown in the URL as `currentStatus=open`. "All Statuses"
-  stays the default and every other Lab 2 behaviour is unchanged.
+  Its Current Status select gains two options: "Open Tickets", meaning the five
+  statuses of BR-29, shown in the URL as `currentStatus=open`, and "Waiting for
+  Requester". The select shows the filter applied, and a URL value it does not
+  list is ignored. "All Statuses" stays the default and every other Lab 2 behaviour is unchanged.
 - **Ticket Queue** needs no change: its URL view already holds these filters.
 - **User Management** (`/admin/users`) reads `role` from the URL when it opens
   and starts with that role filter applied.
