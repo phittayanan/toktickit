@@ -30,7 +30,7 @@ toktickit/
 ├── server/
 │   ├── prisma/              # Prisma schema, migrations, and seed
 │   ├── src/                 # Express + TypeScript source
-│   └── tests/               # Vitest + Supertest suites: lab-01, lab-02, lab-03
+│   └── tests/               # Vitest + Supertest suites: lab-01 to lab-04
 ├── e2e/                    # Playwright suites: lab-02, lab-03
 ├── artifacts/              # Screenshots: lab-02, lab-03
 ├── docs/

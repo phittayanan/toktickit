@@ -116,6 +116,14 @@ _Avoid_: reply, message, note.
 A note on a Ticket visible only to Staff, never to the Requester.
 _Avoid_: private comment, comment.
 
+**Ticket Change**:
+An action that writes to an Unfinished Ticket: changing its Ticket Owner,
+IT Priority, or Current Status; Problem Appears Resolved; adding a Public
+Comment or Internal Note; adding or removing an Attachment. Every Ticket
+Change records the last-updated time, except an Internal Note and Attachment
+changes. A Finished Ticket takes no Ticket Change.
+_Avoid_: ticket update, ticket edit.
+
 **Category**:
 The fixed top-level classification of a Ticket.
 

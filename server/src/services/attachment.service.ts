@@ -3,6 +3,7 @@ import prisma from '../prisma'
 import { MAX_ACTIVE_ATTACHMENTS_PER_TICKET } from '../schemas/attachment.schema'
 import { isFinished } from './statusTransitions.service'
 import { TicketFinishedError, TicketNotFoundError } from './ticket.service'
+import { changeTicket, lockAuthor } from './ticketChange.service'
 
 export { TicketFinishedError, TicketNotFoundError }
 
@@ -64,33 +65,29 @@ export async function uploadAttachment(ticketId: number, requesterId: number, fi
   // same Ticket (e.g. a retry racing the original), not just a compliant
   // client — a second transaction blocks on the lock until the first
   // commits its insert, so it recounts to a value that already reflects it.
-  return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = ${ticketId} FOR UPDATE`
+  // The Ticket row itself is not written, so its last-updated time stays.
+  return changeTicket(ticketId, {
+    lockUsers: lockAuthor(requesterId),
+    rule: async (_ticket, { tx, time }) => {
+      const activeCount = await tx.attachment.count({
+        where: { ticketId, removedAt: null },
+      })
+      if (activeCount >= MAX_ACTIVE_ATTACHMENTS_PER_TICKET) {
+        throw new AttachmentLimitReachedError()
+      }
 
-    // BR-31, read under the lock: the Ticket may have been finished since
-    // the route's own check.
-    const locked = await tx.ticket.findUniqueOrThrow({ where: { id: ticketId } })
-    if (isFinished(locked.currentStatus)) {
-      throw new TicketFinishedError()
-    }
-
-    const activeCount = await tx.attachment.count({
-      where: { ticketId, removedAt: null },
-    })
-    if (activeCount >= MAX_ACTIVE_ATTACHMENTS_PER_TICKET) {
-      throw new AttachmentLimitReachedError()
-    }
-
-    return tx.attachment.create({
-      data: {
-        ticketId,
-        uploadedByRequesterId: requesterId,
-        originalFilename: file.originalname,
-        storedFilename: file.filename,
-        mimeType: file.mimetype,
-        sizeBytes: file.size,
-      },
-    })
+      return tx.attachment.create({
+        data: {
+          ticketId,
+          uploadedByRequesterId: requesterId,
+          originalFilename: file.originalname,
+          storedFilename: file.filename,
+          mimeType: file.mimetype,
+          sizeBytes: file.size,
+          createdAt: time,
+        },
+      })
+    },
   })
 }
 
@@ -130,31 +127,32 @@ export async function getDownloadableAttachment(attachmentId: number, user: User
 }
 
 // POST /api/attachments/:id/remove — BR-18/BR-19: soft removal only, and
-// only of an Attachment that is currently active. Runs the check-then-write
-// inside one transaction with a row lock (same pattern as uploadAttachment)
-// so two concurrent removals of the same Attachment can't both pass the
-// active check and silently overwrite each other's removal metadata — the
-// second blocks on the lock, then re-reads and correctly 404s. The Ticket
-// row is locked first, then the Attachment row, so the Ticket's status is
-// read under its lock: a Ticket finished at the same moment loses no
-// Attachment (BR-31).
+// only of an Attachment that is currently active. The Attachment names its
+// Ticket, so it is looked up first, and an Attachment the caller does not
+// reach is refused ahead of the Ticket's status. The check-then-write then
+// runs as a Ticket Change, with the Attachment row locked after the Ticket
+// row (same pattern as uploadAttachment), so a Ticket finished at the same
+// moment loses no Attachment (BR-31), and two concurrent removals of the
+// same Attachment can't both pass the active check and silently overwrite
+// each other's removal metadata — the second blocks on the lock, then
+// re-reads and correctly 404s.
 export async function removeAttachment(attachmentId: number, requesterId: number, removalReason: string) {
-  return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = (SELECT "ticketId" FROM "Attachment" WHERE id = ${attachmentId}) FOR UPDATE`
-    await tx.$queryRaw`SELECT id FROM "Attachment" WHERE id = ${attachmentId} FOR UPDATE`
+  const { ticketId } = await findOwnedActiveAttachment(attachmentId, requesterId)
 
-    const attachment = await findOwnedActiveAttachment(attachmentId, requesterId, tx)
-    if (isFinished(attachment.ticket.currentStatus)) {
-      throw new TicketFinishedError()
-    }
+  return changeTicket(ticketId, {
+    lockUsers: lockAuthor(requesterId),
+    rule: async (_ticket, { tx, time }) => {
+      await tx.$queryRaw`SELECT id FROM "Attachment" WHERE id = ${attachmentId} FOR UPDATE`
+      await findOwnedActiveAttachment(attachmentId, requesterId, tx)
 
-    return tx.attachment.update({
-      where: { id: attachmentId },
-      data: {
-        removedAt: new Date(),
-        removedByRequesterId: requesterId,
-        removalReason,
-      },
-    })
+      return tx.attachment.update({
+        where: { id: attachmentId },
+        data: {
+          removedAt: time,
+          removedByRequesterId: requesterId,
+          removalReason,
+        },
+      })
+    },
   })
 }
