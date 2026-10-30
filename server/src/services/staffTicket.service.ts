@@ -33,6 +33,20 @@ export class OwnerRequiredError extends Error {
   }
 }
 
+// Lab 4 BR-19: the Resolution Gate, no Done Action Taken.
+export class DoneActionRequiredError extends Error {
+  constructor() {
+    super('A ticket needs at least one Done action before it can be resolved.')
+  }
+}
+
+// Lab 4 BR-19: the Resolution Gate, a Planned Action Taken is left.
+export class PlannedActionRemainsError extends Error {
+  constructor() {
+    super('Finish or cancel every Planned action before resolving this ticket.')
+  }
+}
+
 // The largest id a row can have. A larger one names no user, and is never
 // sent to the database, which would refuse it.
 const MAX_ID = 2_147_483_647
@@ -177,7 +191,7 @@ export async function changeItPriority(ticketId: number, itPriority: Priority) {
 // the order of api-spec.md §1.5.
 export async function changeStatus(ticketId: number, input: StatusInput) {
   await changeTicket(ticketId, {
-    rule: async (ticket, { time, write }) => {
+    rule: async (ticket, { tx, time, write }) => {
       if (ticket.currentStatus !== input.expectedStatus) {
         throw new StatusChangedError()
       }
@@ -186,6 +200,16 @@ export async function changeStatus(ticketId: number, input: StatusInput) {
       }
       if (input.status === 'RESOLVED' && ticket.ownerId === null) {
         throw new OwnerRequiredError()
+      }
+      // Lab 4 BR-21: read under the Ticket lock that Action Taken writes also
+      // take, so a Planned one and this move are serialised.
+      if (input.status === 'RESOLVED') {
+        if ((await tx.actionTaken.count({ where: { ticketId, status: 'DONE' } })) === 0) {
+          throw new DoneActionRequiredError()
+        }
+        if ((await tx.actionTaken.count({ where: { ticketId, status: 'PLANNED' } })) > 0) {
+          throw new PlannedActionRemainsError()
+        }
       }
 
       await write({
