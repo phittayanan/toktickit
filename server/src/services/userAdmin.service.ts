@@ -1,12 +1,10 @@
 import { Prisma } from '../../generated/prisma/client'
-import { now } from '../clock'
 import prisma from '../prisma'
 import type { CreateUserInput, ListUsersQuery, UpdateUserInput } from '../schemas/userAdmin.schema'
 import { generateInitialPassword } from './initialPassword.service'
 import { hashPassword } from './passwordHash.service'
-
-// A finished Ticket is Closed or Cancelled; every other one is unfinished.
-const UNFINISHED = { currentStatus: { notIn: ['CLOSED', 'CANCELLED'] } } satisfies Prisma.TicketWhereInput
+import { UNFINISHED } from './statusTransitions.service'
+import { changeUnfinishedTickets } from './ticketChange.service'
 
 // What User Management reads about a user: the row, and how many unfinished
 // Tickets they own (BR-25).
@@ -194,11 +192,10 @@ export async function updateUser(
       // Tickets keep them as the historical owner.
       let unassignedTicketCount = 0
       if (deactivating || (roleChanging && input.role === 'REQUESTER')) {
-        const unassigned = await tx.ticket.updateMany({
-          where: { ownerId: userId, ...UNFINISHED },
-          data: { ownerId: null, ownerChangedAt: now() },
-        })
-        unassignedTicketCount = unassigned.count
+        unassignedTicketCount = await changeUnfinishedTickets(tx, { ownerId: userId }, (time) => ({
+          ownerId: null,
+          ownerChangedAt: time,
+        }))
       }
 
       const user = await tx.user.findUniqueOrThrow({ ...adminUserQuery, where: { id: userId } })

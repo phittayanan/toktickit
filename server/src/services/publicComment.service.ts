@@ -1,8 +1,7 @@
 import type { Prisma, User } from '../../generated/prisma/client'
 import prisma from '../prisma'
-import { now } from '../clock'
-import { isFinished } from './statusTransitions.service'
-import { TicketFinishedError, TicketNotFoundError } from './ticket.service'
+import { TicketNotFoundError } from './ticket.service'
+import { changeTicket, lockAuthor } from './ticketChange.service'
 
 // Public Comments are read and written here and nowhere else, and nothing
 // here reads an Internal Note (ADR-0010).
@@ -40,27 +39,21 @@ export async function listPublicComments(ticketId: number, user: User) {
 
 // POST /api/tickets/:id/comments (BR-34, BR-36): the author is the session
 // user and the time is the server's. Any unfinished Ticket takes one,
-// including a Resolved one. The Ticket row is locked while its status is
-// checked, so a Ticket finished at the same moment takes no comment.
+// including a Resolved one. As a Ticket Change, a Ticket finished at the
+// same moment takes no comment, and the comment moves the Ticket's
+// last-updated time (specification.md §7.1).
 export async function createPublicComment(ticketId: number, user: User, body: string) {
   await requireReachableTicket(ticketId, user)
 
-  return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = ${ticketId} FOR UPDATE`
+  return changeTicket(ticketId, {
+    lockUsers: lockAuthor(user.id),
+    rule: async (_ticket, { tx, time, write }) => {
+      await write()
 
-    const ticket = await tx.ticket.findUniqueOrThrow({ where: { id: ticketId } })
-    if (isFinished(ticket.currentStatus)) {
-      throw new TicketFinishedError()
-    }
-
-    const time = now()
-    // specification.md §7.1: a new Public Comment moves the Ticket's
-    // last-updated time.
-    await tx.ticket.update({ where: { id: ticketId }, data: { updatedAt: time } })
-
-    return tx.publicComment.create({
-      data: { ticketId, authorId: user.id, body, createdAt: time },
-      select: ENTRY_SELECT,
-    })
+      return tx.publicComment.create({
+        data: { ticketId, authorId: user.id, body, createdAt: time },
+        select: ENTRY_SELECT,
+      })
+    },
   })
 }
