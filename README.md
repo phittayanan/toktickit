@@ -26,7 +26,7 @@ incrementally across CPE 334 Individual Sprints (Labs 1–4).
 ```
 toktickit/
 ├── client/                 # React + TypeScript + Vite frontend
-│   └── src/                 # Screens, with each component test beside it
+│   └── src/                 # Screens, with component tests beside them or in lab-04/
 ├── server/
 │   ├── prisma/              # Prisma schema, migrations, and seed
 │   ├── src/                 # Express + TypeScript source
@@ -176,9 +176,10 @@ export DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/toktickit_e2e?sch
 npm install
 npx playwright install chromium
 npm run typecheck                  # type check of the specs
+npx playwright test e2e/lab-04     # Lab 4 E2E, visual, responsive
 npx playwright test e2e/lab-03     # Lab 3 E2E, visual, responsive
 npx playwright test e2e/lab-02     # Lab 2 regression
-npx playwright test                # both
+npx playwright test                # all of them
 ```
 
 An exported `DATABASE_URL` takes precedence over the one in `server/.env`,
