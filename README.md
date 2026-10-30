@@ -74,8 +74,9 @@ new ones; CI and the test databases below use it.
 ### Seed accounts (local development)
 
 `npx prisma db seed` is safe to run repeatedly. Besides the Categories and
-Related Systems it provides these accounts, and 24 example Tickets
-(`TKT-2026-900001` upward) with Public Comments and Internal Notes:
+Related Systems it provides these accounts, and 31 example Tickets
+(`TKT-2026-900001` upward) with Public Comments, Internal Notes, and Actions
+Taken:
 
 | Name | Email | Role | Status |
 |---|---|---|---|
@@ -119,9 +120,10 @@ requests from `http://localhost:5173` only, unless `CLIENT_ORIGIN` in
 ## Running Tests
 
 The test plan, the traceability to the Acceptance Criteria, and the final
-results are in [`docs/lab-03/tests.md`](docs/lab-03/tests.md).
+results are in [`docs/lab-03/tests.md`](docs/lab-03/tests.md) for Lab 3 and
+[`docs/lab-04/tests.md`](docs/lab-04/tests.md) for Lab 4.
 
-### Server: unit, API, security, migration, seed, and Lab 1 and Lab 2 regression
+### Server: unit, API, security, migration, seed, and earlier-lab regression
 
 ```bash
 cd server

@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { randomUUID } from 'node:crypto'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient, type Role } from '../generated/prisma/client'
 import { hashPassword } from '../src/services/passwordHash.service'
@@ -19,11 +20,11 @@ const RELATED_SYSTEM_NAMES = [
 ]
 
 // The local-development initial password of every seed account
-// (specification.md §7.4, documented in the README). It is hashed when the
-// seed runs and never stored anywhere else (BR-46).
+// (Lab 3 specification.md §7.4, documented in the README). It is hashed when
+// the seed runs and never stored anywhere else (BR-46).
 const SEED_PASSWORD = 'TokTickIT-Lab3!'
 
-// specification.md §7.4: the five Lab 2 Requesters (four active, one
+// Lab 3 specification.md §7.4: the five Lab 2 Requesters (four active, one
 // inactive), four IT Staff (three active, one inactive), and one
 // Administrator. Emails are lower-case, as they are stored (BR-06).
 const USERS: { name: string; email: string; role: Role; isActive: boolean }[] = [
@@ -39,14 +40,14 @@ const USERS: { name: string; email: string; role: Role; isActive: boolean }[] = 
   { name: 'Apinya Thongchai', email: 'apinya.thongchai@kmutt.ac.th', role: 'ADMINISTRATOR', isActive: true },
 ]
 
-// The reserved block for seed Tickets (specification.md §7.4): the real
+// The reserved block for seed Tickets (Lab 3 specification.md §7.4): the real
 // per-year counter never reaches it, so a seed Ticket cannot collide with
 // one a Requester created.
 const FIRST_SEED_TICKET_NUMBER = 900001
 
 // Creates each seed Ticket whose Ticket Number is absent, together with its
-// Public Comments and Internal Notes. A Ticket that exists is left exactly
-// as it is, entries included (BR-47).
+// Public Comments, Internal Notes, and Actions Taken. A Ticket that exists is
+// left exactly as it is, entries included (BR-47).
 async function seedTickets() {
   const [users, categories, relatedSystems] = await Promise.all([
     prisma.user.findMany({ select: { id: true, email: true } }),
@@ -90,6 +91,15 @@ async function seedTickets() {
         updatedAt: ticket.updatedAt,
         publicComments: { create: entries(ticket.comments) },
         internalNotes: { create: entries(ticket.notes) },
+        actionsTaken: {
+          create: (ticket.actionsTaken ?? []).map(({ assignee, createdBy, ...action }) => ({
+            ...action,
+            assigneeId: idIn(userIds, assignee),
+            createdById: idIn(userIds, createdBy),
+            updatedAt: action.createdAt,
+            clientRequestId: randomUUID(),
+          })),
+        },
       },
     })
   }
