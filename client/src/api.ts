@@ -220,6 +220,7 @@ export interface StaffTicket {
   requesterResolvedAt: string | null
   publicCommentCount: number
   internalNoteCount: number
+  actionTakenCounts: { planned: number; done: number }
   attachments: Omit<TicketAttachment, 'ticketId'>[]
   createdAt: string
   updatedAt: string

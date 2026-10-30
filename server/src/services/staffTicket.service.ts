@@ -70,6 +70,7 @@ const STAFF_TICKET = {
   resolvedAt: true,
   requesterResolvedAt: true,
   _count: { select: { publicComments: true, internalNotes: true } },
+  actionsTaken: { select: { status: true } },
   attachments: {
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     select: {
@@ -90,8 +91,10 @@ const STAFF_TICKET = {
 type StaffTicketRow = Prisma.TicketGetPayload<{ select: typeof STAFF_TICKET }>
 
 // The `StaffTicket` shape. `allowedTransitions` are the BR-28 targets from
-// the current status, none for a finished Ticket.
-function toStaffTicket({ _count, attachments, createdAt, updatedAt, ...ticket }: StaffTicketRow) {
+// the current status, none for a finished Ticket, whatever the Resolution
+// Gate says; `actionTakenCounts` is what the client shows the gate's state by
+// (Lab 4 api-spec.md §3.2).
+function toStaffTicket({ _count, actionsTaken, attachments, createdAt, updatedAt, ...ticket }: StaffTicketRow) {
   const { owner, ownerChangedAt, resolutionSummary, resolvedAt, requesterResolvedAt, ...fields } = ticket
 
   return {
@@ -104,6 +107,10 @@ function toStaffTicket({ _count, attachments, createdAt, updatedAt, ...ticket }:
     requesterResolvedAt,
     publicCommentCount: _count.publicComments,
     internalNoteCount: _count.internalNotes,
+    actionTakenCounts: {
+      planned: actionsTaken.filter((action) => action.status === 'PLANNED').length,
+      done: actionsTaken.filter((action) => action.status === 'DONE').length,
+    },
     attachments,
     createdAt,
     updatedAt,
