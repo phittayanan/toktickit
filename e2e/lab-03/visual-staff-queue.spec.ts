@@ -26,6 +26,7 @@ test.describe('visual: Ticket Queue', () => {
 
   async function openQueue(page: Page) {
     await signInAsUser(page, E2E_USERS.IT_STAFF)
+    await page.goto('/staff/queue')
     await expect(page.getByRole('heading', { name: 'Ticket Queue' })).toBeVisible()
     await expect(firstTicketLink(page)).toBeVisible()
   }
@@ -132,6 +133,7 @@ test.describe('visual: Ticket Queue', () => {
     await page.setViewportSize(BREAKPOINTS.desktop)
     const release = await holdRequests(page, QUEUE_REQUEST)
     await signInAsUser(page, E2E_USERS.IT_STAFF)
+    await page.goto('/staff/queue')
     await expect(page.getByText('Loading tickets…')).toBeVisible()
     await expect(page.locator('.tk-queue__skeleton .placeholder').first()).toHaveCSS(
       'background-color',
@@ -145,6 +147,7 @@ test.describe('visual: Ticket Queue', () => {
     await page.setViewportSize(BREAKPOINTS.desktop)
     await page.route(QUEUE_REQUEST, (route) => route.abort())
     await signInAsUser(page, E2E_USERS.IT_STAFF)
+    await page.goto('/staff/queue')
     await expect(page.getByRole('alert')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible()
     await takeScreenshot(page, 'staff-queue', 'desktop-failure')
@@ -156,7 +159,7 @@ test.describe('visual: Ticket Queue', () => {
     await page.goto('/staff/queue')
     await expect(page.getByRole('heading', { name: "You don't have access to this page" })).toBeVisible()
     // Its way out is a 44px tap target (ui-spec.md §11).
-    const wayOut = await page.getByRole('button', { name: 'Go to My Tickets' }).boundingBox()
+    const wayOut = await page.getByRole('button', { name: 'Go to Dashboard' }).boundingBox()
     expect(wayOut!.height).toBeGreaterThanOrEqual(44)
     await takeScreenshot(page, 'staff-queue', 'mobile-forbidden')
   })

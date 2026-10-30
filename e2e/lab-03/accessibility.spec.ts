@@ -115,6 +115,7 @@ test('E2E-13 Requester Ticket Detail', async ({ page }) => {
 
 test('E2E-13 Ticket Queue', async ({ page }) => {
   await signInAs(page, 'IT_STAFF')
+  await page.goto('/staff/queue')
   await expect(page.getByText(/Showing \d+ to \d+ of \d+ tickets/)).toBeVisible()
 
   await expectKeyboardReachable(page, wholePage(page))
@@ -208,6 +209,7 @@ test('E2E-13 User Management and its dialogs', async ({ page }) => {
   test.slow()
   const user = createDisposableUser('IT_STAFF')
   await signInAs(page, 'ADMINISTRATOR')
+  await page.goto('/admin/users')
   await page.getByLabel('Search users').fill(user.email)
   await expect(page.getByRole('table').locator('tbody').getByRole('row')).toHaveCount(1)
 
@@ -261,6 +263,7 @@ test('E2E-13 User Management and its dialogs', async ({ page }) => {
 test('E2E-13 the User Management panel as a dialog below desktop width', async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 900 })
   const administrator = await signInAs(page, 'ADMINISTRATOR')
+  await page.goto('/admin/users')
   await page.getByLabel('Search users').fill(administrator.email)
   await expect(page.getByRole('table').locator('tbody').getByRole('row')).toHaveCount(1)
 

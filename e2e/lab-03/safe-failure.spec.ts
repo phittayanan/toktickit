@@ -65,6 +65,7 @@ for (const failure of FAILURES) {
   test.describe(`E2E-14 safe failure on ${failure}`, () => {
     test('Ticket Queue keeps the search and filters and offers Retry', async ({ page }) => {
       await signInAs(page, 'IT_STAFF')
+      await page.goto('/staff/queue')
       await expect(page.getByText(/Showing \d+ to \d+ of \d+ tickets/)).toBeVisible()
 
       const restore = await failApi(page, failure, 'GET', /^\/api\/staff\/tickets$/)
@@ -149,6 +150,7 @@ for (const failure of FAILURES) {
       const tag = Date.now()
       const entered = { name: `E2E Never Saved ${tag}`, email: `e2e.never-saved.${tag}@kmutt.ac.th` }
       await signInAs(page, 'ADMINISTRATOR')
+      await page.goto('/admin/users')
       await expect(page.getByRole('table')).toBeVisible()
 
       // The list fails to load, then loads on Retry with the search kept.

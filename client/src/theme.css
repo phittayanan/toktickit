@@ -1222,6 +1222,9 @@ a.tk-metric:hover {
   outline-offset: 2px;
 }
 
+.tk-link-table {
+  --bs-table-bg: transparent;
+}
 .tk-link-table__row {
   position: relative;
 }

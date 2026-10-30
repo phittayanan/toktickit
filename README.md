@@ -31,8 +31,8 @@ toktickit/
 │   ├── prisma/              # Prisma schema, migrations, and seed
 │   ├── src/                 # Express + TypeScript source
 │   └── tests/               # Vitest + Supertest suites: lab-01 to lab-04
-├── e2e/                    # Playwright suites: lab-02, lab-03
-├── artifacts/              # Screenshots: lab-02, lab-03
+├── e2e/                    # Playwright suites: lab-02, lab-03, lab-04
+├── artifacts/              # Screenshots: lab-02, lab-03, lab-04
 ├── docs/
 │   ├── adr/                 # Architecture decision records
 │   ├── lab-01/              # Lab 1 tests, peer review, AI use

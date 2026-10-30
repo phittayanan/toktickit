@@ -12,7 +12,7 @@ export interface E2EUser {
   email: string
   password: string
   role: Role
-  // Where the role lands after signing in (ui-spec.md §4.1).
+  // Where the role lands after signing in (docs/lab-04/ui-spec.md §4.1).
   landingPath: string
 }
 
@@ -20,9 +20,9 @@ export interface E2EUser {
 const E2E_PASSWORD = 'E2e-Passw0rd!'
 
 const LANDING_PATHS: Record<Role, string> = {
-  REQUESTER: '/tickets',
-  IT_STAFF: '/staff/queue',
-  ADMINISTRATOR: '/admin/users',
+  REQUESTER: '/dashboard',
+  IT_STAFF: '/staff/dashboard',
+  ADMINISTRATOR: '/staff/dashboard',
 }
 
 export const E2E_USERS: Record<Role, E2EUser> = {
