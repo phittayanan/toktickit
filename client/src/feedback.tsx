@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import type { Role } from './api'
-import { landingEntry } from './navigation'
+import { landingEntry, notFoundEntry } from './navigation'
 
 // Shared feedback components (ui-spec.md §2.3).
 
@@ -63,7 +63,7 @@ export function ForbiddenPage({ role }: { role: Role }) {
 }
 
 // Not Found page: shown inside the shell for an unknown path, with a link
-// back to a list: `back`, or else the one the Role lands on.
+// back to a list: `back`, or else the Role's own.
 export function NotFoundPage({
   role,
   title = "We couldn't find that page",
@@ -73,13 +73,13 @@ export function NotFoundPage({
   title?: string
   back?: { label: string; path: string }
 }) {
-  const landing = back ?? landingEntry(role)
+  const list = back ?? notFoundEntry(role)
 
   return (
     <div className="tk-feedback-page card mx-auto text-center">
       <div className="card-body">
         <h1 className="h4 mb-3">{title}</h1>
-        <Link to={landing.path}>Back to {landing.label}</Link>
+        <Link to={list.path}>Back to {list.label}</Link>
       </div>
     </div>
   )

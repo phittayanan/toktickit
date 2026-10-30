@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams } from 'react-router'
+import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router'
 import type { Role, UserIdentity } from './api'
 import { ForbiddenPage, NotFoundPage } from './feedback'
 import { LANDING_PATH } from './navigation'
@@ -14,14 +14,21 @@ import RequesterTicketDetail from './RequesterTicketDetail'
 import UserManagement from './UserManagement'
 import StaffTicketQueue from './StaffTicketQueue'
 import StaffTicketDetail, { StaffTicketNotFound } from './StaffTicketDetail'
+import RequesterDashboard from './RequesterDashboard'
+import StaffDashboard from './StaffDashboard'
 
 // The Lab 2 Requester screens keep their props; these adapters give them
 // the URL paths of specification.md §6.
 function MyTicketsScreen() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const currentStatus = searchParams.get('currentStatus') ?? ''
 
+  // Keyed so that a different URL filter opens the screen afresh.
   return (
     <MyTickets
+      key={currentStatus}
+      initialCurrentStatus={currentStatus}
       onCreateTicket={() => navigate('/tickets/new')}
       onOpenTicket={(ticketId) => navigate(`/tickets/${ticketId}`)}
     />
@@ -55,8 +62,18 @@ function StaffTicketDetailScreen({ user }: { user: UserIdentity }) {
 // save to their own account is taken into the Session state.
 function UserManagementScreen({ user }: { user: UserIdentity }) {
   const { signIn } = useSession()
+  const [searchParams] = useSearchParams()
+  const role = searchParams.get('role') ?? ''
 
-  return <UserManagement user={user} onSelfSaved={(saved) => signIn({ ...user, name: saved.name, email: saved.email })} />
+  // Keyed so that a different URL filter opens the screen afresh.
+  return (
+    <UserManagement
+      key={role}
+      user={user}
+      initialRole={role}
+      onSelfSaved={(saved) => signIn({ ...user, name: saved.name, email: saved.email })}
+    />
+  )
 }
 
 const REQUESTER: Role[] = ['REQUESTER']
@@ -102,6 +119,14 @@ function AppRoutes() {
         <Route path="/" element={landing} />
         <Route path="/login" element={landing} />
         <Route
+          path="/dashboard"
+          element={
+            <RequireRole user={user} roles={REQUESTER}>
+              <RequesterDashboard />
+            </RequireRole>
+          }
+        />
+        <Route
           path="/tickets"
           element={
             <RequireRole user={user} roles={REQUESTER}>
@@ -122,6 +147,14 @@ function AppRoutes() {
           element={
             <RequireRole user={user} roles={REQUESTER}>
               <RequesterTicketDetailScreen />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/staff/dashboard"
+          element={
+            <RequireRole user={user} roles={STAFF}>
+              <StaffDashboard user={user} />
             </RequireRole>
           }
         />

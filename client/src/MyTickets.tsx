@@ -13,7 +13,16 @@ import { PriorityBadge, StatusBadge } from './badges'
 import PaginationControls from './PaginationControls'
 import type { PageSize } from './pageSizes'
 
-const CURRENT_STATUSES = ['NEW'] as const // the only status value in scope for Lab 2 (ui-spec.md §10)
+// The Current Status options besides All Statuses (docs/lab-04/ui-spec.md
+// §10). `open` stands for the five statuses of the Open Tickets metric
+// (BR-29), which go to the API as a list.
+const CURRENT_STATUSES = ['NEW', 'open', 'WAITING_FOR_REQUESTER'] as const
+const CURRENT_STATUS_LABELS: Record<(typeof CURRENT_STATUSES)[number], string> = {
+  NEW: 'New',
+  open: 'Open Tickets',
+  WAITING_FOR_REQUESTER: 'Waiting for Requester',
+}
+const OPEN_TICKET_STATUSES = 'NEW,OPEN,IN_PROGRESS,WAITING_FOR_REQUESTER,REOPENED'
 
 interface Filters {
   search: string
@@ -43,14 +52,21 @@ function formatDate(iso: string): string {
 // The My Tickets list (ui-spec.md §8, ticket #20): paginated, searchable,
 // filterable, sortable list of the selected Requester's own Tickets.
 function MyTickets({
+  initialCurrentStatus = '',
   onCreateTicket,
   onOpenTicket,
 }: {
+  // The filter the URL opened the screen with. A value the select does not
+  // list is ignored.
+  initialCurrentStatus?: string
   onCreateTicket: () => void
   onOpenTicket: (ticketId: number) => void
 }) {
   const [categories, setCategories] = useState<Category[]>([])
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
+  const [filters, setFilters] = useState<Filters>({
+    ...EMPTY_FILTERS,
+    currentStatus: (CURRENT_STATUSES as readonly string[]).includes(initialCurrentStatus) ? initialCurrentStatus : '',
+  })
   const [sortBy, setSortBy] = useState<SortBy>('updatedAt')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
@@ -77,7 +93,7 @@ function MyTickets({
       categoryId: filters.categoryId ? Number(filters.categoryId) : undefined,
       requestedPriority: filters.requestedPriority || undefined,
       itPriority: filters.itPriority || undefined,
-      currentStatus: filters.currentStatus || undefined,
+      currentStatus: filters.currentStatus === 'open' ? OPEN_TICKET_STATUSES : filters.currentStatus || undefined,
       sortBy,
       sortDir,
     })
@@ -221,7 +237,7 @@ function MyTickets({
             <option value="">All Statuses</option>
             {CURRENT_STATUSES.map((status) => (
               <option key={status} value={status}>
-                {status === 'NEW' ? 'New' : status}
+                {CURRENT_STATUS_LABELS[status]}
               </option>
             ))}
           </select>
