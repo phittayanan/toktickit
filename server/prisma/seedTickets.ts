@@ -69,7 +69,7 @@ function hoursAgo(hours: number): string {
   return new Date(SEED_RUN - hours * HOUR).toISOString()
 }
 
-// specification.md §7.4. A Ticket's position here is its Ticket Number:
+// Lab 3 specification.md §7.4. A Ticket's position here is its Ticket Number:
 // the first is TKT-2026-900001. Add new Tickets at the end, so that the
 // numbers of the existing ones never move.
 //
