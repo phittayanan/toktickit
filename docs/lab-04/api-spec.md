@@ -253,10 +253,9 @@ All three are `GET` with no parameters and return only the fields shown.
 Metrics are calculated per request (BR-27). With no matching data a count is
 `0` and a list is `[]`; the response is still `200` (AC-35).
 
-- `generatedAt`, in all three: the server time of the calculation.
-- `recentSince`, in §5.1 and §5.2: the start of the recent window (BR-28),
-  00:00 Asia/Bangkok six calendar days before today's Bangkok date, as a UTC
-  timestamp.
+`recentSince`, in §5.1 and §5.2, is the start of the recent window (BR-28):
+00:00 Asia/Bangkok six calendar days before today's Bangkok date, as a UTC
+timestamp.
 
 ### 5.1 GET /api/requester/dashboard
 
@@ -265,7 +264,6 @@ Role Requester; staff get `403`. Own Tickets only, from the session.
 - **Success `200`**:
   ```json
   {
-    "generatedAt": "2026-10-30T08:00:00.000Z",
     "recentSince": "2026-10-23T17:00:00.000Z",
     "openCount": 3,
     "waitingForRequesterCount": 1,
@@ -305,7 +303,6 @@ Staff; a Requester gets `403`. `U` below is the six Unfinished statuses:
 - **Success `200`**:
   ```json
   {
-    "generatedAt": "2026-10-30T08:00:00.000Z",
     "recentSince": "2026-10-23T17:00:00.000Z",
     "unassignedCount": 4,
     "ownedByMeCount": 6,
@@ -362,7 +359,6 @@ Role Administrator; anyone else gets `403`. An Administrator calls this and
 - **Success `200`**:
   ```json
   {
-    "generatedAt": "2026-10-30T08:00:00.000Z",
     "activeUsers": { "REQUESTER": 4, "IT_STAFF": 3, "ADMINISTRATOR": 1 }
   }
   ```

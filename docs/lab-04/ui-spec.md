@@ -44,7 +44,7 @@ colour.
 - **Dashboard list**: a titled card of at most five rows. Each row is a link
   to the item, showing the fields each screen states.
 - **Action conflict notice**: for `ACTION_TAKEN_CHANGED`, a Warning alert at
-  the top of the form, "This action was changed by someone else. Reload to
+  the top of the form or in the Cancel action confirmation, "This action was changed by someone else. Reload to
   see the latest version.", with a **Reload** button (Secondary).
 
 ## 3. Screen states
@@ -277,13 +277,14 @@ row stays listed as Planned. View mode still works.
 | Empty | Staff: "No actions recorded yet." Requester: "IT Staff have not recorded any actions yet." |
 | Validation | Message under the field; focus moves to the first invalid field; no request |
 | Server validation (`400`) | The API's message under the field it names |
-| Submitting | Save or Mark Done busy and disabled, fields read-only (BR-36) |
-| Success | The form closes, the Success notice reads "Action added.", "Action updated.", "Action marked Done.", or "Action cancelled.", and the list and Ticket reload, which updates Last Updated, the count, and §9 |
+| Submitting | Save, Mark Done, or the confirmation's Cancel action busy and disabled, fields read-only (BR-36) |
+| Success | The form or confirmation closes, the Success notice reads "Action added.", "Action updated.", "Action marked Done.", or "Action cancelled.", and the list and Ticket reload, which updates Last Updated, the count, and §9 |
 | Stale edit (`ACTION_TAKEN_CHANGED`) | Action conflict notice; the form stays open with the typed data. Reload replaces it with the latest version, or closes it if the action is no longer Planned |
 | Final (`ACTION_TAKEN_FINAL`) or Finished (`TICKET_FINISHED`) | Conflict notice (L3 UI §2.3) in the form; typed data is kept and Save is disabled, so it can be copied |
 | No edit right (`403`) | Error alert with the API's message; typed data is kept |
 | Not found (`404`) | Error alert; typed data is kept |
 | Failure | Safe failure alert in the form or card; typed data is kept; the list offers Retry |
+| Cancel action refused or failed | The confirmation stays open with the alert inside it: the Action conflict notice for `ACTION_TAKEN_CHANGED`, whose Reload closes the confirmation and reloads the list; the Conflict notice for `ACTION_TAKEN_FINAL` or `TICKET_FINISHED`; the API's message for `403` or `404`; safe failure otherwise, which can be confirmed again. **Keep action** closes it and the list reloads |
 
 ### 8.9 Layouts
 

@@ -26,13 +26,16 @@ never a private function call or a query shape.
   rows, applies the Lab 4 migration, and inspects it, then applies the
   rollback and `migrate deploy` again. `seed.test.ts` runs the real seed twice.
 - **Regression**: the Lab 1, Lab 2, and Lab 3 suites stay and must pass. They
-  change in two ways only. Where `specification.md` BR-33 replaces a rule:
+  change in three ways only. Where `specification.md` BR-33 replaces a rule:
   expectations of landing on My Tickets, the Queue, or User Management after
   sign-in, of the exact navigation entries, and of resolving a Ticket with no
-  Done Action Taken. And where a new endpoint joins the Lab 3 endpoint table:
+  Done Action Taken. Where a new endpoint joins the Lab 3 endpoint table:
   `server/tests/lab-03/support/endpoints.ts` and the endpoint counts in
-  `endpoints.unit.test.ts`. Those tests move to the new behaviour; their other
-  assertions stay.
+  `endpoints.unit.test.ts`. And where a Ticket Detail response or screen gains
+  Lab 4 data: the additive `actionTakenCounts` field in exact `StaffTicket`
+  assertions and client fixtures, and the mocked API calls the Actions Taken
+  card makes on the two Ticket Detail screens. Those tests move to the new
+  behaviour; their other assertions stay.
 - **UI component**: Vitest and Testing Library rendering real components with
   only `client/src/api.ts` mocked, in `client/src/lab-04/`, using the file names
   the handout lists.
@@ -113,7 +116,7 @@ The Ticket Change module has its own tests from #74,
 | UI-01 | UI | AC-12 | Actions Taken card, staff: rows, count, badges, open a row | Date, description, status and Follow-up badges; view shows every field | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
 | UI-02 | UI | AC-01, AC-03, AC-04 | Create form: defaults, validation, submit | Date is now, Performed by is the user, Status is Planned; unchecking Follow-up required clears the note; field messages and no call; one call; list reloads | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
 | UI-03 | UI | AC-06, AC-07 | Row buttons with `canEdit` true and false, on Planned, Done, and Cancelled rows | Edit, Mark Done, Cancel action only on `canEdit` Planned rows; none otherwise | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-04 | UI | AC-07 | Mark Done: opens the form, Result required; Cancel action: dismiss, then confirm | Status fixed at Done; dismiss sends nothing; confirm sends `CANCELLED` | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
+| UI-04 | UI | AC-07, AC-44 | Mark Done: opens the form, Result required; Cancel action: dismiss, then confirm, then confirm answered `ACTION_TAKEN_CHANGED` and a failure | Status fixed at Done; dismiss sends nothing; confirm sends `CANCELLED`; the confirmation stays open with the alert; Reload closes it and reloads the list | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
 | UI-05 | UI | AC-09 | Save answered `ACTION_TAKEN_CHANGED`; Reload | Typed data kept with the conflict notice; Reload shows the latest version | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
 | UI-06 | UI | AC-10 | Card on a Finished Ticket; save answered `TICKET_FINISHED` and `ACTION_TAKEN_FINAL` | No Add or row buttons; Conflict notice; typed data kept | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
 | UI-07 | UI | AC-11 | Double click on Save; retry after a failure | One request at a time; a retry with the body unchanged reuses the `clientRequestId` | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
@@ -198,7 +201,7 @@ The Ticket Change module has its own tests from #74,
 | AC-41 | MIG-03, MIG-04 |
 | AC-42 | REG-01, REG-02, REG-03, E2E-14 |
 | AC-43 | UI-20, E2E-07, E2E-08, E2E-09 |
-| AC-44 | API-19, UI-10 |
+| AC-44 | API-19, UI-04, UI-10 |
 | AC-45 | API-20, DASH-15, UI-10, E2E-12 |
 | AC-46 | VIS-01, VIS-02, VIS-03, VIS-04 |
 | AC-47 | E2E-11 |
