@@ -8,6 +8,7 @@ import referenceDataRoutes from './routes/referenceData.routes'
 import ticketRoutes from './routes/ticket.routes'
 import attachmentRoutes from './routes/attachment.routes'
 import commentRoutes from './routes/comment.routes'
+import actionTakenRoutes from './routes/actionTaken.routes'
 import authRoutes from './routes/auth.routes'
 import adminRoutes from './routes/admin.routes'
 import { noStore } from './middleware/noStore'
@@ -43,6 +44,7 @@ app.use('/api', referenceDataRoutes)
 app.use('/api', ticketRoutes)
 app.use('/api', attachmentRoutes)
 app.use('/api', commentRoutes)
+app.use('/api', actionTakenRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/staff', staffRoutes)
 

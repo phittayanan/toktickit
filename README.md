@@ -74,8 +74,9 @@ new ones; CI and the test databases below use it.
 ### Seed accounts (local development)
 
 `npx prisma db seed` is safe to run repeatedly. Besides the Categories and
-Related Systems it provides these accounts, and 24 example Tickets
-(`TKT-2026-900001` upward) with Public Comments and Internal Notes:
+Related Systems it provides these accounts, and 31 example Tickets
+(`TKT-2026-900001` upward) with Public Comments, Internal Notes, and Actions
+Taken:
 
 | Name | Email | Role | Status |
 |---|---|---|---|

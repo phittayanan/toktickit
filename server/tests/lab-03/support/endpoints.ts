@@ -22,7 +22,7 @@ const STAFF = ['IT_STAFF', 'ADMINISTRATOR'] as const
 const ADMINISTRATOR = ['ADMINISTRATOR'] as const
 
 // Every endpoint of docs/lab-03/api-spec.md §2 to §7, in the order the
-// contract lists them. authorization.api.test.ts runs each one with no
+// contract lists them, then those of docs/lab-04/api-spec.md. authorization.api.test.ts runs each one with no
 // session and with each role, so an endpoint added to the API is added
 // here in the same change.
 export const ENDPOINTS: readonly Endpoint[] = [
@@ -66,4 +66,9 @@ export const ENDPOINTS: readonly Endpoint[] = [
   { method: 'POST', path: '/api/admin/users', roles: ADMINISTRATOR },
   { method: 'PATCH', path: '/api/admin/users/:id', roles: ADMINISTRATOR },
   { method: 'POST', path: '/api/admin/users/:id/initial-password', roles: ADMINISTRATOR },
+
+  // Lab 4 §2 Actions Taken
+  { method: 'GET', path: '/api/tickets/:id/actions-taken', roles: ANY_ROLE },
+  { method: 'POST', path: '/api/staff/tickets/:id/actions-taken', roles: STAFF },
+  { method: 'PUT', path: '/api/staff/tickets/:id/actions-taken/:actionTakenId', roles: STAFF },
 ]

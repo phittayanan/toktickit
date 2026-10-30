@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { randomUUID } from 'node:crypto'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient, type Role } from '../generated/prisma/client'
 import { hashPassword } from '../src/services/passwordHash.service'
@@ -45,7 +46,7 @@ const USERS: { name: string; email: string; role: Role; isActive: boolean }[] = 
 const FIRST_SEED_TICKET_NUMBER = 900001
 
 // Creates each seed Ticket whose Ticket Number is absent, together with its
-// Public Comments and Internal Notes. A Ticket that exists is left exactly
+// Public Comments, Internal Notes, and Actions Taken. A Ticket that exists is left exactly
 // as it is, entries included (BR-47).
 async function seedTickets() {
   const [users, categories, relatedSystems] = await Promise.all([
@@ -90,6 +91,15 @@ async function seedTickets() {
         updatedAt: ticket.updatedAt,
         publicComments: { create: entries(ticket.comments) },
         internalNotes: { create: entries(ticket.notes) },
+        actionsTaken: {
+          create: (ticket.actionsTaken ?? []).map(({ assignee, createdBy, ...action }) => ({
+            ...action,
+            assigneeId: idIn(userIds, assignee),
+            createdById: idIn(userIds, createdBy),
+            updatedAt: action.createdAt,
+            clientRequestId: randomUUID(),
+          })),
+        },
       },
     })
   }
