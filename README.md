@@ -37,7 +37,8 @@ toktickit/
 │   ├── adr/                 # Architecture decision records
 │   ├── lab-01/              # Lab 1 tests, peer review, AI use
 │   ├── lab-02/              # Lab 2 contract, tests, AI use
-│   └── lab-03/              # Lab 3 contract, tests, peer review, AI use
+│   ├── lab-03/              # Lab 3 contract, tests, peer review, AI use
+│   └── lab-04/              # Lab 4 contract and test plan
 ├── .github/workflows/      # CI
 ├── CONTEXT.md              # Domain vocabulary
 ├── playwright.config.ts
