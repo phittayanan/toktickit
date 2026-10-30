@@ -351,7 +351,7 @@ marks a transition that also needs the Resolution Gate.
   | L3 BR-28, BR-29 (conditions on Resolved) | Add the Resolution Gate (BR-19). |
   | L3 BR-31 (Finished Ticket read-only) | Also covers Actions Taken (BR-12). |
   | L3 §3 Excluded (Actions Taken, dashboards) | Lifted for what §3 Included lists. |
-  | L3 UI §4.1 (landing screens) | Dashboard is the first navigation entry and the landing screen for every role. |
+  | L3 UI §4.1 (landing screens) | Dashboard is the first navigation entry and the landing screen for every role. The Not Found link keeps its Lab 3 list target. |
 
 - **BR-34** A failure on a new endpoint follows L3 BR-49: a generic `500`
   with no stack trace, query, file path, or hash.

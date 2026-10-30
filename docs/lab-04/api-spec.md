@@ -79,7 +79,6 @@ carry `Cache-Control: no-store`, so a dashboard is never served stale.
 ```json
 {
   "id": 88,
-  "ticketId": 42,
   "actionAt": "2026-10-30T02:00:00.000Z",
   "description": "Replaced the laptop battery.",
   "result": "Charge now holds for 7 hours.",
@@ -90,7 +89,6 @@ carry `Cache-Control: no-store`, so a dashboard is never served stale.
   "attachmentNotes": "See battery-report.pdf.",
   "createdBy": { "id": 15, "name": "Siriporn Kaewmanee" },
   "createdAt": "2026-10-30T02:10:00.000Z",
-  "updatedAt": "2026-10-30T02:10:00.000Z",
   "version": 1,
   "canEdit": false
 }
@@ -190,7 +188,7 @@ action are this request with `status` set (BR-08).
   refused only for `DONE`.
 
 - **Success `200`**: the updated `ActionTaken`. `version` rises by one and
-  `updatedAt` and `Ticket.updatedAt` are set to now. `createdBy` and
+  the stored `updatedAt` and `Ticket.updatedAt` are set to now. `createdBy` and
   `createdAt` never change.
 - **`400`**: as §2.2, or `expectedVersion` missing or invalid.
 - **`403` `ACTION_TAKEN_EDIT_FORBIDDEN`**: `"Only the creator, the person
@@ -231,7 +229,7 @@ gated (BR-22).
 `StaffTicket` (L3 API §5.2) gains one field:
 
 ```json
-{ "actionTakenCounts": { "planned": 1, "done": 2, "cancelled": 0 } }
+{ "actionTakenCounts": { "planned": 1, "done": 2 } }
 ```
 
 `allowedTransitions` keeps its meaning: the matrix targets from the current
@@ -253,10 +251,6 @@ All three are `GET` with no parameters and return only the fields shown.
 Metrics are calculated per request (BR-27). With no matching data a count is
 `0` and a list is `[]`; the response is still `200` (AC-35).
 
-`recentSince`, in §5.1 and §5.2, is the start of the recent window (BR-28):
-00:00 Asia/Bangkok six calendar days before today's Bangkok date, as a UTC
-timestamp.
-
 ### 5.1 GET /api/requester/dashboard
 
 Role Requester; staff get `403`. Own Tickets only, from the session.
@@ -264,7 +258,6 @@ Role Requester; staff get `403`. Own Tickets only, from the session.
 - **Success `200`**:
   ```json
   {
-    "recentSince": "2026-10-23T17:00:00.000Z",
     "openCount": 3,
     "waitingForRequesterCount": 1,
     "recentlyUpdated": [
@@ -292,8 +285,8 @@ Role Requester; staff get `403`. Own Tickets only, from the session.
 |---|---|---|---|
 | `openCount` | `currentStatus` in `NEW`, `OPEN`, `IN_PROGRESS`, `WAITING_FOR_REQUESTER`, `REOPENED` | | `GET /api/tickets?currentStatus=NEW,OPEN,IN_PROGRESS,WAITING_FOR_REQUESTER,REOPENED` |
 | `waitingForRequesterCount` | `currentStatus` is `WAITING_FOR_REQUESTER` | | `GET /api/tickets?currentStatus=WAITING_FOR_REQUESTER` |
-| `recentlyUpdated` | `updatedAt` ≥ `recentSince` | `updatedAt` desc, `id` desc; 5 | Requester Ticket Detail |
-| `recentlyResolved` | `currentStatus` in `RESOLVED`, `CLOSED`, and `resolvedAt` ≥ `recentSince` | `resolvedAt` desc, `id` desc; 5 | Requester Ticket Detail |
+| `recentlyUpdated` | `updatedAt` in the BR-28 window | `updatedAt` desc, `id` desc; 5 | Requester Ticket Detail |
+| `recentlyResolved` | `currentStatus` in `RESOLVED`, `CLOSED`, and `resolvedAt` in the BR-28 window | `resolvedAt` desc, `id` desc; 5 | Requester Ticket Detail |
 
 ### 5.2 GET /api/staff/dashboard
 
@@ -303,7 +296,6 @@ Staff; a Requester gets `403`. `U` below is the six Unfinished statuses:
 - **Success `200`**:
   ```json
   {
-    "recentSince": "2026-10-23T17:00:00.000Z",
     "unassignedCount": 4,
     "ownedByMeCount": 6,
     "myPlannedActionsTakenCount": 2,
@@ -347,7 +339,7 @@ Staff; a Requester gets `403`. `U` below is the six Unfinished statuses:
 | `byStatus` | Count per status in `U` | | `GET /api/staff/tickets?status=<that status>` |
 | `byItPriority` | Count per `itPriority` with status in `U` | | `GET /api/staff/tickets?itPriority=<value>&status=<U>` |
 | `urgent` | Status in `U`, `itPriority` in `HIGH`, `MEDIUM` | `HIGH` first, then `updatedAt` desc, `id` desc; 5 | Staff Ticket Detail |
-| `recentlyUpdated` | Any Ticket with `updatedAt` ≥ `recentSince` | `updatedAt` desc, `id` desc; 5 | Staff Ticket Detail |
+| `recentlyUpdated` | Any Ticket with `updatedAt` in the BR-28 window | `updatedAt` desc, `id` desc; 5 | Staff Ticket Detail |
 
 The drill-downs use the queue parameters of L3 API §5.1 unchanged.
 

@@ -66,7 +66,8 @@ sign-in. The active entry is underlined as in Lab 3.
 | Administrator | Dashboard, Ticket Queue, User Management | `/staff/dashboard` |
 
 The wordmark, the Forbidden page button, and every guard of L3 UI §4.2 that
-names the landing screen use this table.
+names the landing screen use this table. The Not Found link is separate: it
+keeps its Lab 3 list target and label (L3 UI §2.3).
 
 ### 4.2 Guards
 

@@ -62,7 +62,7 @@ The Ticket Change module has its own tests from #74,
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File | Final |
 |---|---|---|---|---|---|---|
-| UNIT-01 | Unit | AC-28 | Recent-window calculation with a fixed clock at 23:59 and 00:00 Asia/Bangkok, across a month end | `recentSince` is 00:00 Bangkok six calendar days before today, as UTC | `server/tests/lab-04/dashboard-window.unit.test.ts` | Planned |
+| UNIT-01 | Unit | AC-28 | Recent-window calculation with a fixed clock at 23:59 and 00:00 Asia/Bangkok, across a month end | The calculated start is 00:00 Bangkok six calendar days before today, as UTC | `server/tests/lab-04/dashboard-window.unit.test.ts` | Planned |
 | UNIT-02 | Unit | AC-03, AC-04 | Action Taken body schema at each length boundary and each status and follow-up combination | Accepts exactly the valid bodies; names the field otherwise | `server/tests/lab-04/action-taken-schema.unit.test.ts` | Planned |
 | API-01 | API | AC-13 | Requester lists Actions Taken of their own Ticket, with Planned, Done, and Cancelled present | 200; all returned, every field, `canEdit` false | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
 | API-02 | API | AC-12 | Staff list a Ticket with several Actions Taken by different staff | 200; newest created first, ties by id; Ticket Owner unchanged | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
@@ -94,7 +94,7 @@ The Ticket Change module has its own tests from #74,
 | WF-08 | Workflow | AC-22 | Legacy Resolved Ticket with no Action Taken is Closed, and another Reopened; legacy In Progress Ticket moves to Resolved | 200 for both; then 409 until a Done exists | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | WF-09 | Workflow | AC-23 | Reopen a Ticket with a Done Action Taken and resolve it again; then again with a new Planned | 200; then 409 `PLANNED_ACTION_REMAINS` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | WF-10 | Workflow | AC-24 | Add a Planned Action Taken to a Resolved Ticket, then Close it | Status stays Resolved on add; Close 200; the action is Planned and read-only | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-11 | API | AC-25 | `GET /api/staff/tickets/:id` with Actions Taken in each status | `actionTakenCounts` correct; `allowedTransitions` as the matrix | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
+| WF-11 | API | AC-25 | `GET /api/staff/tickets/:id` with Actions Taken in each status | `actionTakenCounts` holds the correct `planned` and `done`; `allowedTransitions` as the matrix | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | DASH-01 | Authorization | AC-26 | Two Requesters with Tickets request the dashboard, sending another `requesterId` | Only the session user's metrics and Tickets | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
 | DASH-02 | API | AC-27 | Tickets in all eight statuses; compare with direct database queries | `openCount` and `waitingForRequesterCount` match | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
 | DASH-03 | API | AC-28 | Tickets on both sides of the boundary and more than five in the window, with a fixed clock | Boundary included; instant before excluded; five, newest first | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
