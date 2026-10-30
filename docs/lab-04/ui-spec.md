@@ -80,7 +80,7 @@ All other guards are as L3 UI §4.2.
 
 ## 5. Requester Dashboard (`/dashboard`)
 
-Role: Requester. One mode: view. Own Tickets only (BR-30), from
+Role: Requester. One mode: view. Own Tickets only (BR-29), from
 `GET /api/requester/dashboard`.
 
 ### 5.1 Structure
@@ -125,7 +125,8 @@ Roles: IT Staff and Administrator. One mode: view. From
    - "Unassigned" opens `/staff/queue?owner=unassigned`.
    - "Owned by me" opens `/staff/queue?owner=me`.
    - "My Planned Actions Taken" moves focus to the list of the same name,
-     since its items may be on several Tickets.
+     since its items may be on several Tickets. The list holds the first
+     five; any others are reached from their Tickets (BR-32).
 
    With no `status` in the URL the queue uses its default Unfinished view
    (L3 UI §8.2), which matches the counts.
@@ -191,11 +192,11 @@ One component, used on Staff Ticket Detail and Requester Ticket Detail.
 Title "Actions Taken (n)", where n counts every status. Caption in an
 Info-tinted strip: "Visible to the Requester and IT Staff." for staff,
 "Visible to you and IT Staff." for a Requester. Anything private belongs in
-an Internal Note (BR-18).
+an Internal Note (BR-17).
 
 ### 8.2 List
 
-Newest created first, with Cancelled ones included (BR-11, BR-17).
+Newest created first, with Cancelled ones included (BR-11, BR-16).
 
 | Column | Content |
 |---|---|
@@ -231,7 +232,7 @@ red asterisk.
 | Result | Textarea, counter "n / 2000" | Required when Status is Done |
 | Status | Select: Planned, Done | Defaults to Planned on create. Cancelled is reached only by Cancel action |
 | Performed by | Select of eligible users | Defaults to the signed-in user on create. A current assignee who is no longer eligible stays listed, marked "(no longer eligible)" |
-| Follow-up required | Checkbox | Reveals Follow-up note |
+| Follow-up required | Checkbox | Reveals Follow-up note. Unchecking hides and clears the note, so no hidden value is sent |
 | Follow-up note | Textarea, counter "n / 2000" | Required when checked |
 | Attachment notes | Text input, counter "n / 500", helper "Which file or image to look at" | Optional |
 
@@ -241,12 +242,15 @@ and sends nothing.
 - **Mark Done** opens the form with Status fixed at Done and read-only, Result
   required and focused, and the button reading **Mark Done**. A future
   Date/Time is replaced by now.
-- **Create** keeps one `clientRequestId` until the form saves or closes, so a
-  retry after a failure cannot create a second record (BR-15).
+- **Create** keeps one `clientRequestId` only while the form body is
+  unchanged, so a retry after a failure cannot create a second record. As soon
+  as the user edits any field after a failed or lost response it generates a
+  new one, so a corrected body is a new create and is never silently dropped
+  (BR-14).
 
 ### 8.5 Row buttons
 
-Shown only when `canEdit` is true, so only to users permitted by BR-16: **Edit**
+Shown only when `canEdit` is true, so only to users permitted by BR-15: **Edit**
 (Tertiary), **Mark Done** (Secondary), and **Cancel action** (Destructive
 text). Done and Cancelled rows have none.
 
@@ -258,7 +262,7 @@ action**. Confirming sends the record unchanged with status `CANCELLED`.
 ### 8.6 Requester view
 
 The same card, read-only: no Add, no form, and no row buttons. Rows still
-open view mode, so a Requester can read every field (BR-17).
+open view mode, so a Requester can read every field (BR-16).
 
 ### 8.7 Finished Ticket
 
@@ -274,7 +278,7 @@ row stays listed as Planned. View mode still works.
 | Empty | Staff: "No actions recorded yet." Requester: "IT Staff have not recorded any actions yet." |
 | Validation | Message under the field; focus moves to the first invalid field; no request |
 | Server validation (`400`) | The API's message under the field it names |
-| Submitting | Save or Mark Done busy and disabled, fields read-only (BR-37) |
+| Submitting | Save or Mark Done busy and disabled, fields read-only (BR-36) |
 | Success | The form closes, the Success notice reads "Action added.", "Action updated.", "Action marked Done.", or "Action cancelled.", and the list and Ticket reload, which updates Last Updated, the count, and §9 |
 | Stale edit (`ACTION_TAKEN_CHANGED`) | Action conflict notice; the form stays open with the typed data. Reload replaces it with the latest version, or closes it if the action is no longer Planned |
 | Final (`ACTION_TAKEN_FINAL`) or Finished (`TICKET_FINISHED`) | Conflict notice (L3 UI §2.3) in the form; typed data is kept and Save is disabled, so it can be copied |
@@ -317,7 +321,7 @@ reload shows the gate is met. The backend enforces the rule regardless.
 
 - **My Tickets** (`/tickets`) reads `currentStatus` from the URL when it opens.
   Its Current Status select gains an "Open Tickets" option, meaning the five
-  statuses of BR-30, shown in the URL as `currentStatus=open`. "All Statuses"
+  statuses of BR-29, shown in the URL as `currentStatus=open`. "All Statuses"
   stays the default and every other Lab 2 behaviour is unchanged.
 - **Ticket Queue** needs no change: its URL view already holds these filters.
 - **User Management** (`/admin/users`) reads `role` from the URL when it opens

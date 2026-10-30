@@ -8,8 +8,9 @@ wins and the other is a defect.
 Terms follow `CONTEXT.md`. **Staff** means IT Staff or Administrator. A
 **Finished** Ticket is Closed or Cancelled; every other Ticket, including a
 Resolved one, is **Unfinished**. **Last Updated** is `Ticket.updatedAt`.
-The **assignee** of an Action Taken is its Performed by user and is never
-the Ticket Owner. **Done** is an Action Taken status, not a Ticket state.
+The word **assignee** always means the Performed by user of an Action
+Taken and never names the Ticket Owner role; a Ticket Owner may be an
+assignee. **Done** is an Action Taken status, not a Ticket state.
 "L3" prefixes a Lab 3 identifier (for example L3 BR-28) to keep it apart
 from the Lab 4 numbers below.
 
@@ -77,7 +78,7 @@ work leaves no reliable trace. The stakeholder wants that closed:
 ### Preserved from earlier labs
 
 - **Rules and contracts.** Every Lab 3 rule stays in force except as listed
-  in BR-34, and every Lab 2 and Lab 3 endpoint keeps its shape except for
+  in BR-33, and every Lab 2 and Lab 3 endpoint keeps its shape except for
   the additive changes in `api-spec.md` §3 and §4.
 - **Ticket Change module.** Issue #74 gives every write against a Ticket
   one home, `server/src/services/ticketChange.service.ts`, which locks the
@@ -93,7 +94,7 @@ work leaves no reliable trace. The stakeholder wants that closed:
   Public Comments, and Internal Notes stay valid. Existing Tickets get no
   placeholder Actions Taken.
 - **Tests.** The Lab 1, Lab 2, and Lab 3 suites stay and must pass. They
-  change only where BR-34 replaces a rule.
+  change only where BR-33 replaces a rule.
 - **Design.** Zen Green tokens, components, and responsive rules from
   Labs 2 and 3 are reused; there is no second visual system.
 
@@ -120,7 +121,7 @@ work leaves no reliable trace. The stakeholder wants that closed:
 ### Ticket workflow
 
 - **FR-07** The system shall refuse a move to Resolved unless the Resolution
-  Gate (BR-20) holds, whichever client sends the request.
+  Gate (BR-19) holds, whichever client sends the request.
 - **FR-08** The system shall keep the Lab 3 status matrix and shall offer
   only permitted transitions in the Ticket status controls, refreshing the
   Ticket summary after a successful change.
@@ -130,12 +131,12 @@ work leaves no reliable trace. The stakeholder wants that closed:
 ### Dashboards
 
 - **FR-10** The system shall provide a Requester dashboard summarising only
-  the authenticated Requester's Tickets (BR-30).
-- **FR-11** The system shall provide an IT Staff dashboard (BR-31).
+  the authenticated Requester's Tickets (BR-29).
+- **FR-11** The system shall provide an IT Staff dashboard (BR-30).
 - **FR-12** The system shall provide an Administrator dashboard: the IT
-  Staff dashboard plus active account counts by role (BR-32).
+  Staff dashboard plus active account counts by role (BR-31).
 - **FR-13** The system shall link each dashboard metric and list item to
-  the matching filtered list or detail screen (BR-33).
+  the matching filtered list or detail screen (BR-32).
 - **FR-14** The system shall calculate every metric on the backend from
   authoritative data and shall return concise data, not Ticket collections.
 - **FR-15** The system shall add a Dashboard destination to each role's
@@ -218,27 +219,32 @@ work leaves no reliable trace. The stakeholder wants that closed:
   Last Updated and is refused on a Finished Ticket. A Planned Action Taken
   on a Ticket that becomes Finished therefore stays Planned and read-only.
 - **BR-13** Each Action Taken has a version number, starting at 1 and
-  raised by every edit that changes it. An edit states the version the
+  raised by every accepted edit. An edit states the version the
   client loaded; a mismatch is rejected `409` and nothing changes. The form
   keeps the typed data and prompts to reload.
-- **BR-14** An edit that changes nothing succeeds without raising the
-  version or moving Last Updated.
-- **BR-15** A create request carries a client-generated key. A repeat with
-  the same key on the same Ticket returns the Action Taken already created
-  and creates nothing.
+- **BR-14** A create request carries a client-generated key, because the
+  labsheet (section 8.5, Final Regression and Product Hardening) requires
+  that "duplicate actions caused by repeated clicking or network retry are
+  prevented or safely handled", and BR-36 covers repeated clicking only. A
+  repeat with the same key on the same Ticket returns the Action Taken
+  already created with `200` and creates nothing, even if its body is invalid
+  or the Ticket has since become Finished. The client keeps one key only
+  while the form body is unchanged and generates a new one as soon as the
+  user edits any field after a failed or lost response, so a corrected body
+  is a new create and is never silently dropped.
 
 ### 5.3 Action Taken authorization
 
-- **BR-16** Any staff user may create an Action Taken on any Unfinished
+- **BR-15** Any staff user may create an Action Taken on any Unfinished
   Ticket and read those of any Ticket. Only its creator, its assignee, and
   Administrators may edit an existing one. Being the Ticket Owner gives no
   extra edit right; other IT Staff read it only.
-- **BR-17** A Requester reads every Action Taken of their own Ticket,
+- **BR-16** A Requester reads every Action Taken of their own Ticket,
   Cancelled included, with all fields, and never creates or changes one.
   Another Requester's Ticket and a nonexistent one produce the same `404`.
-- **BR-18** Action Taken content is shared with the Requester. Anything
+- **BR-17** Action Taken content is shared with the Requester. Anything
   private belongs in an Internal Note (ADR-0010).
-- **BR-19** The backend enforces this matrix. A hidden control is feedback,
+- **BR-18** The backend enforces this matrix. A hidden control is feedback,
   never the control. "Own" and "Any" are as in L3 §5.3.
 
   | Operation | Not signed in | Requester | IT Staff | Administrator |
@@ -270,40 +276,40 @@ marks a transition that also needs the Resolution Gate.
 | Closed | — | — | — | — | — | — | — |
 | Cancelled | — | — | — | — | — | — | — |
 
-- **BR-20** **Resolution Gate**: a Ticket may move to Resolved only with at
+- **BR-19** **Resolution Gate**: a Ticket may move to Resolved only with at
   least one Done Action Taken and no Planned Action Taken. Cancelled ones
   do not count either way.
-- **BR-21** The L3 conditions on Resolved still apply: a Ticket Owner at
+- **BR-20** The L3 conditions on Resolved still apply: a Ticket Owner at
   that moment and a Resolution Summary of 10 to 2000 characters (L3 BR-29),
   a confirmation step, and a stale status check (L3 BR-30).
-- **BR-22** The gate is checked by the backend inside the same Ticket Change
+- **BR-21** The gate is checked by the backend inside the same Ticket Change
   as the status write. Action Taken writes take the same Ticket row lock,
   so a Planned Action Taken and a move to Resolved are serialised.
-- **BR-23** The gate applies only to moves into Resolved. Closed, Reopened,
+- **BR-22** The gate applies only to moves into Resolved. Closed, Reopened,
   and Cancelled are not gated. An Action Taken added while a Ticket is
   Resolved does not change its status, and a Planned one does not stop it
   being Closed.
-- **BR-24** A Reopened Ticket keeps its Actions Taken, and an earlier Done
+- **BR-23** A Reopened Ticket keeps its Actions Taken, and an earlier Done
   one still counts toward the gate. New work is a new Planned Action Taken.
-- **BR-25** The gate applies from this sprint on. Tickets already Resolved
+- **BR-24** The gate applies from this sprint on. Tickets already Resolved
   or Closed are untouched and may move on as the matrix allows. An
   Unfinished Ticket with no Action Taken needs a Done one before it can move
   to Resolved.
-- **BR-26** Problem Appears Resolved stays advisory (L3 BR-05, BR-33). It
+- **BR-25** Problem Appears Resolved stays advisory (L3 BR-05, BR-33). It
   does not change the status and does not satisfy the gate.
-- **BR-27** Closed and Cancelled stay final. A problem that returns after
+- **BR-26** Closed and Cancelled stay final. A problem that returns after
   Closed is a new Ticket that refers to the old one in its text.
 
 ### 5.5 Dashboards
 
-- **BR-28** The backend calculates every metric per request from Ticket,
+- **BR-27** The backend calculates every metric per request from Ticket,
   Action Taken, and User rows. No metric is stored, and the client computes
   none. A dashboard response never holds a Ticket description, a Public
   Comment, or an Internal Note.
-- **BR-29** "Recent" means from 00:00 Asia/Bangkok six calendar days before
+- **BR-28** "Recent" means from 00:00 Asia/Bangkok six calendar days before
   today's Bangkok date, up to now: today and the previous six days. Each
   recent list shows at most five items.
-- **BR-30** Requester dashboard, the session user's own Tickets only:
+- **BR-29** Requester dashboard, the session user's own Tickets only:
 
   | Metric | Calculation | Empty | Drill-down |
   |---|---|---|---|
@@ -314,7 +320,7 @@ marks a transition that also needs the Resolution Gate.
 
   "Open Tickets" is a metric name, wider than the Open status.
 
-- **BR-31** IT Staff dashboard:
+- **BR-30** IT Staff dashboard:
 
   | Metric | Calculation | Empty | Drill-down |
   |---|---|---|---|
@@ -326,30 +332,33 @@ marks a transition that also needs the Resolution Gate.
   | Urgent | Unfinished Tickets with IT Priority High or Medium, the top two of the three levels; High first, then most recently updated; top 5 | Empty message | Ticket Detail of the item |
   | Recently updated | All Tickets, Finished included, with Last Updated within the recent window, newest first, top 5 | Empty message | Ticket Detail of the item |
 
-- **BR-32** Administrator dashboard: everything in BR-31 plus a count of
+- **BR-31** Administrator dashboard: everything in BR-30 plus a count of
   active users for each Role (`0` when there are none), drilling to User
   Management filtered to that Role. User Management also lists inactive
   users, so its row count can be higher than the active count.
-- **BR-33** Drill-down uses existing filters wherever one exists. Apart
-  from BR-32, the filtered list shows exactly the rows a count counted at
-  the moment it is opened.
+- **BR-32** Drill-down uses existing filters wherever one exists. Apart
+  from BR-31 and My Planned Actions Taken, the filtered list shows exactly
+  the rows a count counted at the moment it is opened. My Planned Actions
+  Taken lists its first five items; any beyond five are reached from their
+  Tickets.
+
 ### 5.6 Preservation and hardening
 
-- **BR-34** Every Lab 2 and Lab 3 rule stays in force except these:
+- **BR-33** Every Lab 2 and Lab 3 rule stays in force except these:
 
   | Earlier rule | Lab 4 |
   |---|---|
-  | L3 BR-28, BR-29 (conditions on Resolved) | Add the Resolution Gate (BR-20). |
+  | L3 BR-28, BR-29 (conditions on Resolved) | Add the Resolution Gate (BR-19). |
   | L3 BR-31 (Finished Ticket read-only) | Also covers Actions Taken (BR-12). |
   | L3 §3 Excluded (Actions Taken, dashboards) | Lifted for what §3 Included lists. |
   | L3 UI §4.1 (landing screens) | Dashboard is the first navigation entry and the landing screen for every role. |
 
-- **BR-35** A failure on a new endpoint follows L3 BR-49: a generic `500`
+- **BR-34** A failure on a new endpoint follows L3 BR-49: a generic `500`
   with no stack trace, query, file path, or hash.
-- **BR-36** A form with entered data keeps it after a validation error, a
+- **BR-35** A form with entered data keeps it after a validation error, a
   conflict, or a failed request.
-- **BR-37** A submit control is disabled while its request is pending.
-- **BR-38** Action Taken text fields are trimmed, stored as plain text with
+- **BR-36** A submit control is disabled while its request is pending.
+- **BR-37** Action Taken text fields are trimmed, stored as plain text with
   line breaks preserved, and displayed literally (L3 BR-35). An optional
   field left empty is stored as null.
 
@@ -380,7 +389,7 @@ new token.
   Rows show date, description, and status badge and open a read-only view of
   every field. Create and edit use a form inside the card, not a modal. A
   Planned row offers Edit, Mark Done, and Cancel action only to users
-  permitted by BR-16. Requester Ticket Detail shows the same card directly
+  permitted by BR-15. Requester Ticket Detail shows the same card directly
   above Public Comments, with no write control.
 - **Status control**: when the Resolution Gate is unmet, Resolved stays listed
   but disabled as "Resolved (not available)", with a text reason giving the
@@ -426,8 +435,7 @@ behaviour is otherwise unchanged, so Internal Notes do not move it.
    Planned Actions Taken must query them. Foreign keys make BR-01 and the
    rule that a person stays attributed hold in the database.
 2. **A `version` integer, not a comparison of `updatedAt`.** A counter has
-   no clock precision or JSON round-trip issues, and a no-op edit leaves it
-   alone (BR-14). The Ticket row lock from the Ticket Change module makes
+   no clock precision or JSON round-trip issues. The Ticket row lock from the Ticket Change module makes
    check and increment atomic.
 3. **A `clientRequestId` unique per Ticket.** Actions Taken are never
    deleted, so a duplicate from a network retry would stay forever; a
@@ -442,7 +450,7 @@ The migration, `20261030120000_lab4_actions_taken`, creates the enum, the
 table, and the indexes. It adds no column to an existing table.
 
 - No Action Taken is created for an existing Ticket.
-- Legacy Tickets behave as BR-25 states. A legacy Resolved or Closed Ticket
+- Legacy Tickets behave as BR-24 states. A legacy Resolved or Closed Ticket
   with no Done Action Taken stays valid.
 - Dashboards treat a legacy Ticket like any other: status, owner, IT
   Priority, `updatedAt`, and `resolvedAt` are already on the row, and a
@@ -453,8 +461,10 @@ table, and the indexes. It adds no column to an existing table.
 
 Before migrating a database that matters, take a `pg_dump`. Prisma has no
 down migrations, so `server/prisma/rollback/lab4_actions_taken.down.sql`
-drops the `ActionTaken` table, its enum, and the new `Ticket` index, after
-which `npx prisma migrate resolve --rolled-back` records the rollback.
+drops the `ActionTaken` table, its enum, and the new `Ticket` index, and
+deletes the migration's row from `_prisma_migrations`. Run it from `server/`
+with `npx prisma db execute --file prisma/rollback/lab4_actions_taken.down.sql`.
+With that row gone, `npx prisma migrate deploy` applies the migration again.
 Rollback loses Action Taken rows and nothing else; restoring the dump is
 the recovery path when those must be kept. The migration test proves both
 directions.
@@ -490,7 +500,7 @@ of checks are as in Lab 3.
 | Area | Endpoints | Roles |
 |---|---|---|
 | Read Actions Taken | `GET /api/tickets/:id/actions-taken` | Requester own; staff any |
-| Write Actions Taken | `POST /api/staff/tickets/:id/actions-taken`, `PUT /api/staff/tickets/:id/actions-taken/:actionTakenId` | Staff; edit limited by BR-16 |
+| Write Actions Taken | `POST /api/staff/tickets/:id/actions-taken`, `PUT /api/staff/tickets/:id/actions-taken/:actionTakenId` | Staff; edit limited by BR-15 |
 | Ticket status | `POST /api/staff/tickets/:id/status` (adds the gate) | Staff |
 | Staff Ticket Detail | `GET /api/staff/tickets/:id` (adds `actionTakenCounts`) | Staff |
 | My Tickets | `GET /api/tickets` (`currentStatus` accepts a list) | Requester, own |
@@ -526,70 +536,72 @@ New `409` codes: `ACTION_TAKEN_CHANGED` (stale version),
   it is set, then it is rejected `400` with one message; another active
   staff user is accepted; and an edit that leaves an already ineligible
   assignee unchanged is accepted.
-- **AC-06** Given a Planned Action Taken, when its creator, its assignee, or
-  an Administrator edits it, then the edit is saved; and when any other IT
+- **AC-06** Given a Planned Action Taken on an Unfinished Ticket, when its
+  creator, its assignee, or an Administrator edits it, then the edit is saved,
+  the version rises, and Last Updated moves; and when any other IT
   Staff user does, including the Ticket Owner, then it is rejected `403` and
   nothing changes.
-- **AC-07** Given a Planned Action Taken, when it is set to Done with a
-  Result or to Cancelled, then the status is saved; and any later edit by
-  anyone is rejected `409` `ACTION_TAKEN_FINAL`.
+- **AC-07** Given a Planned Action Taken on an Unfinished Ticket, when it is
+  set to Done with a Result or to Cancelled, then the status is saved; and
+  any later edit by a permitted user with the current version is rejected
+  `409` `ACTION_TAKEN_FINAL`.
 - **AC-08** Given any Action Taken, when deletion is requested, then there
   is no such route, and a Cancelled one stays listed.
-- **AC-09** Given an edit from a stale version, when it is saved, then it is
-  rejected `409` `ACTION_TAKEN_CHANGED` and nothing changes, and the form
+- **AC-09** Given an edit from a stale version by a permitted user on an
+  Unfinished Ticket, when it is saved, then it is rejected `409` `ACTION_TAKEN_CHANGED` and nothing changes, and the form
   keeps the typed data and prompts to reload.
-- **AC-10** Given a Finished Ticket, when an Action Taken is created or
-  edited, then it is rejected `409` `TICKET_FINISHED`, and the UI offers no
-  such control.
-- **AC-11** Given an edit that changes a field, when saved, then the version
-  rises and Last Updated moves; and given an edit that changes nothing, then
-  neither moves.
-- **AC-12** Given a repeated click or a retried create with the same key,
+- **AC-10** Given a Finished Ticket, when a valid new Action Taken is created
+  or an Action Taken is edited with a valid body, then it is rejected `409`
+  `TICKET_FINISHED`, and the UI offers no such control.
+- **AC-11** Given a repeated click or a retried create with the same key,
+  even with an invalid body or on a Ticket that has since become Finished,
   when it reaches the backend, then one Action Taken exists and the same
-  record is returned.
-- **AC-13** Given several Actions Taken by different staff on one Ticket,
+  record is returned with `200`; and given any field edited after a failed
+  or lost response, when the form saves, then it sends a new key.
+- **AC-12** Given several Actions Taken by different staff on one Ticket,
   when Staff Ticket Detail opens, then all are listed newest created first
   in a stable order with a status badge and a Follow-up badge when required,
   each opens to show every field, and the Ticket Owner is unchanged.
-- **AC-14** Given a Requester's own Ticket, when Ticket Detail opens, then
+- **AC-13** Given a Requester's own Ticket, when Ticket Detail opens, then
   every Action Taken, Cancelled included, is shown read-only in the same card
   with its status badge and every field, and no write control is offered.
-- **AC-15** Given a Requester, when an Action Taken create or edit is sent
+- **AC-14** Given a Requester, when an Action Taken create or edit is sent
   directly, then it is rejected `403`; and given Requester B, when the
   Actions Taken of Requester A's Ticket are requested, then the `404` is
   identical to that for a nonexistent id.
-- **AC-16** Given an Action Taken containing HTML or script markup, when it
+- **AC-15** Given an Action Taken containing HTML or script markup, when it
   is displayed, then the markup appears as literal text.
 
 ### Ticket workflow
 
-- **AC-17** Given a Ticket with no Done Action Taken, when a move to Resolved
-  is sent directly to the API, then it is rejected `409`
+- **AC-16** Given a Ticket with no Done Action Taken, when an otherwise valid
+  move to Resolved is sent directly to the API, then it is rejected `409`
   `DONE_ACTION_REQUIRED` and the Ticket is unchanged.
-- **AC-18** Given a Ticket with a Planned Action Taken, when a move to
-  Resolved is sent, then it is rejected `409` `PLANNED_ACTION_REMAINS` and
-  the Ticket is unchanged, even with a Done one present.
-- **AC-19** Given a Ticket with an owner, at least one Done, no Planned, and
+- **AC-17** Given a Ticket with a Done and a Planned Action Taken, when an
+  otherwise valid move to Resolved is sent, then it is rejected `409`
+  `PLANNED_ACTION_REMAINS` and the Ticket is unchanged.
+- **AC-18** Given a Ticket with an owner, at least one Done, no Planned, and
   a valid Resolution Summary, when it moves to Resolved, then it succeeds,
   with Cancelled Actions Taken and Follow-Up Required? having no effect.
-- **AC-20** Given a Ticket in each status, when each transition is
-  requested, then exactly the §5.4 pairs succeed and every other is rejected
-  `409` `INVALID_TRANSITION`.
-- **AC-21** Given a move to Resolved and a new Planned Action Taken sent at
+- **AC-19** Given a Ticket in each status, when each transition is
+  requested, then exactly the §5.4 pairs succeed, every other pair from an
+  Unfinished status is rejected `409` `INVALID_TRANSITION`, and any request
+  from Closed or Cancelled is rejected `409` `TICKET_FINISHED`.
+- **AC-20** Given a move to Resolved and a new Planned Action Taken sent at
   the same moment, when both finish, then the Ticket is never Resolved over
   a Planned Action Taken created before the move.
-- **AC-22** Given a Requester's Problem Appears Resolved indication, when it
+- **AC-21** Given a Requester's Problem Appears Resolved indication, when it
   is set, then the status is unchanged and the gate still applies.
-- **AC-23** Given Tickets already Resolved or Closed before the migration,
+- **AC-22** Given Tickets already Resolved or Closed before the migration,
   when the migration has run, then they are unchanged and a Resolved one can
   still be Closed or Reopened; and an Unfinished legacy Ticket is refused
   Resolved until it has a Done Action Taken.
-- **AC-24** Given a Reopened Ticket with an earlier Done Action Taken and no
+- **AC-23** Given a Reopened Ticket with an earlier Done Action Taken and no
   Planned one, when it moves to Resolved, then it succeeds.
-- **AC-25** Given a Resolved Ticket with a Planned Action Taken added
+- **AC-24** Given a Resolved Ticket with a Planned Action Taken added
   afterwards, when it is Closed, then the move succeeds and the Action Taken
   stays Planned and read-only.
-- **AC-26** Given the Ticket status controls, when they render, then only
+- **AC-25** Given the Ticket status controls, when they render, then only
   permitted transitions are offered; when the gate is unmet, Resolved is
   listed disabled as "Resolved (not available)" with a reason stating the Done
   and Planned counts and a link to the Actions Taken card; and a successful
@@ -597,83 +609,85 @@ New `409` codes: `ACTION_TAKEN_CHANGED` (stale version),
 
 ### Dashboards
 
-- **AC-27** Given an authenticated Requester, when dashboard data is
+- **AC-26** Given an authenticated Requester, when dashboard data is
   retrieved, then only metrics and recent Tickets owned by that Requester
   are returned.
-- **AC-28** Given known Tickets in every status, when the Requester dashboard
-  is retrieved, then Open Tickets and Waiting for Requester equal the BR-30
+- **AC-27** Given known Tickets in every status, when the Requester dashboard
+  is retrieved, then Open Tickets and Waiting for Requester equal the BR-29
   calculations.
-- **AC-29** Given Tickets on both sides of the recent-window boundary, when a
+- **AC-28** Given Tickets on both sides of the recent-window boundary, when a
   dashboard is retrieved, then a time at 00:00 Asia/Bangkok six days back is
   included, the instant before it is excluded, and lists hold at most five
   items, newest first.
-- **AC-30** Given Tickets with `resolvedAt` in the window, when the Requester
+- **AC-29** Given Tickets with `resolvedAt` in the window, when the Requester
   dashboard is retrieved, then Resolved and Closed ones are listed and a
   Reopened or Cancelled one is not.
-- **AC-31** Given known Tickets, when the IT Staff dashboard is retrieved,
+- **AC-30** Given known Tickets, when the IT Staff dashboard is retrieved,
   then Unassigned, Owned by me, and every status and IT Priority count equal
-  the BR-31 calculations, and Finished Tickets are in none of them.
-- **AC-32** Given Actions Taken of several staff, statuses, and Tickets, when
+  the BR-30 calculations, and Finished Tickets are in none of them.
+- **AC-31** Given Actions Taken of several staff, statuses, and Tickets, when
   the IT Staff dashboard is retrieved, then My Planned Actions Taken holds
   only the session user's Planned ones on Unfinished Tickets, soonest first.
-- **AC-33** Given Tickets of all IT Priorities, when the IT Staff dashboard
+- **AC-32** Given Tickets of all IT Priorities, when the IT Staff dashboard
   is retrieved, then Urgent holds only Unfinished High and Medium Tickets,
   High first, at most five; and Recently updated includes Finished Tickets.
-- **AC-34** Given an Administrator, when the dashboard opens, then it shows
+- **AC-33** Given an Administrator, when the dashboard opens, then it shows
   the IT Staff dashboard plus correct active account counts by role.
-- **AC-35** Given a dashboard, when each card or list item is activated, then
+- **AC-34** Given a dashboard, when each card or list item is activated, then
   the matching filtered list or Ticket Detail opens, and a count equals the
-  rows listed, except the BR-32 account counts.
-- **AC-36** Given a user with no matching data, when a dashboard is
+  rows listed, except the BR-31 account counts and My Planned Actions Taken,
+  whose items beyond five are reached from their Tickets.
+- **AC-35** Given a user with no matching data, when a dashboard is
   retrieved, then counts are `0`, lists are empty, and the screen shows its
   empty states rather than a failure.
-- **AC-37** Given no session, `401`; given a Requester on a staff or
+- **AC-36** Given no session, `401`; given a Requester on a staff or
   administrator dashboard, IT Staff on the Requester or administrator one,
   or an Administrator on the Requester one, then `403` and no data.
-- **AC-38** Given a dashboard response, when it is inspected, then it holds
+- **AC-37** Given a dashboard response, when it is inspected, then it holds
   only documented fields and no Ticket description, Public Comment, or
   Internal Note.
-- **AC-39** Given a dashboard screen, when it is loading, forbidden, or its
+- **AC-38** Given a dashboard screen, when it is loading, forbidden, or its
   request fails, then a distinct loading, Forbidden, or safe failure state
   with Retry is shown.
 
 ### Migration and seed
 
-- **AC-40** Given a Lab 3 database with Users, Tickets, Attachments, Public
+- **AC-39** Given a Lab 3 database with Users, Tickets, Attachments, Public
   Comments, and Internal Notes, when the Lab 4 migration runs, then every row
   is unchanged and no Action Taken exists.
-- **AC-41** Given a migrated database, when the rollback runs, then the Lab 3
-  schema and every earlier row remain intact.
-- **AC-42** Given a migrated database, when the seed runs twice, then the
+- **AC-40** Given a migrated database, when the rollback runs, then the Lab 3
+  schema and every earlier row remain intact, and a later
+  `npx prisma migrate deploy` applies the migration again.
+- **AC-41** Given a migrated database, when the seed runs twice, then the
   second run changes nothing and the §7.5 data exists, with Lab 3 seed
   guarantees intact.
 
 ### Hardening and presentation
 
-- **AC-43** Given the Lab 1, Lab 2, and Lab 3 suites, when run against the
-  final code, then all pass, changed only where BR-34 replaces a rule.
-- **AC-44** Given each role, when the user signs in, then their Dashboard is
+- **AC-42** Given the Lab 1, Lab 2, and Lab 3 suites, when run against the
+  final code, then all pass, changed only where BR-33 replaces a rule.
+- **AC-43** Given each role, when the user signs in, then their Dashboard is
   the landing screen and the first navigation entry, it shows the active page,
   and every Lab 3 entry remains.
-- **AC-45** Given the Actions Taken area and the dashboards, when requests
+- **AC-44** Given the Actions Taken area and the dashboards, when requests
   are loading, succeed, fail validation, conflict, or find nothing, then the
   matching consistent feedback appears.
-- **AC-46** Given an unexpected server failure or a lost connection, when a
+- **AC-45** Given an unexpected server failure or a lost connection, when a
   Lab 4 screen makes a request, then a safe message is shown, entered data
   is kept, and no internal detail is exposed.
-- **AC-47** Given desktop, tablet, and mobile widths, when every Lab 4 screen
+- **AC-46** Given desktop, tablet, and mobile widths, when every Lab 4 screen
   is inspected, then nothing is clipped, nothing overlaps, and the page does
   not scroll horizontally.
-- **AC-48** Given a keyboard-only user, when they move through each Lab 4
+- **AC-47** Given a keyboard-only user, when they move through each Lab 4
   screen and dialog, then every control is reachable, shows visible focus,
   and has an accessible name.
-- **AC-49** Given status, Action Taken, and Follow-up badges and shared or
+- **AC-48** Given status, Action Taken, and Follow-up badges and shared or
   private content, when displayed, then each is distinguished by text as
   well as colour and matches `ui-spec.md`.
-- **AC-50** Given the final application, when every screen is exercised, then
+- **AC-49** Given the final application, when every screen is exercised, then
   there are no console errors, broken links, placeholder text, or unfinished
   controls, and the README instructions work as written.
-- **AC-51** Given the test database with 1000 Tickets, when each dashboard
+- **AC-50** Given the test database with 1000 Tickets, when each dashboard
   endpoint is requested, then it answers within one second.
 
 ## 10. Definition of Done
@@ -696,7 +710,7 @@ the final `main` branch:
       authorization test's endpoint table.
 - [ ] The migration applies cleanly to a Lab 3 database and to an empty one,
       and the rollback is proven by test.
-- [ ] The Lab 1, Lab 2, and Lab 3 suites pass, changed only where BR-34
+- [ ] The Lab 1, Lab 2, and Lab 3 suites pass, changed only where BR-33
       replaces a rule.
 - [ ] The seed runs twice without change and provides the §7.5 data.
 - [ ] Selected dashboard metrics are shown to match direct database queries.
@@ -713,24 +727,29 @@ the final `main` branch:
 
 ## 11. Assumptions and Decisions
 
-Choices the handout leaves open. Items 1 to 20 were decided by the product
+Choices the handout leaves open. Items 1 to 21 were decided by the product
 owner on 2026-10-30; the rest are defaults taken while writing this contract.
 
 1. **An Action Taken create or edit is a Ticket Change** (BR-12).
 2. **An Action Taken has an assignee and its own status** (BR-04, BR-08).
 3. **Edit rights go to the creator, the assignee, and Administrators**
-   (BR-16), narrower than the handout's minimum for IT Staff.
-4. **The Resolution Gate** needs one Done and no Planned (BR-20).
+   (BR-15), narrower than the handout's minimum for IT Staff.
+4. **The Resolution Gate** needs one Done and no Planned (BR-19).
 5. **No delete**; Done and Cancelled are read-only (BR-10, BR-11).
-6. **Performed by is the assignee**, default the creator (BR-04).
-7. **The Lab 3 matrix stays unchanged** apart from the gate (§5.4, BR-27).
-8. **Dashboards** are as BR-30 to BR-32, with seven-day recency in
+6. **Performed by is the assignee**, default the creator (BR-04). An
+   ineligible assignee already on the record is kept on save (BR-04), as
+   recorded in worker question 75-ineligible-assignee on 2026-10-30, so a
+   deactivated user's Planned work can still be marked Done or Cancelled and
+   Performed by stays true. If its creator is also gone, an Administrator
+   does this.
+7. **The Lab 3 matrix stays unchanged** apart from the gate (§5.4, BR-26).
+8. **Dashboards** are as BR-29 to BR-31, with seven-day recency in
    Asia/Bangkok and lists of five.
 9. **Stale edits use a version number** and answer `409` (BR-13).
 10. **Follow-up does not block Resolved** (BR-07).
-11. **Requesters see every Action Taken**, Cancelled included (BR-17).
+11. **Requesters see every Action Taken**, Cancelled included (BR-16).
 12. **The gate applies from now on** and the migration creates no placeholder
-    Actions Taken (BR-25).
+    Actions Taken (BR-24).
 13. **Action Date/Time is user-entered**, separate from Created at (BR-06).
 14. **An Action Taken may be created directly as Done**, Done and Cancelled
     are final, Result is required when Done, and it cannot be created as
@@ -742,39 +761,40 @@ owner on 2026-10-30; the rest are defaults taken while writing this contract.
 17. **Dashboards are metric cards, link tables, and lists**, one column on
     mobile, with no charts.
 18. **Dashboard is the first navigation entry and the landing screen** for
-    every role. Lab 3 tests that expect My Tickets or the Queue after sign-in
-    change with it (BR-34).
+    every role. Lab 3 tests that expect My Tickets, the Queue, or User
+    Management after sign-in change with it (BR-33).
 19. **Requester Ticket Detail reuses the same card**, read-only.
 20. **A Planned row offers Edit, Mark Done, and Cancel action** to permitted
     users; Mark Done opens the form requiring Result, and Cancel action asks
     for confirmation. Actions Taken is a table on larger screens and stacked
     cards on mobile.
-21. **Text limits**: Action Description, Result, and Follow-up Note at most
+21. **`clientRequestId` stays** (BR-14), because the labsheet, section 8.5
+    Final Regression and Product Hardening, requires that "duplicate actions
+    caused by repeated clicking or network retry are prevented or safely
+    handled".
+22. **Text limits**: Action Description, Result, and Follow-up Note at most
     2000, like a Public Comment; Attachment Notes at most 500, since it only
     points at a file.
-22. **Endpoints follow the role-by-prefix rule.** Writes are under
+23. **Endpoints follow the role-by-prefix rule.** Writes are under
     `/api/staff`. The read is shared like Public Comments, under
     `/api/tickets`. `/api/requester` is a new prefix so the Requester
     dashboard gets the same role check by prefix as the other two and does
     not collide with `/api/tickets/:id`.
-23. **`PUT` replaces all editable fields** of an Action Taken, so an omitted
+24. **`PUT` replaces all editable fields** of an Action Taken, so an omitted
     key cannot silently blank a value and every rule can be checked from the
     request alone.
-24. **Eligible assignees reuse `GET /api/staff/eligible-owners`**, since the
+25. **Eligible assignees reuse `GET /api/staff/eligible-owners`**, since the
     rule is the same.
-25. **The list is ordered by Created at, newest first**, so a record does not
+26. **The list is ordered by Created at, newest first**, so a record does not
     jump when edited.
-26. **An ineligible assignee already on the record is kept on save** (BR-04),
-    so a Planned Action Taken of a deactivated user can be completed or
-    withdrawn and Performed by stays true. If its creator is also gone, an
-    Administrator does this.
 27. **My Planned Actions Taken counts Unfinished Tickets only**, because a
     Planned one on a Finished Ticket can no longer be acted on (BR-12).
 28. **Unassigned counts Unfinished Tickets only**, because a Ticket cancelled
     while New has no owner and needs no attention.
 29. **My Planned Actions Taken also returns its top five items.** A count
     spanning several Tickets cannot open one Ticket Detail, so the items
-    carry the drill-down.
+    carry the drill-down, and any beyond five are reached from their Tickets
+    (BR-32).
 30. **Recently resolved requires status Resolved or Closed**, because
     `resolvedAt` stays set after a Ticket is Reopened (L3 API §4.1).
 31. **"Recent" uses calendar days**, so the time zone sets a clear date
@@ -784,7 +804,7 @@ owner on 2026-10-30; the rest are defaults taken while writing this contract.
 33. **`currentStatus` on My Tickets accepts a list** so that Open Tickets can
     drill down; a single value behaves as before.
 34. **Account drill-down reuses the role filter.** Lab 3 excluded further
-    user filters, so inactive users appear there too (BR-32).
+    user filters, so inactive users appear there too (BR-31).
 35. **Client tests go in `client/src/lab-04/`**, the handout's Lab 4 layout,
     replacing the Lab 3 choice of placing them beside components.
 36. **Performance smoke target**: one second per dashboard endpoint at 1000
