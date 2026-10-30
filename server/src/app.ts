@@ -13,6 +13,7 @@ import authRoutes from './routes/auth.routes'
 import adminRoutes from './routes/admin.routes'
 import { noStore } from './middleware/noStore'
 import staffRoutes from './routes/staff.routes'
+import requesterRoutes from './routes/requester.routes'
 
 const app = express()
 
@@ -31,6 +32,10 @@ app.use('/api/auth', authRoutes)
 // included.
 app.use('/api/admin', noStore)
 
+// Lab 4 api-spec.md §1.4: nor is a dashboard.
+app.use('/api/requester', noStore)
+app.use('/api/staff/dashboard', noStore)
+
 // api-spec.md §1.5 steps 1 and 2: everything below needs a session whose
 // user has no password change pending.
 app.use('/api', requireSession, requirePasswordChanged)
@@ -39,6 +44,7 @@ app.use('/api', requireSession, requirePasswordChanged)
 // under it, defined or not (api-spec.md §1.4).
 app.use('/api/staff', requireRole('IT_STAFF', 'ADMINISTRATOR'))
 app.use('/api/admin', requireRole('ADMINISTRATOR'))
+app.use('/api/requester', requireRole('REQUESTER'))
 
 app.use('/api', referenceDataRoutes)
 app.use('/api', ticketRoutes)
@@ -47,6 +53,7 @@ app.use('/api', commentRoutes)
 app.use('/api', actionTakenRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/staff', staffRoutes)
+app.use('/api/requester', requesterRoutes)
 
 // api-spec.md §1.4: an /api path, or a method, that nothing above defines
 // is answered after the session checks, so it says nothing to a visitor

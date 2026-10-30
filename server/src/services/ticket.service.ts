@@ -82,7 +82,7 @@ export async function listTickets(query: ListTicketsQuery, requesterId: number) 
     ...(query.categoryId !== undefined && { categoryId: query.categoryId }),
     ...(query.requestedPriority !== undefined && { requestedPriority: query.requestedPriority }),
     ...(query.itPriority !== undefined && { itPriority: query.itPriority }),
-    ...(query.currentStatus !== undefined && { currentStatus: query.currentStatus }),
+    ...(query.currentStatus !== undefined && { currentStatus: { in: query.currentStatus } }),
     ...(query.search !== undefined && {
       OR: [
         { ticketNumber: { contains: query.search, mode: 'insensitive' } },

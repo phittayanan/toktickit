@@ -71,4 +71,9 @@ export const ENDPOINTS: readonly Endpoint[] = [
   { method: 'GET', path: '/api/tickets/:id/actions-taken', roles: ANY_ROLE },
   { method: 'POST', path: '/api/staff/tickets/:id/actions-taken', roles: STAFF },
   { method: 'PUT', path: '/api/staff/tickets/:id/actions-taken/:actionTakenId', roles: STAFF },
+
+  // Lab 4 §5 Dashboards
+  { method: 'GET', path: '/api/requester/dashboard', roles: REQUESTER },
+  { method: 'GET', path: '/api/staff/dashboard', roles: STAFF },
+  { method: 'GET', path: '/api/admin/dashboard', roles: ADMINISTRATOR },
 ]
