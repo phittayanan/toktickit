@@ -227,7 +227,7 @@ red asterisk.
 
 | Field | Control | Behaviour |
 |---|---|---|
-| Date/Time | Date and time input | Defaults to now on create |
+| Date/Time | Date and time input | Defaults to now on create. Required. A value that is not a valid date gets a field message and sends nothing |
 | Description | Textarea, counter "n / 2000" | Required |
 | Result | Textarea, counter "n / 2000" | Required when Status is Done |
 | Status | Select: Planned, Done | Defaults to Planned on create. Cancelled is reached only by Cancel action |

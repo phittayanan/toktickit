@@ -1,5 +1,5 @@
-import type { Priority, Role } from './api'
-import { statusLabel } from './statusLabels'
+import type { ActionTakenStatus, Priority, Role } from './api'
+import { ACTION_STATUS_LABELS, statusLabel } from './statusLabels'
 
 // Shared Priority/Current Status badges (ui-spec.md §10) — used by the
 // Requester and Staff ticket screens alike so they render Tickets
@@ -48,6 +48,35 @@ export function AppearsResolvedBadge() {
         ⚑
       </span>
       Requester: appears resolved
+    </span>
+  )
+}
+
+// Action status badge (docs/lab-04/ui-spec.md §2.2).
+const ACTION_STATUS_CLASSES: Record<ActionTakenStatus, string> = {
+  PLANNED: 'tk-badge--info',
+  DONE: 'tk-badge--success',
+  CANCELLED: 'tk-badge--neutral tk-badge--outlined',
+}
+
+export function ActionStatusBadge({ status }: { status: ActionTakenStatus }) {
+  return (
+    <span className={`badge rounded-pill ${ACTION_STATUS_CLASSES[status]}`}>
+      {status === 'DONE' && <span aria-hidden="true">✓ </span>}
+      {ACTION_STATUS_LABELS[status]}
+    </span>
+  )
+}
+
+// Flag badge (docs/lab-04/ui-spec.md §2.2): the Action Taken needs a
+// follow-up.
+export function FollowUpBadge() {
+  return (
+    <span className="badge rounded-pill tk-badge--warning-outline">
+      <span className="tk-badge__icon" aria-hidden="true">
+        ⚑
+      </span>
+      Follow-up
     </span>
   )
 }

@@ -14,6 +14,7 @@ import {
   type TicketStatus,
   type UserIdentity,
 } from './api'
+import ActionsTaken from './ActionsTaken'
 import { AccountBadge, AppearsResolvedBadge, PriorityBadge, StatusBadge } from './badges'
 import EntryThread from './EntryThread'
 import { statusLabel } from './statusLabels'
@@ -727,8 +728,8 @@ function Tabs({ labels, children }: { labels: Record<TabKey, ReactNode>; childre
 
 // IT Staff Ticket Detail (docs/lab-03/ui-spec.md §9), for IT Staff and
 // Administrators alike: the Ticket's information read-only, the Operations
-// card, the Resolution Summary, and the Public Comments, Internal Notes,
-// and Attachments tabs. Mount it with the Ticket id as its `key`.
+// card, the Actions Taken card, the Resolution Summary, and the Public
+// Comments, Internal Notes, and Attachments tabs. Mount it with the Ticket id as its `key`.
 function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIdentity }) {
   const navigate = useNavigate()
   const queuePath = queuePathFrom(useLocation().state)
@@ -889,6 +890,14 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
                 onConflict={reloadTicket}
               />
             </div>
+          </div>
+
+          <div className="mb-3">
+            <ActionsTaken
+              ticketId={ticket.id}
+              finishedAs={finishedAs}
+              staff={{ user, owners, onChanged: reloadTicket }}
+            />
           </div>
 
           {ticket.resolutionSummary !== null && (
