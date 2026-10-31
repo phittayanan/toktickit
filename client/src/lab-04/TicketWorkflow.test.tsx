@@ -180,4 +180,72 @@ describe('the Ticket status control', () => {
       expect(fetchStaffTicket).toHaveBeenCalledTimes(2)
     },
   )
+
+  // Opens the dialog and answers its summary with PLANNED_ACTION_REMAINS, the
+  // reload showing the gate unmet.
+  async function refuseSummary(fetchStaffTicket: Awaited<ReturnType<typeof openDetail>>) {
+    const updateTicketStatus = vi
+      .spyOn(api, 'updateTicketStatus')
+      .mockRejectedValue(new api.ApiError(409, 'Refused', 'PLANNED_ACTION_REMAINS'))
+    fetchStaffTicket.mockResolvedValue(ticket({ actionTakenCounts: { planned: 1, done: 1 } }))
+
+    choose('RESOLVED')
+    fireEvent.click(updateStatus())
+    const dialog = within(await screen.findByRole('dialog', { name: 'Resolve TKT-2026-000123' }))
+    fireEvent.change(dialog.getByLabelText(/Resolution Summary/), { target: { value: 'Replaced the battery.' } })
+    fireEvent.click(dialog.getByRole('button', { name: 'Mark as Resolved' }))
+    await operations().findByText(/Resolved needs/)
+
+    return updateTicketStatus
+  }
+
+  // An in-place reload that shows the gate met again.
+  async function meetGateAgain(fetchStaffTicket: Awaited<ReturnType<typeof openDetail>>) {
+    fetchStaffTicket.mockResolvedValue(ticket(gateMet))
+    vi.spyOn(api, 'updateItPriority').mockRejectedValue(new api.ApiError(409, 'Changed', 'STATUS_CHANGED'))
+    fireEvent.change(operations().getByLabelText('IT Priority'), { target: { value: 'LOW' } })
+    fireEvent.click(operations().getByRole('button', { name: 'Update Priority' }))
+    await waitFor(() => expect(option('Resolved').disabled).toBe(false))
+  }
+
+  async function reopenDialog() {
+    choose('RESOLVED')
+    fireEvent.click(updateStatus())
+
+    return within(await screen.findByRole('dialog', { name: 'Resolve TKT-2026-000123' }))
+  }
+
+  // BR-35
+  it('shows a refused Resolution Summary again when the gate is next met', async () => {
+    const fetchStaffTicket = await openDetail(ticket(gateMet))
+    await refuseSummary(fetchStaffTicket)
+
+    await meetGateAgain(fetchStaffTicket)
+
+    expect((await reopenDialog()).getByLabelText(/Resolution Summary/)).toHaveValue('Replaced the battery.')
+  })
+
+  // BR-35: Cancel still discards what was typed.
+  it('forgets a refused Resolution Summary once its dialog is cancelled', async () => {
+    const fetchStaffTicket = await openDetail(ticket(gateMet))
+    await refuseSummary(fetchStaffTicket)
+    await meetGateAgain(fetchStaffTicket)
+
+    fireEvent.click((await reopenDialog()).getByRole('button', { name: 'Cancel' }))
+
+    expect((await reopenDialog()).getByLabelText(/Resolution Summary/)).toHaveValue('')
+  })
+
+  // BR-35: a summary that was saved is not the next resolve's draft.
+  it('forgets a refused Resolution Summary once it is saved', async () => {
+    const fetchStaffTicket = await openDetail(ticket(gateMet))
+    const updateTicketStatus = await refuseSummary(fetchStaffTicket)
+    await meetGateAgain(fetchStaffTicket)
+    updateTicketStatus.mockResolvedValue(ticket({ ...gateMet, allowedTransitions: ['WAITING_FOR_REQUESTER', 'RESOLVED'] }))
+
+    fireEvent.click((await reopenDialog()).getByRole('button', { name: 'Mark as Resolved' }))
+    await operations().findByRole('status')
+
+    expect((await reopenDialog()).getByLabelText(/Resolution Summary/)).toHaveValue('')
+  })
 })

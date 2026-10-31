@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { addDoneAction, apiSessionFor, createTicketFor, type ArrangedTicket } from '../lab-03/support/api'
 import { signInAs } from '../lab-03/support/signIn'
@@ -91,6 +92,61 @@ test('the link to the Actions Taken card is a tap target at 390px', async ({ pag
 
   expect(box?.height).toBeGreaterThanOrEqual(43.5)
   expect(box?.width).toBeGreaterThanOrEqual(43.5)
+})
+
+// UI-13, BR-35: a gate refusal keeps the summary until the gate is met again.
+test('a Resolution Summary refused by the gate is shown again when Resolved next opens', async ({ page }) => {
+  const ticket = await ticketInProgress('E2E Lab 4 refused summary')
+  await addDoneAction(E2E_USERS.IT_STAFF, ticket.id)
+  await signInAs(page, 'IT_STAFF')
+  await page.goto(`/staff/tickets/${ticket.id}`)
+
+  await chooseStatus(page, 'Resolved')
+  const dialog = page.getByRole('dialog', { name: `Resolve ${ticket.ticketNumber}` })
+  await dialog.getByLabel('Resolution Summary').fill(RESOLUTION_SUMMARY)
+
+  const api = await apiSessionFor(E2E_USERS.IT_STAFF)
+  const planned = await api
+    .post(`/api/staff/tickets/${ticket.id}/actions-taken`, {
+      data: { clientRequestId: randomUUID(), status: 'PLANNED', description: 'Planned by another session.' },
+    })
+    .then((res) => res.json())
+
+  await dialog.getByRole('button', { name: 'Mark as Resolved' }).click()
+
+  await expect(dialog).toBeHidden()
+  await expect(operations(page).getByRole('alert')).toBeVisible()
+  await expect(operations(page).getByText(/Resolved needs/)).toContainText('Done: 1. Planned: 1.')
+  await expect(statusSelect(page).getByRole('option', { name: 'Resolved (not available)' })).toBeDisabled()
+
+  const cancelled = await api.put(`/api/staff/tickets/${ticket.id}/actions-taken/${planned.id}`, {
+    data: {
+      expectedVersion: planned.version,
+      actionAt: planned.actionAt,
+      description: planned.description,
+      result: null,
+      status: 'CANCELLED',
+      assigneeId: planned.assignee.id,
+      followUpRequired: false,
+      followUpNote: null,
+      attachmentNotes: null,
+    },
+  })
+  expect(cancelled.ok()).toBe(true)
+  // The screen is now stale, so its next save reloads it in place.
+  const moved = await api.post(`/api/staff/tickets/${ticket.id}/status`, {
+    data: { status: 'WAITING_FOR_REQUESTER', expectedStatus: 'IN_PROGRESS' },
+  })
+  expect(moved.ok()).toBe(true)
+  await api.dispose()
+
+  await chooseStatus(page, 'Waiting for Requester')
+  await expect(statusSelect(page).getByRole('option', { name: 'Resolved', exact: true })).toBeEnabled()
+
+  await chooseStatus(page, 'Resolved')
+  await expect(dialog.getByLabel('Resolution Summary')).toHaveValue(RESOLUTION_SUMMARY)
+  await dialog.getByRole('button', { name: 'Mark as Resolved' }).click()
+  await expect(operations(page).getByRole('status').filter({ hasText: 'Status changed to Resolved.' })).toBeVisible()
 })
 
 // E2E-05 (AC-16, AC-21)

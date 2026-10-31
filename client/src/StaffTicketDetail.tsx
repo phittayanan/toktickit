@@ -136,17 +136,19 @@ type ResolveOutcome = { kind: 'closed' } | { kind: 'invalid'; message: string } 
 function ResolveDialog({
   ticket,
   claiming,
+  initialSummary,
   onClaim,
   onResolve,
   onCancel,
 }: {
   ticket: StaffTicket
   claiming: boolean
+  initialSummary: string
   onClaim: () => void
   onResolve: (resolutionSummary: string) => Promise<ResolveOutcome>
   onCancel: () => void
 }) {
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialSummary)
   const [fieldError, setFieldError] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -270,6 +272,8 @@ function Operations({
   const [feedback, setFeedback] = useState<Partial<Record<Control, Feedback>>>({})
   // The dialog that is open: a confirmation, or the Resolved dialog.
   const [confirming, setConfirming] = useState<'owner' | 'status' | 'resolve' | null>(null)
+  // What a Conflict took out of the Resolved dialog, for when it opens again.
+  const [refusedSummary, setRefusedSummary] = useState('')
 
   // Each select follows the Ticket until the user picks something else.
   const currentOwner = ticket.owner ? String(ticket.owner.id) : ''
@@ -396,6 +400,7 @@ function Operations({
       const updated = await updateTicketStatus(ticket.id, statusRequest(resolutionSummary))
       onSaved(updated)
       setStatusChoice('')
+      setRefusedSummary('')
       setFeedback((prev) => ({ ...prev, status: { kind: 'success', message: statusSaved(updated) } }))
     } catch (err) {
       if (err instanceof ApiError && err.status === 400 && err.field === 'resolutionSummary') {
@@ -404,6 +409,7 @@ function Operations({
       if (!(err instanceof ApiError && err.status === 409)) {
         return { kind: 'failure' }
       }
+      setRefusedSummary(resolutionSummary)
       setFeedback((prev) => ({ ...prev, status: { kind: 'conflict' } }))
       onConflict()
     }
@@ -616,12 +622,16 @@ function Operations({
         <ResolveDialog
           ticket={ticket}
           claiming={saving.owner === 'claim'}
+          initialSummary={refusedSummary}
           onClaim={async () => {
             // A claim that did not go through is explained in the card.
             if (!(await claim())) setConfirming(null)
           }}
           onResolve={resolve}
-          onCancel={() => setConfirming(null)}
+          onCancel={() => {
+            setRefusedSummary('')
+            setConfirming(null)
+          }}
         />
       )}
     </section>
