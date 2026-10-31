@@ -423,10 +423,11 @@ function ProblemAppearsResolved({
 }
 
 // Requester Ticket Detail (docs/lab-02/ui-spec.md §9, continued in
-// docs/lab-03/ui-spec.md §7): a read-only field grid, Summary and
-// Description, and Attachment management, plus the Ticket Owner, the
-// Resolution Summary, Problem Appears Resolved, and Public Comments. No
-// Internal Notes, Actions Taken, or status change (BR-32).
+// docs/lab-03/ui-spec.md §7 and docs/lab-04/ui-spec.md §8): a read-only field
+// grid, Summary and Description, and Attachment management, plus the Ticket
+// Owner, the Resolution Summary, Problem Appears Resolved, the read-only
+// Actions Taken card, and Public Comments. No Internal Notes or status change
+// (BR-32).
 function RequesterTicketDetail({ ticketId, onBack }: { ticketId: number; onBack: () => void }) {
   const { user } = useSession()
   const [categories, setCategories] = useState<Category[]>([])
