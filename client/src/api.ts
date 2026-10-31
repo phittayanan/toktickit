@@ -233,6 +233,38 @@ export interface StatusChange {
   resolutionSummary?: string
 }
 
+export type ActionTakenStatus = 'PLANNED' | 'DONE' | 'CANCELLED'
+
+// docs/lab-04/api-spec.md §1.5. `canEdit` is feedback for the screen: the
+// backend still enforces the rule.
+export interface ActionTaken {
+  id: number
+  actionAt: string
+  description: string
+  result: string | null
+  status: ActionTakenStatus
+  assignee: { id: number; name: string }
+  followUpRequired: boolean
+  followUpNote: string | null
+  attachmentNotes: string | null
+  createdBy: { id: number; name: string }
+  createdAt: string
+  version: number
+  canEdit: boolean
+}
+
+// What a create and an edit of an Action Taken both send.
+export interface ActionTakenFields {
+  actionAt: string
+  description: string
+  result: string | null
+  status: ActionTakenStatus
+  assigneeId: number
+  followUpRequired: boolean
+  followUpNote: string | null
+  attachmentNotes: string | null
+}
+
 // A User who can be made Ticket Owner (docs/lab-03/api-spec.md §5.3).
 export interface EligibleOwner {
   id: number
@@ -561,6 +593,39 @@ export async function updateItPriority(id: number, itPriority: Priority): Promis
 // or OWNER_REQUIRED.
 export async function updateTicketStatus(id: number, change: StatusChange): Promise<StaffTicket> {
   const res = await sendJson(`/api/staff/tickets/${id}/status`, 'POST', change)
+  return res.json()
+}
+
+// GET /api/tickets/:id/actions-taken: every Action Taken of the Ticket,
+// newest created first, for its Requester and for staff. Refusals are
+// ApiErrors: 403, 404.
+export async function fetchActionsTaken(ticketId: number): Promise<ActionTaken[]> {
+  const res = await request(`/api/tickets/${ticketId}/actions-taken`)
+  return res.json()
+}
+
+// POST /api/staff/tickets/:id/actions-taken. A repeat of `clientRequestId`
+// answers with the Action Taken it created (BR-14). Refusals are ApiErrors:
+// 400 naming the field, 404, 409 TICKET_FINISHED.
+export async function createActionTaken(
+  ticketId: number,
+  input: ActionTakenFields & { clientRequestId: string },
+): Promise<ActionTaken> {
+  const res = await sendJson(`/api/staff/tickets/${ticketId}/actions-taken`, 'POST', input)
+  return res.json()
+}
+
+// PUT /api/staff/tickets/:id/actions-taken/:actionTakenId, which is also how
+// an action is marked Done or cancelled. `expectedVersion` is the version the
+// client loaded. Refusals are ApiErrors: 400 naming the field, 403
+// ACTION_TAKEN_EDIT_FORBIDDEN, 404, 409 TICKET_FINISHED, ACTION_TAKEN_CHANGED,
+// or ACTION_TAKEN_FINAL.
+export async function updateActionTaken(
+  ticketId: number,
+  actionTakenId: number,
+  input: ActionTakenFields & { expectedVersion: number },
+): Promise<ActionTaken> {
+  const res = await sendJson(`/api/staff/tickets/${ticketId}/actions-taken/${actionTakenId}`, 'PUT', input)
   return res.json()
 }
 

@@ -119,16 +119,16 @@ The Ticket Change module has its own tests from #74,
 | REG-01 | Regression | AC-42 | Lab 1, Lab 2, and Lab 3 server suites | All pass, changed only as §1 states | `server/tests/lab-01/*.test.ts` `server/tests/lab-02/*.test.ts` `server/tests/lab-03/*.test.ts` | Planned |
 | REG-02 | Regression | AC-42 | Lab 2 and Lab 3 client suites | All pass, changed only as §1 states | `client/src/*.test.tsx` | Planned |
 | REG-03 | Regression | AC-42 | Lab 2 and Lab 3 E2E flows | All pass, changed only as §1 states | `e2e/lab-02/*.spec.ts` `e2e/lab-03/*.spec.ts` | Planned |
-| UI-01 | UI | AC-12 | Actions Taken card, staff: rows, count, badges, open a row | Date, description, status and Follow-up badges; view shows every field | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-02 | UI | AC-01, AC-03, AC-04 | Create form: defaults, validation, submit | Date is now, Performed by is the user, Status is Planned; unchecking Follow-up required clears the note; field messages and no call; one call; list reloads | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-03 | UI | AC-06, AC-07 | Row buttons with `canEdit` true and false, on Planned, Done, and Cancelled rows | Edit, Mark Done, Cancel action only on `canEdit` Planned rows; none otherwise | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-04 | UI | AC-07, AC-44 | Mark Done: opens the form, Result required; Cancel action: dismiss, then confirm, then confirm answered `ACTION_TAKEN_CHANGED` and a failure | Status fixed at Done; dismiss sends nothing; confirm sends `CANCELLED`; the confirmation stays open with the alert; Reload closes it and reloads the list | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-05 | UI | AC-09 | Save answered `ACTION_TAKEN_CHANGED`; Reload | Typed data kept with the conflict notice; Reload shows the latest version | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-06 | UI | AC-10 | Card on a Finished Ticket; save answered `TICKET_FINISHED` and `ACTION_TAKEN_FINAL` | No Add or row buttons; Conflict notice; typed data kept | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-07 | UI | AC-11 | Double click on Save; retry after a failure | One request at a time; a retry with the body unchanged reuses the `clientRequestId` | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-08 | UI | AC-13 | Card rendered for a Requester | Every Action Taken with status badges; rows open; no Add, form, or row buttons | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-09 | Security | AC-15 | Action Taken text containing markup | Rendered as literal text; no element injected | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-10 | UI | AC-44, AC-45 | Card loading, empty, 403, 404, and failure | Skeleton; role-specific empty text; alert; typed data kept; Retry | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
+| UI-01 | UI | AC-12 | Actions Taken card, staff: rows, count, badges, open a row | Date, description, status and Follow-up badges; view shows every field | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-02 | UI | AC-01, AC-03, AC-04 | Create form: defaults, validation, a Date/Time that is not a date, submit | Date is now, Performed by is the user, Status is Planned; unchecking Follow-up required clears the note; field messages and no call, with the form editable and typed data kept; one call; list reloads | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-03 | UI | AC-06, AC-07 | Row buttons with `canEdit` true and false, on Planned, Done, and Cancelled rows | Edit, Mark Done, Cancel action only on `canEdit` Planned rows; none otherwise | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-04 | UI | AC-07, AC-44 | Mark Done: opens the form, Result required; Cancel action: dismiss, then confirm, then confirm answered `ACTION_TAKEN_CHANGED` and a failure | Status fixed at Done; dismiss sends nothing; confirm sends `CANCELLED`; the confirmation stays open with the alert; Reload closes it and reloads the list | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-05 | UI | AC-09 | Save answered `ACTION_TAKEN_CHANGED`; Reload | Typed data kept with the conflict notice; Reload shows the latest version | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-06 | UI | AC-10 | Card on a Finished Ticket; save answered `TICKET_FINISHED` and `ACTION_TAKEN_FINAL` | No Add or row buttons; Conflict notice; typed data kept | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-07 | UI | AC-11 | Double click on Save; retry after a failure | One request at a time; a retry with the body unchanged reuses the `clientRequestId` | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-08 | UI | AC-13 | Card rendered for a Requester | Every Action Taken with status badges; rows open; no Add, form, or row buttons | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-09 | Security | AC-15 | Action Taken text containing markup | Rendered as literal text; no element injected | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-10 | UI | AC-44, AC-45 | Card loading, empty, 403, 404, and failure; a changed `reloadSignal` | Skeleton; role-specific empty text; alert; typed data kept; Retry; the list loads again only on a change | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
 | UI-11 | UI | AC-25 | Status select with the gate unmet by each condition | "Resolved (not available)" disabled; reason states Done and Planned counts; link reaches the card | `client/src/lab-04/TicketWorkflow.test.tsx` | Planned |
 | UI-12 | UI | AC-25 | Status select with the gate met; other transitions; after a save | Resolved opens the Lab 3 dialog; only allowed options; summary status refreshes and the reason clears | `client/src/lab-04/TicketWorkflow.test.tsx` | Planned |
 | UI-13 | UI | AC-16, AC-17 | A stale screen answered `DONE_ACTION_REQUIRED` or `PLANNED_ACTION_REMAINS` | Conflict notice; Ticket and card reload | `client/src/lab-04/TicketWorkflow.test.tsx` | Planned |
@@ -139,15 +139,15 @@ The Ticket Change module has its own tests from #74,
 | UI-18 | UI | AC-33 | Dashboard for an Administrator and for IT Staff; account request fails | Active accounts only for the Administrator, linking to User Management; its failure leaves the rest usable | `client/src/lab-04/StaffDashboard.test.tsx` | Pass |
 | UI-19 | UI | AC-34 | My Tickets and User Management opened with URL filters | The matching filter is applied and its control shows it; "Open Tickets" sends the five statuses | `client/src/lab-04/RequesterDashboard.test.tsx` | Pass |
 | UI-20 | UI | AC-43 | Shell for each role; sign-in; Forbidden page button | Dashboard first and active; Lab 3 entries stay; landing is the Dashboard | `client/src/lab-04/StaffDashboard.test.tsx` | Pass |
-| UI-21 | UI style | AC-48 | Action status and Follow-up badge components | Label, icon, and style class match `ui-spec.md` §2.2 | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-22 | UI | AC-11 | Edit a field after a failed or lost response, then Save | The request carries a new `clientRequestId` | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
+| UI-21 | UI style | AC-48 | Action status and Follow-up badge components | Label, icon, and style class match `ui-spec.md` §2.2 | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-22 | UI | AC-11 | Edit a field after a failed or lost response, then Save | The request carries a new `clientRequestId` | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
 | VIS-01 | UI style | AC-46, AC-48 | Screenshots of the Requester Dashboard at the three widths, plus empty | Match the `ui-spec.md` §13 checklist | `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
 | VIS-02 | UI style | AC-46, AC-48 | Screenshots of the IT Staff and Administrator dashboards at the three widths, plus empty | Same checklist | `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
-| VIS-03 | UI style | AC-46, AC-48 | Screenshots of the Actions Taken card, staff and Requester, at the three widths, plus form, conflict, and Resolved not available | Same checklist | `e2e/lab-04/visual-actions-taken.spec.ts` | Planned |
-| VIS-04 | Responsive | AC-46 | Every Lab 4 screen at the three widths: page width against viewport; Actions Taken table or cards | No horizontal scroll; table on desktop and tablet, cards on mobile; one column on mobile dashboards | `e2e/lab-04/responsive.spec.ts` | Planned |
-| E2E-01 | E2E | AC-01, AC-07, AC-12, AC-13 | IT Staff adds Planned actions to a Ticket, assigns one to a colleague, who marks it Done, and cancels another; the Requester reads all of them | Different actions on one Ticket; each step visible to the right role; read-only for the Requester | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| E2E-02 | E2E | AC-05, AC-06 | Inactive user is not offered; other IT Staff sees no row buttons and is refused by direct request | Not listed; no buttons; 403 | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| E2E-03 | E2E | AC-09 | Two staff sessions edit the same Planned action | The second sees the conflict with typed data kept, then reloads | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
+| VIS-03 | UI style | AC-46, AC-48 | Screenshots of the Actions Taken card, staff and Requester, at the three widths, plus form, conflict, and Resolved not available | Same checklist | `e2e/lab-04/visual-actions-taken.spec.ts` | Planned: only the Resolved not available screenshot remains (#80) |
+| VIS-04 | Responsive | AC-46 | Every Lab 4 screen at the three widths: page width against viewport; Actions Taken table or cards | No horizontal scroll; table on desktop and tablet, cards on mobile; one column on mobile dashboards | `e2e/lab-04/responsive.spec.ts`, `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
+| E2E-01 | E2E | AC-01, AC-07, AC-12, AC-13 | IT Staff adds Planned actions to a Ticket and assigns one to a colleague, who adds their own and marks the assigned one Done; staff cancel another; staff and the Requester open all of them | Actions by different staff on one Ticket; newest created first after a reload too; each row opens to every field for both; each step visible to the right role; read-only for the Requester | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
+| E2E-02 | E2E | AC-05, AC-06 | Inactive user is not offered; other IT Staff sees no row buttons and is refused by direct request | Not listed; no buttons; 403 | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
+| E2E-03 | E2E | AC-09 | Two staff sessions edit the same Planned action | The second sees the conflict with typed data kept, then reloads | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-04 | E2E | AC-16, AC-17, AC-18, AC-25 | Status control shows Resolved (not available); staff complete the work, resolve, and close | Reason then normal option; Resolved, then Closed; Ticket read-only | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
 | E2E-05 | E2E | AC-16, AC-21 | Requester indicates resolved; a direct status request bypasses the screen | Status unchanged; 409 | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
 | E2E-06 | E2E | AC-19, AC-23 | Ticket walks from New through Reopened to Resolved again and Closed | Each step offers only permitted transitions | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
@@ -156,7 +156,7 @@ The Ticket Change module has its own tests from #74,
 | E2E-09 | E2E | AC-33, AC-43 | Administrator signs in and opens each Active accounts card | Filtered User Management; every Lab 3 entry remains | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-10 | E2E | AC-36, AC-38 | Staff opens `/dashboard`; Requester opens `/staff/dashboard`; each calls the other's API | Forbidden page; 403 | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-11 | E2E | AC-47 | Keyboard-only pass over every Lab 4 screen, the form, and the confirmation | Every control reachable with visible focus and an accessible name; focus returns on close | `e2e/lab-04/accessibility.spec.ts` | Planned |
-| E2E-12 | E2E | AC-45 | Dashboards and the Actions Taken form with the API forced to fail | Safe message; typed data kept; no internal detail on screen | `e2e/lab-04/safe-failure.spec.ts` | Planned |
+| E2E-12 | E2E | AC-45 | Dashboards and the Actions Taken form with the API forced to fail | Safe message; typed data kept; no internal detail on screen | `e2e/lab-04/safe-failure.spec.ts`, `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
 | E2E-13 | E2E | AC-49 | Visit every screen of every role, following each link, with a console listener | No console error, no broken link, no placeholder text | `e2e/lab-04/final-regression.spec.ts` | Planned |
 | E2E-14 | E2E | AC-42 | One full journey: login, create a Ticket, Attachment, comment, note, Action Taken, resolve, close, plus user administration | Every earlier function still works alongside Lab 4 | `e2e/lab-04/final-regression.spec.ts` | Planned |
 
@@ -178,7 +178,7 @@ The Ticket Change module has its own tests from #74,
 | AC-12 | API-02, API-18, UI-01, E2E-01 |
 | AC-13 | API-01, UI-08, E2E-01 |
 | AC-14 | API-16 |
-| AC-15 | API-17, UI-09 |
+| AC-15 | API-17, UI-09, `e2e/lab-04/actions-taken-flow.spec.ts` |
 | AC-16 | WF-01, WF-05, UI-13, E2E-04, E2E-05 |
 | AC-17 | WF-02, WF-05, UI-13, E2E-04 |
 | AC-18 | WF-03, E2E-04 |
@@ -247,5 +247,7 @@ To be recorded from the final run on `main`.
 
 ## 7. Known Limitations or Deferred Tests
 
-None planned. Any test deferred during the sprint is recorded here with its
-reason.
+Any test deferred during the sprint is recorded here with its reason.
+
+- VIS-03: the Resolved not available screenshot waits for the Ticket status
+  control of #80. Every other VIS-03 screenshot is captured.
