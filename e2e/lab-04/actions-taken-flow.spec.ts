@@ -6,9 +6,13 @@ import {
   actionsOf,
   addActionFor,
   card,
+  detailsOf,
   openRequesterTicket,
   openStaffTicket,
+  openedFields,
+  rowDescriptions,
   rowOf,
+  shownTime,
 } from './support/actionsTaken'
 
 const STAFF = E2E_USERS.IT_STAFF
@@ -45,6 +49,9 @@ test.describe('Actions Taken', () => {
     const form = page.getByRole('form', { name: 'Add action' })
     await form.getByLabel('Description').fill('Replace the battery')
     await form.getByLabel('Performed by').selectOption({ label: colleague.name })
+    await form.getByLabel('Follow-up required').check()
+    await form.getByLabel('Follow-up note').fill('Check the charge again next week.')
+    await form.getByLabel('Attachment notes').fill('See battery-report.pdf.')
     await form.getByRole('button', { name: 'Save' }).click()
     await expect(page.getByText('Action added.')).toBeVisible()
     await expect(form).toBeHidden()
@@ -54,9 +61,15 @@ test.describe('Actions Taken', () => {
     await form.getByRole('button', { name: 'Save' }).click()
     await expect(card(page).getByRole('heading', { name: 'Actions Taken (2)' })).toBeVisible()
 
-    // The colleague performs the first one. It leaves the Ticket Owner alone.
+    // The colleague adds their own and performs the first one. It leaves the
+    // Ticket Owner alone.
     const colleaguePage = await signedInPage(browser, colleague)
     await openStaffTicket(colleaguePage, ticket)
+    await card(colleaguePage).getByRole('button', { name: 'Add' }).click()
+    const colleagueForm = colleaguePage.getByRole('form', { name: 'Add action' })
+    await colleagueForm.getByLabel('Description').fill('Test the new battery')
+    await colleagueForm.getByRole('button', { name: 'Save' }).click()
+    await expect(card(colleaguePage).getByRole('heading', { name: 'Actions Taken (3)' })).toBeVisible()
     await rowOf(colleaguePage, 'Replace the battery').getByRole('button', { name: 'Mark Done' }).click()
     const done = colleaguePage.getByRole('form', { name: 'Mark action Done' })
     await expect(done.getByLabel('Status')).toBeDisabled()
@@ -76,14 +89,65 @@ test.describe('Actions Taken', () => {
     await expect(rowOf(page, 'Order a charger').getByText('Cancelled')).toBeVisible()
     await expect(rowOf(page, 'Order a charger').getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0)
 
+    const [tested, charger, battery] = await actionsOf(STAFF, ticket)
+    const everyField: Record<string, Record<string, string>> = {
+      'Test the new battery': {
+        'Action Date/Time': await shownTime(page, tested.actionAt),
+        'Action Description': 'Test the new battery',
+        Result: '—',
+        'Performed by': colleague.name,
+        Status: 'Planned',
+        'Follow-Up Required?': 'No',
+        'Follow-up Note': '—',
+        'Attachment Notes': '—',
+        'Created by': colleague.name,
+        'Created at': await shownTime(page, tested.createdAt),
+      },
+      'Order a charger': {
+        'Action Date/Time': await shownTime(page, charger.actionAt),
+        'Action Description': 'Order a charger',
+        Result: '—',
+        'Performed by': STAFF.name,
+        Status: 'Cancelled',
+        'Follow-Up Required?': 'No',
+        'Follow-up Note': '—',
+        'Attachment Notes': '—',
+        'Created by': STAFF.name,
+        'Created at': await shownTime(page, charger.createdAt),
+      },
+      'Replace the battery': {
+        'Action Date/Time': await shownTime(page, battery.actionAt),
+        'Action Description': 'Replace the battery',
+        Result: 'Charge holds for 7 hours.',
+        'Performed by': colleague.name,
+        Status: 'Done',
+        'Follow-Up Required?': 'Yes',
+        'Follow-up Note': 'Check the charge again next week.',
+        'Attachment Notes': 'See battery-report.pdf.',
+        'Created by': STAFF.name,
+        'Created at': await shownTime(page, battery.createdAt),
+      },
+    }
+
+    // Newest created first, and each row opens to every field.
+    const readsEveryAction = async (viewer: Page) => {
+      await expect(rowDescriptions(viewer)).toHaveText(Object.keys(everyField))
+      for (const [description, fields] of Object.entries(everyField)) {
+        expect(await openedFields(viewer, description)).toEqual(fields)
+      }
+    }
+
+    await readsEveryAction(page)
+    await page.reload()
+    await expect(card(page).getByRole('heading', { name: 'Actions Taken (3)' })).toBeVisible()
+    await expect(rowDescriptions(page)).toHaveText(Object.keys(everyField))
+
     const requesterPage = await signedInPage(browser, REQUESTER)
     await openRequesterTicket(requesterPage, ticket)
-    await expect(card(requesterPage).getByRole('heading', { name: 'Actions Taken (2)' })).toBeVisible()
+    await expect(card(requesterPage).getByRole('heading', { name: 'Actions Taken (3)' })).toBeVisible()
     await expect(card(requesterPage).getByText('Visible to you and IT Staff.')).toBeVisible()
     await expect(rowOf(requesterPage, 'Order a charger').getByText('Cancelled')).toBeVisible()
-    await card(requesterPage).getByRole('button', { name: 'Replace the battery' }).click()
-    await expect(card(requesterPage).getByText('Charge holds for 7 hours.')).toBeVisible()
-    await expect(card(requesterPage).getByText(colleague.name)).toBeVisible()
+    await readsEveryAction(requesterPage)
     for (const name of ['Add', 'Edit', 'Mark Done', 'Cancel action']) {
       await expect(card(requesterPage).getByRole('button', { name, exact: true })).toHaveCount(0)
     }
@@ -154,17 +218,35 @@ test.describe('Actions Taken', () => {
   })
 
   // AC-15, in a real browser.
-  test('markup in an action is shown as text to staff and the Requester', async ({ page }) => {
+  test('markup in an action is shown as text to staff and the Requester', async ({ page, browser }) => {
     const markup = '<img src=x onerror="window.injected=1"><script>window.injected=1</script>'
     const ticket = await createTicketFor(REQUESTER, 'AC-15 literal text')
-    await addActionFor(STAFF, ticket, { description: markup })
+    await addActionFor(STAFF, ticket, {
+      description: markup,
+      result: markup,
+      followUpRequired: true,
+      followUpNote: markup,
+      attachmentNotes: markup,
+    })
 
-    await signInAsUser(page, REQUESTER)
-    await openRequesterTicket(page, ticket)
-    await card(page).getByRole('button', { name: markup }).click()
-    await expect(card(page).getByRole('region', { name: `Details of ${markup}` }).getByText(markup)).toBeVisible()
-    await expect(card(page).locator('img, script')).toHaveCount(0)
-    expect(await page.evaluate(() => 'injected' in window)).toBe(false)
+    const showsLiterally = async (viewer: Page) => {
+      const fields = await openedFields(viewer, markup)
+      for (const label of ['Action Description', 'Result', 'Follow-up Note', 'Attachment Notes']) {
+        expect(fields[label]).toBe(markup)
+      }
+      await expect(detailsOf(viewer, markup).getByText(markup)).toHaveCount(4)
+      await expect(card(viewer).locator('img, script')).toHaveCount(0)
+      expect(await viewer.evaluate(() => 'injected' in window)).toBe(false)
+    }
+
+    await signInAsUser(page, STAFF)
+    await openStaffTicket(page, ticket)
+    await showsLiterally(page)
+
+    const requesterPage = await signedInPage(browser, REQUESTER)
+    await openRequesterTicket(requesterPage, ticket)
+    await showsLiterally(requesterPage)
+    await requesterPage.context().close()
   })
 
   // AC-44.
@@ -198,6 +280,6 @@ test.describe('Actions Taken', () => {
     await expect(card(page).getByRole('button', { name: 'Add' })).toHaveCount(0)
     await expect(rowOf(page, 'Left Planned').getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0)
     await card(page).getByRole('button', { name: 'Left Planned' }).click()
-    await expect(card(page).getByRole('region', { name: 'Details of Left Planned' })).toBeVisible()
+    await expect(detailsOf(page, 'Left Planned')).toBeVisible()
   })
 })

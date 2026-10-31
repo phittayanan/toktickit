@@ -205,6 +205,22 @@ describe('UI-02: the create form', () => {
     expect(api.createActionTaken).not.toHaveBeenCalled()
   })
 
+  it('refuses a Date/Time that is not a date and stays editable, with the typed data kept', async () => {
+    renderStaff()
+    await openAdd()
+    changeField('Description', 'My typed text.')
+    changeField('Date/Time', '20266-10-31T10:00')
+    fireEvent.click(form().getByRole('button', { name: 'Save' }))
+
+    expect(form().getByLabelText('Date/Time')).toHaveAccessibleDescription('Date/Time is not a valid date.')
+    expect(form().getByLabelText('Date/Time')).toHaveFocus()
+    expect(form().getByLabelText('Date/Time')).toHaveValue('20266-10-31T10:00')
+    expect(form().getByLabelText('Description')).toHaveValue('My typed text.')
+    expect(form().getByLabelText('Description')).not.toHaveAttribute('readonly')
+    expect(form().getByRole('button', { name: 'Save' })).toBeEnabled()
+    expect(api.createActionTaken).not.toHaveBeenCalled()
+  })
+
   it('refuses text past the limits', async () => {
     renderStaff()
     await openAdd()
@@ -816,5 +832,20 @@ describe('UI-10: the states of the card', () => {
 
     expect(await screen.findByText('Something went wrong. Please try again.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Check the laptop battery.' })).toBeInTheDocument()
+  })
+
+  it('loads the list again only when reloadSignal changes', async () => {
+    const list = mockList(action())
+    const { rerender } = render(<ActionsTaken ticketId={42} reloadSignal={0} />)
+    await screen.findByRole('button', { name: 'Check the laptop battery.' })
+
+    rerender(<ActionsTaken ticketId={42} reloadSignal={0} />)
+    expect(list).toHaveBeenCalledTimes(1)
+
+    list.mockResolvedValue([action(), DONE])
+    rerender(<ActionsTaken ticketId={42} reloadSignal={1} />)
+
+    expect(await screen.findByRole('button', { name: 'Replaced the laptop battery.' })).toBeInTheDocument()
+    expect(list).toHaveBeenCalledTimes(2)
   })
 })

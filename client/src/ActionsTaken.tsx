@@ -128,6 +128,7 @@ function validate(values: FormValues): FieldErrors {
   const note = values.followUpNote.trim()
 
   if (values.actionAt === '') errors.actionAt = 'Date/Time is required.'
+  else if (Number.isNaN(new Date(values.actionAt).getTime())) errors.actionAt = 'Date/Time is not a valid date.'
   if (description === '') errors.description = 'Description is required.'
   else if (description.length > TEXT_MAX_LENGTH) {
     errors.description = `Description must be at most ${TEXT_MAX_LENGTH} characters.`
@@ -526,15 +527,18 @@ function ActionDetails({ action }: { action: ActionTaken }) {
 // The Actions Taken card (docs/lab-04/ui-spec.md §8), the same on both Ticket
 // Detail screens. `staff` is what the staff screen adds to it; without it the
 // card is the Requester's read-only view. `onChanged` says a Ticket Change
-// was made or refused, so the Ticket shown is due a reload.
+// was made or refused, so the Ticket shown is due a reload. A change of
+// `reloadSignal` says the list shown is due one.
 function ActionsTaken({
   ticketId,
   finishedAs,
   staff,
+  reloadSignal,
 }: {
   ticketId: number
   finishedAs?: 'closed' | 'cancelled'
   staff?: { user: UserIdentity; owners: EligibleOwner[]; onChanged: () => void }
+  reloadSignal?: number
 }) {
   const [actions, setActions] = useState<ActionTaken[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -575,7 +579,7 @@ function ActionsTaken({
   // A Ticket that finished on this screen turns every `canEdit` false.
   useEffect(() => {
     void load()
-  }, [load, finishedAs])
+  }, [load, finishedAs, reloadSignal])
 
   // `#actions-taken` is where the dashboards link to (ui-spec.md §6.1).
   useEffect(() => {

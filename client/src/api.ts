@@ -233,7 +233,6 @@ export interface StatusChange {
   resolutionSummary?: string
 }
 
-// A User who can be made Ticket Owner (docs/lab-03/api-spec.md §5.3).
 export type ActionTakenStatus = 'PLANNED' | 'DONE' | 'CANCELLED'
 
 // docs/lab-04/api-spec.md §1.5. `canEdit` is feedback for the screen: the
@@ -266,6 +265,7 @@ export interface ActionTakenFields {
   attachmentNotes: string | null
 }
 
+// A User who can be made Ticket Owner (docs/lab-03/api-spec.md §5.3).
 export interface EligibleOwner {
   id: number
   name: string
