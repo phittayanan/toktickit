@@ -143,8 +143,8 @@ The Ticket Change module has its own tests from #74,
 | UI-22 | UI | AC-11 | Edit a field after a failed or lost response, then Save | The request carries a new `clientRequestId` | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
 | VIS-01 | UI style | AC-46, AC-48 | Screenshots of the Requester Dashboard at the three widths, plus empty | Match the `ui-spec.md` §13 checklist | `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
 | VIS-02 | UI style | AC-46, AC-48 | Screenshots of the IT Staff and Administrator dashboards at the three widths, plus empty | Same checklist | `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
-| VIS-03 | UI style | AC-46, AC-48 | Screenshots of the Actions Taken card, staff and Requester, at the three widths, plus form, conflict, and Resolved not available | Same checklist | `e2e/lab-04/visual-actions-taken.spec.ts` | Planned |
-| VIS-04 | Responsive | AC-46 | Every Lab 4 screen at the three widths: page width against viewport; Actions Taken table or cards | No horizontal scroll; table on desktop and tablet, cards on mobile; one column on mobile dashboards | `e2e/lab-04/responsive.spec.ts` | Planned |
+| VIS-03 | UI style | AC-46, AC-48 | Screenshots of the Actions Taken card, staff and Requester, at the three widths, plus form, conflict, and Resolved not available | Same checklist | `e2e/lab-04/visual-actions-taken.spec.ts` | Planned: only the Resolved not available screenshot remains (#80) |
+| VIS-04 | Responsive | AC-46 | Every Lab 4 screen at the three widths: page width against viewport; Actions Taken table or cards | No horizontal scroll; table on desktop and tablet, cards on mobile; one column on mobile dashboards | `e2e/lab-04/responsive.spec.ts`, `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
 | E2E-01 | E2E | AC-01, AC-07, AC-12, AC-13 | IT Staff adds Planned actions to a Ticket and assigns one to a colleague, who adds their own and marks the assigned one Done; staff cancel another; staff and the Requester open all of them | Actions by different staff on one Ticket; newest created first after a reload too; each row opens to every field for both; each step visible to the right role; read-only for the Requester | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-02 | E2E | AC-05, AC-06 | Inactive user is not offered; other IT Staff sees no row buttons and is refused by direct request | Not listed; no buttons; 403 | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-03 | E2E | AC-09 | Two staff sessions edit the same Planned action | The second sees the conflict with typed data kept, then reloads | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
@@ -156,7 +156,7 @@ The Ticket Change module has its own tests from #74,
 | E2E-09 | E2E | AC-33, AC-43 | Administrator signs in and opens each Active accounts card | Filtered User Management; every Lab 3 entry remains | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-10 | E2E | AC-36, AC-38 | Staff opens `/dashboard`; Requester opens `/staff/dashboard`; each calls the other's API | Forbidden page; 403 | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-11 | E2E | AC-47 | Keyboard-only pass over every Lab 4 screen, the form, and the confirmation | Every control reachable with visible focus and an accessible name; focus returns on close | `e2e/lab-04/accessibility.spec.ts` | Planned |
-| E2E-12 | E2E | AC-45 | Dashboards and the Actions Taken form with the API forced to fail | Safe message; typed data kept; no internal detail on screen | `e2e/lab-04/safe-failure.spec.ts` | Planned |
+| E2E-12 | E2E | AC-45 | Dashboards and the Actions Taken form with the API forced to fail | Safe message; typed data kept; no internal detail on screen | `e2e/lab-04/safe-failure.spec.ts`, `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
 | E2E-13 | E2E | AC-49 | Visit every screen of every role, following each link, with a console listener | No console error, no broken link, no placeholder text | `e2e/lab-04/final-regression.spec.ts` | Planned |
 | E2E-14 | E2E | AC-42 | One full journey: login, create a Ticket, Attachment, comment, note, Action Taken, resolve, close, plus user administration | Every earlier function still works alongside Lab 4 | `e2e/lab-04/final-regression.spec.ts` | Planned |
 
@@ -247,5 +247,7 @@ To be recorded from the final run on `main`.
 
 ## 7. Known Limitations or Deferred Tests
 
-None planned. Any test deferred during the sprint is recorded here with its
-reason.
+Any test deferred during the sprint is recorded here with its reason.
+
+- VIS-03: the Resolved not available screenshot waits for the Ticket status
+  control of #80. Every other VIS-03 screenshot is captured.

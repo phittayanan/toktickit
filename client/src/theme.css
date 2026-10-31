@@ -1437,7 +1437,7 @@ a.tk-metric:hover {
   .tk-actions__form-buttons {
     flex-direction: column-reverse;
   }
-  .tk-actions__header .btn {
+  .tk-actions .tk-actions__header .btn:not(.btn-link) {
     width: auto;
   }
 }

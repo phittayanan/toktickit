@@ -55,6 +55,12 @@ test.describe('responsive: Actions Taken card', () => {
         for (const control of await card(page).getByRole('button').all()) {
           expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44)
         }
+
+        // Add stays beside the title, which keeps to one line.
+        const add = (await card(page).getByRole('button', { name: 'Add' }).boundingBox())!
+        const title = (await card(page).getByRole('heading', { name: /Actions Taken/ }).boundingBox())!
+        expect(add.width).toBeLessThan(size.width / 2)
+        expect(title.height).toBeLessThanOrEqual(add.height)
       }
 
       await card(page).locator('.tk-actions__disclosure').click()
