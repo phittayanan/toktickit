@@ -213,9 +213,9 @@ password.
    Follow a card to the matching My Tickets view, create a Ticket with an
    Attachment, and post a Public Comment.
 2. **IT Staff** (`wichai.phromma@kmutt.ac.th`): the Dashboard opens first.
-   Open the new Ticket from the Ticket Queue and claim it. Its status control
-   lists Resolved (not available), with the reason. Add an Action Taken as
-   Done, resolve the Ticket, and close it.
+   Open the new Ticket from the Ticket Queue, claim it, and move it to In
+   Progress. Its status control lists Resolved (not available), with the
+   reason. Add an Action Taken as Done, resolve the Ticket, and close it.
 3. **Requester** again: Ticket Detail shows the Action Taken, read-only, and
    the Resolution Summary.
 4. **Administrator** (`apinya.thongchai@kmutt.ac.th`): the Dashboard adds the
