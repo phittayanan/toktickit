@@ -629,7 +629,7 @@ function Operations({
           }}
           onResolve={resolve}
           onCancel={() => {
-            setRefusedSummary('')
+            if (ticket.owner) setRefusedSummary('')
             setConfirming(null)
           }}
         />

@@ -248,4 +248,45 @@ describe('the Ticket status control', () => {
 
     expect((await reopenDialog()).getByLabelText(/Resolution Summary/)).toHaveValue('')
   })
+
+  // Answers the summary with OWNER_REQUIRED, the reload showing no owner, and
+  // opens the dialog again on its "needs an owner" branch.
+  async function refuseForNoOwner() {
+    const fetchStaffTicket = await openDetail(ticket(gateMet))
+    vi.spyOn(api, 'updateTicketStatus').mockRejectedValue(new api.ApiError(409, 'Refused', 'OWNER_REQUIRED'))
+    fetchStaffTicket.mockResolvedValue(ticket({ ...gateMet, owner: null, ownerChangedAt: null }))
+    vi.spyOn(api, 'updateTicketOwner').mockResolvedValue(ticket(gateMet))
+
+    const dialog = await reopenDialog()
+    fireEvent.change(dialog.getByLabelText(/Resolution Summary/), { target: { value: 'Replaced the battery.' } })
+    fireEvent.click(dialog.getByRole('button', { name: 'Mark as Resolved' }))
+    await operations().findByRole('button', { name: 'Claim' })
+
+    const noOwner = await reopenDialog()
+    expect(noOwner.getByText('A ticket needs an owner before it can be resolved.')).toBeInTheDocument()
+
+    return noOwner
+  }
+
+  // BR-35: the no-owner dialog never showed the summary, so leaving it keeps it.
+  it.each([
+    ['Cancel', (dialog: Awaited<ReturnType<typeof reopenDialog>>) => fireEvent.click(dialog.getByRole('button', { name: 'Cancel' }))],
+    ['Escape', () => fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })],
+  ])('keeps a refused Resolution Summary when %s leaves the no-owner dialog', async (_how, leave) => {
+    leave(await refuseForNoOwner())
+
+    fireEvent.click(operations().getByRole('button', { name: 'Claim' }))
+    await operations().findByText('Owner updated.')
+
+    expect((await reopenDialog()).getByLabelText(/Resolution Summary/)).toHaveValue('Replaced the battery.')
+  })
+
+  // BR-35
+  it('shows a refused Resolution Summary once Claim in the dialog gives the Ticket an owner', async () => {
+    const dialog = await refuseForNoOwner()
+
+    fireEvent.click(dialog.getByRole('button', { name: 'Claim' }))
+
+    expect(await dialog.findByLabelText(/Resolution Summary/)).toHaveValue('Replaced the battery.')
+  })
 })
