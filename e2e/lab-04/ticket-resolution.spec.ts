@@ -80,6 +80,19 @@ test('the status control shows Resolved as not available until the work is done,
   await expect(operations(page).getByRole('combobox')).toHaveCount(0)
 })
 
+// ui-spec.md §11: the reason's link is a 44px tap target on mobile.
+test('the link to the Actions Taken card is a tap target at 390px', async ({ page }) => {
+  const ticket = await ticketInProgress('E2E Lab 4 reason link')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signInAs(page, 'IT_STAFF')
+  await page.goto(`/staff/tickets/${ticket.id}`)
+
+  const box = await operations(page).getByRole('link', { name: 'Go to Actions Taken' }).boundingBox()
+
+  expect(box?.height).toBeGreaterThanOrEqual(43.5)
+  expect(box?.width).toBeGreaterThanOrEqual(43.5)
+})
+
 // E2E-05 (AC-16, AC-21)
 test('the Requester indicating resolved changes no status, and a direct request is refused', async ({ page }) => {
   const ticket = await ticketInProgress('E2E Lab 4 appears resolved')
