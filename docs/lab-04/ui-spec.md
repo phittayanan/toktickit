@@ -321,7 +321,9 @@ reload shows the gate is met. The backend enforces the rule regardless.
 Any `409` from the Resolved dialog closes it and keeps the typed Resolution
 Summary (BR-35). The summary fills the dialog's text field the next time it is
 shown, so it survives the reload showing the gate unmet or the Ticket without
-an owner. Cancel discards it only from the dialog that shows it.
+an owner. Cancel discards it only from the dialog that shows it. A reload that
+makes Resolved unavailable also closes the dialog, and it does not reopen by
+itself when the gate is met again.
 
 ## 10. Drill-down additions
 

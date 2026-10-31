@@ -789,7 +789,7 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
   const [commentCount, setCommentCount] = useState<number | null>(null)
   const [noteCount, setNoteCount] = useState<number | null>(null)
   // Counts the Conflict reloads, for the Actions Taken card to follow
-  // (ui-spec.md §9): its `reloadSignal` prop re-runs the card's load.
+  // (Lab 4 ui-spec.md §9): its `reloadSignal` prop re-runs the card's load.
   const [reloadSignal, setReloadSignal] = useState(0)
 
   useEffect(() => {
