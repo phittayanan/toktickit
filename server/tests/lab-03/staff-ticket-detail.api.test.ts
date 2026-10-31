@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import request from 'supertest'
 import app from '../../src/app'
@@ -93,6 +94,7 @@ describe('GET /api/staff/tickets/:id', () => {
       requesterResolvedAt: null,
       publicCommentCount: 1,
       internalNoteCount: 0,
+      actionTakenCounts: { planned: 0, done: 0 },
       attachments: [
         {
           id: active.body.id,
@@ -448,12 +450,25 @@ describe('POST /api/staff/tickets/:id/status', () => {
     requester = await signInAs('REQUESTER')
   })
 
-  // A Ticket put in `status`, owned by `staff` unless told otherwise.
+  // A Ticket put in `status`, owned by `staff` unless told otherwise, with
+  // the Done Action Taken that Lab 4 requires of a move to Resolved.
   async function ticketIn(status: Status, data: { ownerId?: number | null; requesterResolvedAt?: Date } = {}) {
     const ticketId = await createTicket(requester.cookie)
     await prisma.ticket.update({
       where: { id: ticketId },
       data: { currentStatus: status, ownerId: staff.user.id, ...data },
+    })
+    await prisma.actionTaken.create({
+      data: {
+        ticketId,
+        actionAt: new Date(),
+        description: 'Replaced the battery.',
+        result: 'The charge holds.',
+        status: 'DONE',
+        assigneeId: staff.user.id,
+        createdById: staff.user.id,
+        clientRequestId: randomUUID(),
+      },
     })
 
     return ticketId

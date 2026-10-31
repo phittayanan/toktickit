@@ -1,5 +1,5 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
-import { apiSessionFor, apiUrl, createTicketFor } from './support/api'
+import { addDoneAction, apiSessionFor, apiUrl, createTicketFor } from './support/api'
 import { openTicketQueue, searchQueue } from './support/queue'
 import { signInAs, signInAsUser } from './support/signIn'
 import { E2E_SECOND_REQUESTER, E2E_USERS } from './support/users'
@@ -151,7 +151,9 @@ test('E2E-05 a Ticket goes from creation to Closed across the Requester and IT S
   // AC-21: the indication is a flag, not a status change.
   await expect(requesterPage.getByText('In Progress', { exact: true })).toBeVisible()
 
-  // IT Staff: sees the flag, resolves with a summary, then closes.
+  // IT Staff: sees the flag, resolves with a summary, then closes. Lab 4
+  // BR-19: resolving needs a Done Action Taken.
+  await addDoneAction(staff, Number(new URL(staffPage.url()).pathname.split('/').pop()))
   await staffPage.reload()
   await expect(statusBadges(staffPage)).toContainText('Requester: appears resolved')
 

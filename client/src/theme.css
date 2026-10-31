@@ -1150,7 +1150,8 @@ button:focus-visible {
   .tk-tabs__tab {
     min-height: 44px;
   }
-  .tk-breadcrumb a {
+  .tk-breadcrumb a,
+  .tk-ops__control .form-text a {
     display: inline-flex;
     align-items: center;
     min-height: 44px;

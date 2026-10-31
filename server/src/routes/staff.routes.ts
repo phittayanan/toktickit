@@ -12,10 +12,12 @@ import {
   changeItPriority,
   changeOwner,
   changeStatus,
+  DoneActionRequiredError,
   getStaffTicket,
   InvalidTransitionError,
   OwnerChangedError,
   OwnerRequiredError,
+  PlannedActionRemainsError,
   StatusChangedError,
   ticketExists,
 } from '../services/staffTicket.service'
@@ -92,6 +94,10 @@ function sendOperationError(res: Response, err: unknown): boolean {
     sendError(res, 409, 'INVALID_TRANSITION', err.message)
   } else if (err instanceof OwnerRequiredError) {
     sendError(res, 409, 'OWNER_REQUIRED', err.message)
+  } else if (err instanceof DoneActionRequiredError) {
+    sendError(res, 409, 'DONE_ACTION_REQUIRED', err.message)
+  } else if (err instanceof PlannedActionRemainsError) {
+    sendError(res, 409, 'PLANNED_ACTION_REMAINS', err.message)
   } else {
     return false
   }

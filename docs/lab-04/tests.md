@@ -85,17 +85,17 @@ The Ticket Change module has its own tests from #74,
 | API-18 | API | AC-12 | An Action Taken on an unassigned Ticket, and one performed by someone other than the Ticket Owner | Both succeed; ownership is unchanged | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
 | API-19 | API | AC-44 | A path mismatch: an Action Taken id under another Ticket | 404 | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
 | API-20 | API | AC-45 | Create and edit with the database call forced to throw | 500 with the generic body and no internal detail | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
-| WF-01 | Workflow | AC-16 | Move to Resolved by direct request with zero Action Taken, and with only Cancelled | 409 `DONE_ACTION_REQUIRED`; Ticket unchanged | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-02 | Workflow | AC-17 | Move to Resolved with a Planned and a Done Action Taken | 409 `PLANNED_ACTION_REMAINS`; Ticket unchanged | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-03 | Workflow | AC-18 | Move to Resolved from each permitted status with one Done, plus a Cancelled and a follow-up flagged one | 200; `RESOLVED`; summary stored | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-04 | Workflow | AC-19 | Every pair of statuses, table-driven, with the gate satisfied | Exactly the §5.4 pairs succeed; other pairs from an Unfinished status 409 `INVALID_TRANSITION`; any request from Closed or Cancelled 409 `TICKET_FINISHED` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-05 | Workflow | AC-16, AC-17 | Gate against the Lab 3 checks: no owner, stale status, invalid summary, Finished Ticket | The documented order of `api-spec.md` §3.1 holds | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-06 | Workflow | AC-20 | Move to Resolved and a Planned create sent in parallel, repeated | Never Resolved over a Planned one created before the move; the two serialise | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-07 | Workflow | AC-21 | Requester sets Problem Appears Resolved on a Ticket with no Done, then staff try to resolve | Status unchanged; 409 `DONE_ACTION_REQUIRED` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-08 | Workflow | AC-22 | Legacy Resolved Ticket with no Action Taken is Closed, and another Reopened; legacy In Progress Ticket moves to Resolved | 200 for both; then 409 until a Done exists | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-09 | Workflow | AC-23 | Reopen a Ticket with a Done Action Taken and resolve it again; then again with a new Planned | 200; then 409 `PLANNED_ACTION_REMAINS` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-10 | Workflow | AC-24 | Add a Planned Action Taken to a Resolved Ticket, then Close it | Status stays Resolved on add; Close 200; the action is Planned and read-only | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| WF-11 | API | AC-25 | `GET /api/staff/tickets/:id` with Actions Taken in each status | `actionTakenCounts` holds the correct `planned` and `done`; `allowedTransitions` as the matrix | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
+| WF-01 | Workflow | AC-16 | Move to Resolved by direct request with zero Action Taken, and with only Cancelled | 409 `DONE_ACTION_REQUIRED`; Ticket unchanged | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| WF-02 | Workflow | AC-17 | Move to Resolved with a Planned and a Done Action Taken | 409 `PLANNED_ACTION_REMAINS`; Ticket unchanged | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| WF-03 | Workflow | AC-18 | Move to Resolved from each permitted status with one Done, plus a Cancelled and a follow-up flagged one | 200; `RESOLVED`; summary stored | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| WF-04 | Workflow | AC-19 | Every pair of statuses, table-driven, with the gate satisfied | Exactly the §5.4 pairs succeed; other pairs from an Unfinished status 409 `INVALID_TRANSITION`; any request from Closed or Cancelled 409 `TICKET_FINISHED` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| WF-05 | Workflow | AC-16, AC-17 | Gate against the Lab 3 checks: no owner, stale status, invalid summary, Finished Ticket | The documented order of `api-spec.md` §3.1 holds | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| WF-06 | Workflow | AC-20 | Move to Resolved and a Planned create sent in parallel, repeated | Never Resolved over a Planned one created before the move; the two serialise | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| WF-07 | Workflow | AC-21 | Requester sets Problem Appears Resolved on a Ticket with no Done, then staff try to resolve | Status unchanged; 409 `DONE_ACTION_REQUIRED` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| WF-08 | Workflow | AC-22 | Legacy Resolved Ticket with no Action Taken is Closed, and another Reopened; legacy In Progress Ticket moves to Resolved | 200 for both; then 409 until a Done exists | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| WF-09 | Workflow | AC-23 | Reopen a Ticket with a Done Action Taken and resolve it again; then again with a new Planned | 200; then 409 `PLANNED_ACTION_REMAINS` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| WF-10 | Workflow | AC-24 | Add a Planned Action Taken to a Resolved Ticket, then Close it | Status stays Resolved on add; Close 200; the action is Planned and read-only | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| WF-11 | API | AC-25 | `GET /api/staff/tickets/:id` with Actions Taken in each status | `actionTakenCounts` holds the correct `planned` and `done`; `allowedTransitions` as the matrix | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
 | DASH-01 | Authorization | AC-26 | Two Requesters with Tickets request the dashboard, sending another `requesterId` | Only the session user's metrics and Tickets | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
 | DASH-02 | API | AC-27 | Tickets in all eight statuses; compare with direct database queries | `openCount` and `waitingForRequesterCount` match | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
 | DASH-03 | API | AC-28 | Tickets on both sides of the boundary and more than five in the window, with a fixed clock | Boundary included; instant before excluded; five, newest first | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
@@ -129,9 +129,9 @@ The Ticket Change module has its own tests from #74,
 | UI-08 | UI | AC-13 | Card rendered for a Requester | Every Action Taken with status badges; rows open; no Add, form, or row buttons | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
 | UI-09 | Security | AC-15 | Action Taken text containing markup | Rendered as literal text; no element injected | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
 | UI-10 | UI | AC-44, AC-45 | Card loading, empty, 403, 404, and failure | Skeleton; role-specific empty text; alert; typed data kept; Retry | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-11 | UI | AC-25 | Status select with the gate unmet by each condition | "Resolved (not available)" disabled; reason states Done and Planned counts; link reaches the card | `client/src/lab-04/TicketWorkflow.test.tsx` | Planned |
-| UI-12 | UI | AC-25 | Status select with the gate met; other transitions; after a save | Resolved opens the Lab 3 dialog; only allowed options; summary status refreshes and the reason clears | `client/src/lab-04/TicketWorkflow.test.tsx` | Planned |
-| UI-13 | UI | AC-16, AC-17 | A stale screen answered `DONE_ACTION_REQUIRED` or `PLANNED_ACTION_REMAINS` | Conflict notice; Ticket and card reload | `client/src/lab-04/TicketWorkflow.test.tsx` | Planned |
+| UI-11 | UI | AC-25 | Status select with the gate unmet by each condition | "Resolved (not available)" disabled; reason states Done and Planned counts; link reaches the card | `client/src/lab-04/TicketWorkflow.test.tsx` | Pass |
+| UI-12 | UI | AC-25 | Status select with the gate met; other transitions; after a save | Resolved opens the Lab 3 dialog; only allowed options; summary status refreshes and the reason clears | `client/src/lab-04/TicketWorkflow.test.tsx` | Pass |
+| UI-13 | UI | AC-16, AC-17 | A stale screen answered `DONE_ACTION_REQUIRED` or `PLANNED_ACTION_REMAINS` | Conflict notice; Ticket and card reload | `client/src/lab-04/TicketWorkflow.test.tsx` | Planned (see §7) |
 | UI-14 | UI | AC-27, AC-34 | Requester Dashboard: cards and lists | Counts and rows from the API; links to filtered My Tickets and Ticket Detail | `client/src/lab-04/RequesterDashboard.test.tsx` | Planned |
 | UI-15 | UI | AC-35, AC-38 | Requester Dashboard: loading, empty, failure | Skeleton; `0` and empty text; safe failure with Retry | `client/src/lab-04/RequesterDashboard.test.tsx` | Planned |
 | UI-16 | UI | AC-30, AC-31, AC-32, AC-34 | IT Staff Dashboard: cards, link tables, lists | Each link's target is as `ui-spec.md` §6.1; My Planned moves focus to its list | `client/src/lab-04/StaffDashboard.test.tsx` | Planned |
@@ -148,9 +148,9 @@ The Ticket Change module has its own tests from #74,
 | E2E-01 | E2E | AC-01, AC-07, AC-12, AC-13 | IT Staff adds Planned actions to a Ticket, assigns one to a colleague, who marks it Done, and cancels another; the Requester reads all of them | Different actions on one Ticket; each step visible to the right role; read-only for the Requester | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
 | E2E-02 | E2E | AC-05, AC-06 | Inactive user is not offered; other IT Staff sees no row buttons and is refused by direct request | Not listed; no buttons; 403 | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
 | E2E-03 | E2E | AC-09 | Two staff sessions edit the same Planned action | The second sees the conflict with typed data kept, then reloads | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| E2E-04 | E2E | AC-16, AC-17, AC-18, AC-25 | Status control shows Resolved (not available); staff complete the work, resolve, and close | Reason then normal option; Resolved, then Closed; Ticket read-only | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
-| E2E-05 | E2E | AC-16, AC-21 | Requester indicates resolved; a direct status request bypasses the screen | Status unchanged; 409 | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
-| E2E-06 | E2E | AC-19, AC-23 | Ticket walks from New through Reopened to Resolved again and Closed | Each step offers only permitted transitions | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
+| E2E-04 | E2E | AC-16, AC-17, AC-18, AC-25 | Status control shows Resolved (not available); staff complete the work, resolve, and close | Reason then normal option; Resolved, then Closed; Ticket read-only | `e2e/lab-04/ticket-resolution.spec.ts` | Pass |
+| E2E-05 | E2E | AC-16, AC-21 | Requester indicates resolved; a direct status request bypasses the screen | Status unchanged; 409 | `e2e/lab-04/ticket-resolution.spec.ts` | Pass |
+| E2E-06 | E2E | AC-19, AC-23 | Ticket walks from New through Reopened to Resolved again and Closed | Each step offers only permitted transitions | `e2e/lab-04/ticket-resolution.spec.ts` | Pass |
 | E2E-07 | E2E | AC-26, AC-34, AC-43 | Requester signs in, lands on the Dashboard, and drills into each card and list | Own Tickets only; matching views | `e2e/lab-04/dashboards.spec.ts` | Planned |
 | E2E-08 | E2E | AC-30, AC-31, AC-34, AC-43 | IT Staff signs in, lands on the Dashboard, and drills into each metric | Ticket counts equal the rows listed; My Planned Actions Taken lists at most five | `e2e/lab-04/dashboards.spec.ts` | Planned |
 | E2E-09 | E2E | AC-33, AC-43 | Administrator signs in and opens each Active accounts card | Filtered User Management; every Lab 3 entry remains | `e2e/lab-04/dashboards.spec.ts` | Planned |
@@ -247,5 +247,10 @@ To be recorded from the final run on `main`.
 
 ## 7. Known Limitations or Deferred Tests
 
-None planned. Any test deferred during the sprint is recorded here with its
-reason.
+Any test deferred during the sprint is recorded here with its reason.
+
+- **UI-13**: the Conflict notice and the Ticket reload pass, but the card reload
+  cannot be shown until the Actions Taken card of #79 and the status controls
+  of #80 are in one branch. Whichever PR merges second passes the `reloadSignal`
+  kept in `StaffTicketDetail` to the card's `reloadSignal` prop, asserts the
+  card reload in the named test, and turns UI-13 Pass.

@@ -32,6 +32,10 @@ const QUEUE = { label: 'Ticket Queue', path: '/staff/queue' }
 // A Closed or Cancelled Ticket is finished, and read-only (BR-31).
 const FINISHED_AS: Partial<Record<TicketStatus, 'closed' | 'cancelled'>> = { CLOSED: 'closed', CANCELLED: 'cancelled' }
 
+// The Actions Taken card, where the status control sends a user who cannot
+// resolve yet (Lab 4 ui-spec.md §9).
+const ACTIONS_TAKEN_ID = 'actions-taken'
+
 const PRIORITIES: Priority[] = ['LOW', 'MEDIUM', 'HIGH']
 const PRIORITY_LABELS: Record<Priority, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' }
 
@@ -270,8 +274,17 @@ function Operations({
   const currentOwner = ticket.owner ? String(ticket.owner.id) : ''
   const selectedOwner = ownerChoice ?? currentOwner
   const selectedPriority = priorityChoice ?? ticket.itPriority
+  // Lab 4 ui-spec.md §9: the Resolution Gate, shown from the counts. The
+  // backend enforces it regardless.
+  const { done, planned } = ticket.actionTakenCounts
+  const resolvedUnavailable = ticket.allowedTransitions.includes('RESOLVED') && (done === 0 || planned > 0)
   // A status the Ticket can no longer be moved to is not a choice.
-  const selectedStatus = statusChoice !== '' && ticket.allowedTransitions.includes(statusChoice) ? statusChoice : ''
+  const selectedStatus =
+    statusChoice !== '' &&
+    ticket.allowedTransitions.includes(statusChoice) &&
+    !(statusChoice === 'RESOLVED' && resolvedUnavailable)
+      ? statusChoice
+      : ''
   // The current owner is listed even when they are no longer eligible.
   const ownerOptions =
     ticket.owner && !owners.some((owner) => owner.id === ticket.owner!.id) ? [ticket.owner, ...owners] : owners
@@ -519,15 +532,36 @@ function Operations({
                 className="form-select"
                 value={selectedStatus}
                 disabled={saving.status !== undefined}
+                aria-describedby={resolvedUnavailable ? 'ticket-status-reason' : undefined}
                 onChange={(event) => setStatusChoice(event.target.value as TicketStatus | '')}
               >
                 <option value="">Choose a new status…</option>
-                {ticket.allowedTransitions.map((status) => (
-                  <option key={status} value={status}>
-                    {statusLabel(status)}
-                  </option>
-                ))}
+                {ticket.allowedTransitions.map((status) => {
+                  const unavailable = status === 'RESOLVED' && resolvedUnavailable
+
+                  return (
+                    <option key={status} value={status} disabled={unavailable}>
+                      {unavailable ? 'Resolved (not available)' : statusLabel(status)}
+                    </option>
+                  )
+                })}
               </select>
+              {resolvedUnavailable && (
+                <p className="form-text mb-0">
+                  <span id="ticket-status-reason">
+                    Resolved needs at least one Done action and no Planned actions. Done: {done}. Planned: {planned}.
+                  </span>{' '}
+                  <a
+                    href={`#${ACTIONS_TAKEN_ID}`}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      document.getElementById(ACTIONS_TAKEN_ID)?.focus()
+                    }}
+                  >
+                    Go to Actions Taken
+                  </a>
+                </p>
+              )}
               <button
                 type="button"
                 className="btn btn-outline-primary"
@@ -739,6 +773,9 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
   // own counts.
   const [commentCount, setCommentCount] = useState<number | null>(null)
   const [noteCount, setNoteCount] = useState<number | null>(null)
+  // Counts the Conflict reloads, for the Actions Taken card to follow
+  // (ui-spec.md §9): its optional `reloadSignal` prop re-runs the card's load.
+  const [, setReloadSignal] = useState(0)
 
   useEffect(() => {
     // Without them the Owner select offers only "Unassigned" and the
@@ -775,6 +812,7 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
   // After a Conflict: the latest Ticket, in place, so the controls and
   // composers keep what was chosen and typed (ui-spec.md §2.3).
   const reloadTicket = () => {
+    setReloadSignal((count) => count + 1)
     fetchStaffTicket(ticketId)
       .then((ticket) => setDetail((prev) => (prev.status === 'loaded' ? { status: 'loaded', ticket } : prev)))
       .catch(() => {
