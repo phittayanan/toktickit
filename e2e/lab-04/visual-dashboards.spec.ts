@@ -19,6 +19,9 @@ async function capture(page: Page, folder: string, name: string) {
   await page.screenshot({ path: `${SCREENSHOTS}/${folder}/${name}.png`, fullPage: true })
 }
 
+// A state's desktop picture keeps its plain name; the others say their width.
+const stateAt = (state: string, width: string) => (width === 'desktop' ? state : `${state}-${width}`)
+
 async function openDashboard(page: Page, user: E2EUser, ready: RegExp) {
   await signInAsUser(page, user)
   await expect(page.getByRole('link', { name: ready })).toBeVisible()
@@ -66,24 +69,28 @@ test.describe('visual: Requester Dashboard', () => {
     expect(await top(/^Open Tickets/)).toBeLessThan(await top(/^Waiting for Requester/))
   })
 
-  test('shows the empty state', async ({ page }) => {
-    await openDashboard(page, createDisposableUser('REQUESTER'), /^Open Tickets: 0$/)
+  for (const [name, size] of Object.entries(BREAKPOINTS)) {
+    test(`shows the empty state at ${name}`, async ({ page }) => {
+      await page.setViewportSize(size)
+      await openDashboard(page, createDisposableUser('REQUESTER'), /^Open Tickets: 0$/)
 
-    await expect(page.getByText('No tickets updated in the last 7 days.')).toBeVisible()
-    await expect(page.getByText('No tickets resolved in the last 7 days.')).toBeVisible()
-    await capture(page, 'requester-dashboard', 'empty')
-  })
+      await expect(page.getByText('No tickets updated in the last 7 days.')).toBeVisible()
+      await expect(page.getByText('No tickets resolved in the last 7 days.')).toBeVisible()
+      await capture(page, 'requester-dashboard', stateAt('empty', name))
+    })
 
-  test('shows the failure state, and Retry recovers', async ({ page }) => {
-    await page.route('**/api/requester/dashboard', (route) => route.fulfill({ status: 500, json: { error: 'x' } }))
-    await signInAsUser(page, requester)
-    await expect(page.getByRole('alert')).toContainText('Something went wrong. Please try again.')
-    await capture(page, 'requester-dashboard', 'failure')
+    test(`shows the failure state at ${name}, and Retry recovers`, async ({ page }) => {
+      await page.setViewportSize(size)
+      await page.route('**/api/requester/dashboard', (route) => route.fulfill({ status: 500, json: { error: 'x' } }))
+      await signInAsUser(page, requester)
+      await expect(page.getByRole('alert')).toContainText('Something went wrong. Please try again.')
+      await capture(page, 'requester-dashboard', stateAt('failure', name))
 
-    await page.unroute('**/api/requester/dashboard')
-    await page.getByRole('button', { name: 'Retry' }).click()
-    await expect(page.getByRole('link', { name: /^Open Tickets: \d+$/ })).toBeVisible()
-  })
+      await page.unroute('**/api/requester/dashboard')
+      await page.getByRole('button', { name: 'Retry' }).click()
+      await expect(page.getByRole('link', { name: /^Open Tickets: \d+$/ })).toBeVisible()
+    })
+  }
 })
 
 test.describe('visual: IT Staff and Administrator dashboards', () => {
@@ -128,22 +135,26 @@ test.describe('visual: IT Staff and Administrator dashboards', () => {
     expect(await tablesAt('By status')).toBeLessThan(await tablesAt('By IT Priority'))
   })
 
-  test('shows the empty state', async ({ page }) => {
-    await page.route('**/api/staff/dashboard', (route) => route.fulfill({ json: EMPTY_STAFF }))
-    await openDashboard(page, E2E_USERS.IT_STAFF, /^Unassigned: 0$/)
+  for (const [name, size] of Object.entries(BREAKPOINTS)) {
+    test(`shows the empty state at ${name}`, async ({ page }) => {
+      await page.setViewportSize(size)
+      await page.route('**/api/staff/dashboard', (route) => route.fulfill({ json: EMPTY_STAFF }))
+      await openDashboard(page, E2E_USERS.IT_STAFF, /^Unassigned: 0$/)
 
-    await expect(page.getByText('No planned actions assigned to you.')).toBeVisible()
-    await expect(page.getByText('No urgent tickets.')).toBeVisible()
-    await capture(page, 'staff-dashboard', 'empty')
-  })
+      await expect(page.getByText('No planned actions assigned to you.')).toBeVisible()
+      await expect(page.getByText('No urgent tickets.')).toBeVisible()
+      await capture(page, 'staff-dashboard', stateAt('empty', name))
+    })
 
-  test('shows the failure state', async ({ page }) => {
-    await page.route('**/api/staff/dashboard', (route) => route.fulfill({ status: 500, json: { error: 'x' } }))
-    await signInAsUser(page, E2E_USERS.IT_STAFF)
+    test(`shows the failure state at ${name}`, async ({ page }) => {
+      await page.setViewportSize(size)
+      await page.route('**/api/staff/dashboard', (route) => route.fulfill({ status: 500, json: { error: 'x' } }))
+      await signInAsUser(page, E2E_USERS.IT_STAFF)
 
-    await expect(page.getByRole('alert')).toContainText('Something went wrong. Please try again.')
-    await capture(page, 'staff-dashboard', 'failure')
-  })
+      await expect(page.getByRole('alert')).toContainText('Something went wrong. Please try again.')
+      await capture(page, 'staff-dashboard', stateAt('failure', name))
+    })
+  }
 
   test('keeps the rest usable when Active accounts fails', async ({ page }) => {
     await page.route('**/api/admin/dashboard', (route) => route.fulfill({ status: 500, json: { error: 'x' } }))

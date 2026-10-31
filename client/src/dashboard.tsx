@@ -123,6 +123,7 @@ export function DashboardList<T extends { id: number }>({
   empty,
   rowTo,
   renderRow,
+  sectionId,
   sectionRef,
 }: {
   title: string
@@ -131,12 +132,14 @@ export function DashboardList<T extends { id: number }>({
   empty: string
   rowTo: (item: T) => string
   renderRow: (item: T) => ReactNode
+  sectionId?: string
   sectionRef?: Ref<HTMLElement>
 }) {
   const headingId = useId()
 
   return (
     <section
+      id={sectionId}
       ref={sectionRef}
       tabIndex={sectionRef ? -1 : undefined}
       className="card tk-dashboard-card h-100"

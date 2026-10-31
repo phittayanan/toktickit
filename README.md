@@ -71,6 +71,15 @@ npm run dev            # API on http://localhost:4000
 `npx prisma migrate deploy` applies the same migrations without creating
 new ones; CI and the test databases below use it.
 
+To undo the Lab 4 migration, take a `pg_dump` first, because rollback drops
+the Action Taken rows, then run this from `server/`:
+
+```bash
+npx prisma db execute --file prisma/rollback/lab4_actions_taken.down.sql
+```
+
+`npx prisma migrate deploy` then applies the migration again.
+
 ### Seed accounts (local development)
 
 `npx prisma db seed` is safe to run repeatedly. Besides the Categories and
@@ -193,6 +202,24 @@ CI (`.github/workflows/ci.yml`) runs the server, client, and Playwright
 suites and the type checks on every pull request and on every push to
 `main` and to a `labN-staging` branch, and uploads the Playwright report
 when a Playwright run fails.
+
+## Demonstration
+
+With the seed loaded, the server and the client running, sign in at
+http://localhost:5173 as a seed account. The first sign-in asks for a new
+password.
+
+1. **Requester** (`somchai.jaidee@kmutt.ac.th`): the Dashboard opens first.
+   Follow a card to the matching My Tickets view, create a Ticket with an
+   Attachment, and post a Public Comment.
+2. **IT Staff** (`wichai.phromma@kmutt.ac.th`): the Dashboard opens first.
+   Open the new Ticket from the Ticket Queue and claim it. Its status control
+   lists Resolved (not available), with the reason. Add an Action Taken as
+   Done, resolve the Ticket, and close it.
+3. **Requester** again: Ticket Detail shows the Action Taken, read-only, and
+   the Resolution Summary.
+4. **Administrator** (`apinya.thongchai@kmutt.ac.th`): the Dashboard adds the
+   Active accounts counts. Follow one to User Management.
 
 ## Git Workflow
 

@@ -26,7 +26,7 @@ const ACCOUNT_CARDS: { role: Role; label: string }[] = [
   { role: 'ADMINISTRATOR', label: 'Administrators' },
 ]
 
-const PLANNED_LIST_ANCHOR = '#my-planned-actions-taken'
+const PLANNED_LIST_ID = 'my-planned-actions-taken'
 
 function TicketRow({ ticket, updated }: { ticket: StaffDashboardTicket; updated?: boolean }) {
   return (
@@ -58,7 +58,7 @@ function MetricCards({ data, onPlannedActivate }: { data: Dashboard; onPlannedAc
           <MetricCard
             label="My Planned Actions Taken"
             value={data.myPlannedActionsTakenCount}
-            to={PLANNED_LIST_ANCHOR}
+            to={`#${PLANNED_LIST_ID}`}
             onActivate={onPlannedActivate}
           />
         </div>
@@ -99,6 +99,7 @@ function Details({ data, plannedRef }: { data: Dashboard; plannedRef: RefObject<
       <div className="d-flex flex-column gap-3">
         <DashboardList
           title="My Planned Actions Taken"
+          sectionId={PLANNED_LIST_ID}
           sectionRef={plannedRef}
           items={data.myPlannedActionsTaken}
           empty="No planned actions assigned to you."

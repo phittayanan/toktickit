@@ -396,5 +396,5 @@ Playwright screenshots are stored under `artifacts/lab-04/screenshots/`:
 artifacts/lab-04/screenshots/
 ├── staff-dashboard/      (IT Staff and Administrator: desktop, tablet, mobile, plus empty and failure)
 ├── requester-dashboard/  (desktop, tablet, mobile, plus empty and failure)
-└── actions-taken/        (staff and Requester: desktop, tablet, mobile, plus form, conflict, and Resolved not available)
+└── actions-taken/        (staff and Requester: desktop, tablet, mobile, plus form, Cancel action confirmation, conflict, and Resolved not available)
 ```
