@@ -785,8 +785,8 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
   const [commentCount, setCommentCount] = useState<number | null>(null)
   const [noteCount, setNoteCount] = useState<number | null>(null)
   // Counts the Conflict reloads, for the Actions Taken card to follow
-  // (ui-spec.md §9): its optional `reloadSignal` prop re-runs the card's load.
-  const [, setReloadSignal] = useState(0)
+  // (ui-spec.md §9): its `reloadSignal` prop re-runs the card's load.
+  const [reloadSignal, setReloadSignal] = useState(0)
 
   useEffect(() => {
     // Without them the Owner select offers only "Unassigned" and the
@@ -820,15 +820,20 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
     setAttempt((count) => count + 1)
   }
 
-  // After a Conflict: the latest Ticket, in place, so the controls and
-  // composers keep what was chosen and typed (ui-spec.md §2.3).
-  const reloadTicket = () => {
-    setReloadSignal((count) => count + 1)
+  // The latest Ticket, in place, so the controls and composers keep what was
+  // chosen and typed (ui-spec.md §2.3).
+  const refreshTicket = () => {
     fetchStaffTicket(ticketId)
       .then((ticket) => setDetail((prev) => (prev.status === 'loaded' ? { status: 'loaded', ticket } : prev)))
       .catch(() => {
         // The Ticket shown stays as it was; the notice has been given.
       })
+  }
+
+  // After a Conflict: the latest Ticket and Actions Taken card.
+  const reloadTicket = () => {
+    setReloadSignal((count) => count + 1)
+    refreshTicket()
   }
 
   if (detail.status === 'not-found') return <StaffTicketNotFound user={user} />
@@ -944,7 +949,8 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
             <ActionsTaken
               ticketId={ticket.id}
               finishedAs={finishedAs}
-              staff={{ user, owners, onChanged: reloadTicket }}
+              staff={{ user, owners, onChanged: refreshTicket }}
+              reloadSignal={reloadSignal}
             />
           </div>
 

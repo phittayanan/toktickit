@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from '../App'
 import * as api from '../api'
-import type { StaffTicket, TicketStatus } from '../api'
+import type { ActionTaken, StaffTicket, TicketStatus } from '../api'
 import { IT_STAFF, openPath, signedInAs } from '../test/session'
 
 // An In Progress Ticket owned by the signed-in IT Staff user, gate unmet.
@@ -36,10 +36,27 @@ function ticket(overrides: Partial<StaffTicket> = {}): StaffTicket {
 
 const gateMet = { actionTakenCounts: { planned: 0, done: 1 } }
 
+const plannedAction: ActionTaken = {
+  id: 88,
+  actionAt: '2026-10-30T02:00:00.000Z',
+  description: 'Check the laptop battery.',
+  result: null,
+  status: 'PLANNED',
+  assignee: { id: 12, name: 'Wichai Phromma' },
+  followUpRequired: false,
+  followUpNote: null,
+  attachmentNotes: null,
+  createdBy: { id: 12, name: 'Wichai Phromma' },
+  createdAt: '2026-10-30T02:10:00.000Z',
+  version: 3,
+  canEdit: true,
+}
+
 beforeEach(() => {
   vi.spyOn(api, 'fetchEligibleOwners').mockResolvedValue([])
   vi.spyOn(api, 'fetchPublicComments').mockResolvedValue([])
   vi.spyOn(api, 'fetchInternalNotes').mockResolvedValue([])
+  vi.spyOn(api, 'fetchActionsTaken').mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -82,15 +99,10 @@ describe('the Ticket status control', () => {
   // UI-11 (AC-25)
   it('links the reason to the Actions Taken card, moving focus to it', async () => {
     await openDetail(ticket())
-    const card = document.createElement('section')
-    card.id = 'actions-taken'
-    card.tabIndex = -1
-    document.body.appendChild(card)
 
     fireEvent.click(operations().getByRole('link', { name: 'Go to Actions Taken' }))
 
-    expect(card).toHaveFocus()
-    card.remove()
+    expect(screen.getByRole('region', { name: /^Actions Taken/ })).toHaveFocus()
   })
 
   // UI-11 (AC-25): a gate that does not apply to this status.
@@ -162,11 +174,13 @@ describe('the Ticket status control', () => {
 
   // UI-13 (AC-16, AC-17)
   it.each(['DONE_ACTION_REQUIRED', 'PLANNED_ACTION_REMAINS'])(
-    'a stale screen answered %s shows the Conflict notice and reloads the Ticket',
+    'a stale screen answered %s shows the Conflict notice and reloads the Ticket and card',
     async (code) => {
       const fetchStaffTicket = await openDetail(ticket(gateMet))
+      await screen.findByText('No actions recorded yet.')
       vi.spyOn(api, 'updateTicketStatus').mockRejectedValue(new api.ApiError(409, 'Refused', code))
       fetchStaffTicket.mockResolvedValue(ticket({ actionTakenCounts: { planned: 1, done: 1 } }))
+      vi.mocked(api.fetchActionsTaken).mockResolvedValue([plannedAction])
 
       choose('RESOLVED')
       fireEvent.click(updateStatus())
@@ -178,8 +192,23 @@ describe('the Ticket status control', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
       expect(operations().getByRole('alert')).toBeInTheDocument()
       expect(fetchStaffTicket).toHaveBeenCalledTimes(2)
+      expect((await screen.findAllByText(plannedAction.description)).length).toBeGreaterThan(0)
     },
   )
+
+  // A change on the card reloads the list itself; the Ticket follows it.
+  it('reloads the Ticket once and the card list once after a change on the card', async () => {
+    vi.mocked(api.fetchActionsTaken).mockResolvedValue([plannedAction])
+    const fetchStaffTicket = await openDetail(ticket({ actionTakenCounts: { planned: 1, done: 0 } }))
+    vi.spyOn(api, 'updateActionTaken').mockResolvedValue({ ...plannedAction, status: 'CANCELLED', canEdit: false })
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Cancel action' }))[0])
+    const dialog = within(await screen.findByRole('dialog'))
+    fireEvent.click(dialog.getByRole('button', { name: 'Cancel action' }))
+
+    await waitFor(() => expect(fetchStaffTicket).toHaveBeenCalledTimes(2))
+    expect(api.fetchActionsTaken).toHaveBeenCalledTimes(2)
+  })
 
   // Opens the dialog and answers its summary with PLANNED_ACTION_REMAINS, the
   // reload showing the gate unmet.
