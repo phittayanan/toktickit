@@ -195,7 +195,7 @@ export async function changeItPriority(ticketId: number, itPriority: Priority) {
 }
 
 // POST /api/staff/tickets/:id/status (BR-28 to BR-30, BR-33), checked in
-// the order of api-spec.md §1.5.
+// the order of Lab 4 api-spec.md §3.1.
 export async function changeStatus(ticketId: number, input: StatusInput) {
   await changeTicket(ticketId, {
     rule: async (ticket, { tx, time, write }) => {
