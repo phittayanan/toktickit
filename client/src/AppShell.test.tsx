@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from './App'
 import * as api from './api'
-import { ADMINISTRATOR, IT_STAFF, openPath, REQUESTER, signedInAs, signedOut } from './test/session'
+import { ADMINISTRATOR, emptyDashboards, IT_STAFF, openPath, REQUESTER, signedInAs, signedOut } from './test/session'
 
 beforeEach(() => {
+  emptyDashboards()
   vi.spyOn(api, 'fetchCategories').mockResolvedValue([{ id: 1, name: 'Hardware' }])
   vi.spyOn(api, 'fetchRelatedSystems').mockResolvedValue([{ id: 1, name: 'Wi-Fi' }])
   vi.spyOn(api, 'fetchTickets').mockResolvedValue({
@@ -33,15 +34,28 @@ describe('Shell', () => {
   // UI-07 (AC-14): only the role's entries; name and role badge; no
   // selector and no Change Requester
   it.each([
-    { user: REQUESTER, path: '/tickets', entries: ['My Tickets', 'Create Ticket'], badge: 'Requester' },
-    { user: IT_STAFF, path: '/staff/queue', entries: ['Ticket Queue'], badge: 'IT Staff' },
+    {
+      user: REQUESTER,
+      path: '/tickets',
+      landing: '/dashboard',
+      entries: ['Dashboard', 'My Tickets', 'Create Ticket'],
+      badge: 'Requester',
+    },
+    {
+      user: IT_STAFF,
+      path: '/staff/queue',
+      landing: '/staff/dashboard',
+      entries: ['Dashboard', 'Ticket Queue'],
+      badge: 'IT Staff',
+    },
     {
       user: ADMINISTRATOR,
       path: '/admin/users',
-      entries: ['Ticket Queue', 'User Management'],
+      landing: '/staff/dashboard',
+      entries: ['Dashboard', 'Ticket Queue', 'User Management'],
       badge: 'Administrator',
     },
-  ])('shows $badge only their navigation, with their name and role badge', async ({ user, path, entries, badge }) => {
+  ])('shows $badge only their navigation, with their name and role badge', async ({ user, path, landing, entries, badge }) => {
     signedInAs(user)
     openPath(path)
 
@@ -50,7 +64,7 @@ describe('Shell', () => {
     const userMenu = await screen.findByRole('button', { name: new RegExp(user.name) })
     expect(within(userMenu).getByText(badge)).toBeInTheDocument()
     expect(navigationEntries()).toEqual(entries)
-    expect(screen.getByRole('link', { name: 'TokTickIT' })).toHaveAttribute('href', path)
+    expect(screen.getByRole('link', { name: 'TokTickIT' })).toHaveAttribute('href', landing)
     expect(screen.queryByRole('button', { name: /change requester/i })).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/development requester/i)).not.toBeInTheDocument()
   })
@@ -156,7 +170,7 @@ describe('Mobile shell', () => {
   it('keeps navigation, name, role badge, Change Password, and Logout in one menu', async () => {
     await openMobileMenu()
 
-    expect(navigationEntries()).toEqual(['Ticket Queue', 'User Management'])
+    expect(navigationEntries()).toEqual(['Dashboard', 'Ticket Queue', 'User Management'])
     const banner = within(screen.getByRole('banner'))
     expect(banner.getByText('Apinya Thongchai')).toBeInTheDocument()
     expect(banner.getByText('Administrator')).toBeInTheDocument()
@@ -183,7 +197,7 @@ describe('Mobile shell', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'TokTickIT' }))
 
-    await waitFor(() => expect(window.location.pathname).toBe('/admin/users'))
+    await waitFor(() => expect(window.location.pathname).toBe('/staff/dashboard'))
     await waitFor(() => expect(screen.getByRole('button', { name: 'Menu' })).toHaveAttribute('aria-expanded', 'false'))
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
   })
@@ -329,13 +343,13 @@ describe('Guards', () => {
   // UI-08 (AC-14): signed in, path of another role -> Forbidden page, and
   // no protected data is requested
   it.each([
-    { user: REQUESTER, path: '/staff/queue', landing: 'My Tickets' },
-    { user: REQUESTER, path: '/staff/tickets/5', landing: 'My Tickets' },
-    { user: REQUESTER, path: '/admin/users', landing: 'My Tickets' },
-    { user: IT_STAFF, path: '/admin/users', landing: 'Ticket Queue' },
-    { user: IT_STAFF, path: '/tickets', landing: 'Ticket Queue' },
-    { user: ADMINISTRATOR, path: '/tickets/new', landing: 'User Management' },
-    { user: ADMINISTRATOR, path: '/tickets/42', landing: 'User Management' },
+    { user: REQUESTER, path: '/staff/queue', landing: 'Dashboard' },
+    { user: REQUESTER, path: '/staff/tickets/5', landing: 'Dashboard' },
+    { user: REQUESTER, path: '/admin/users', landing: 'Dashboard' },
+    { user: IT_STAFF, path: '/admin/users', landing: 'Dashboard' },
+    { user: IT_STAFF, path: '/tickets', landing: 'Dashboard' },
+    { user: ADMINISTRATOR, path: '/tickets/new', landing: 'Dashboard' },
+    { user: ADMINISTRATOR, path: '/tickets/42', landing: 'Dashboard' },
   ])('shows the Forbidden page to $user.role at $path', async ({ user, path, landing }) => {
     const fetchTicketById = vi.spyOn(api, 'fetchTicketById')
     signedInAs(user)
@@ -397,10 +411,10 @@ describe('Guards', () => {
 
   // ui-spec.md §4.2: signed in, opens /login -> the landing screen
   it.each([
-    { user: REQUESTER, path: '/login', landing: '/tickets' },
-    { user: IT_STAFF, path: '/login', landing: '/staff/queue' },
-    { user: ADMINISTRATOR, path: '/login', landing: '/admin/users' },
-    { user: REQUESTER, path: '/', landing: '/tickets' },
+    { user: REQUESTER, path: '/login', landing: '/dashboard' },
+    { user: IT_STAFF, path: '/login', landing: '/staff/dashboard' },
+    { user: ADMINISTRATOR, path: '/login', landing: '/staff/dashboard' },
+    { user: REQUESTER, path: '/', landing: '/dashboard' },
   ])('sends a signed-in $user.role from $path to their landing screen', async ({ user, path, landing }) => {
     signedInAs(user)
     openPath(path)

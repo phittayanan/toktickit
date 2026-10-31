@@ -1,9 +1,8 @@
 import { expect, type Page } from '@playwright/test'
 
-// Opens the Ticket Queue from the shell navigation and waits for it. An
-// Administrator lands on User Management, which has a search field and a
-// table of its own, so a step taken before the queue is on screen would
-// act on that screen instead.
+// Opens the Ticket Queue from the shell navigation and waits for it. A
+// step taken before the queue is on screen would act on the screen the
+// user came from.
 export async function openTicketQueue(page: Page) {
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Ticket Queue' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Ticket Queue' })).toBeVisible()

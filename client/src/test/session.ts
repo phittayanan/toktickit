@@ -44,3 +44,25 @@ export function signedOut() {
 export function openPath(path: string) {
   window.history.pushState({}, '', path)
 }
+
+// The dashboards answer with nothing, for suites that pass through a
+// landing screen on the way to what they test.
+export function emptyDashboards() {
+  vi.spyOn(api, 'fetchRequesterDashboard').mockResolvedValue({
+    openCount: 0,
+    waitingForRequesterCount: 0,
+    recentlyUpdated: [],
+    recentlyResolved: [],
+  })
+  vi.spyOn(api, 'fetchStaffDashboard').mockResolvedValue({
+    unassignedCount: 0,
+    ownedByMeCount: 0,
+    myPlannedActionsTakenCount: 0,
+    byStatus: { NEW: 0, OPEN: 0, IN_PROGRESS: 0, WAITING_FOR_REQUESTER: 0, RESOLVED: 0, REOPENED: 0 },
+    byItPriority: { LOW: 0, MEDIUM: 0, HIGH: 0 },
+    myPlannedActionsTaken: [],
+    urgent: [],
+    recentlyUpdated: [],
+  })
+  vi.spyOn(api, 'fetchAdminDashboard').mockResolvedValue({ activeUsers: { REQUESTER: 0, IT_STAFF: 0, ADMINISTRATOR: 0 } })
+}

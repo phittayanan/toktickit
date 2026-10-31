@@ -634,3 +634,53 @@ export async function withdrawResolutionIndication(ticketId: number): Promise<Re
   const res = await request(`/api/tickets/${ticketId}/resolution-indication`, { method: 'DELETE' })
   return res.json()
 }
+
+export interface RequesterDashboardTicket {
+  id: number
+  ticketNumber: string
+  summary: string
+  currentStatus: TicketStatus
+}
+
+// GET /api/requester/dashboard (docs/lab-04/api-spec.md §5.1).
+export interface RequesterDashboard {
+  openCount: number
+  waitingForRequesterCount: number
+  recentlyUpdated: (RequesterDashboardTicket & { updatedAt: string })[]
+  recentlyResolved: (RequesterDashboardTicket & { resolvedAt: string })[]
+}
+
+export interface StaffDashboardTicket extends RequesterDashboardTicket {
+  itPriority: Priority
+  owner: { id: number; name: string } | null
+  updatedAt: string
+}
+
+// GET /api/staff/dashboard (docs/lab-04/api-spec.md §5.2).
+export interface StaffDashboard {
+  unassignedCount: number
+  ownedByMeCount: number
+  myPlannedActionsTakenCount: number
+  byStatus: Record<string, number>
+  byItPriority: Record<Priority, number>
+  myPlannedActionsTaken: { id: number; ticketId: number; ticketNumber: string; description: string; actionAt: string }[]
+  urgent: StaffDashboardTicket[]
+  recentlyUpdated: StaffDashboardTicket[]
+}
+
+// A refusal is an ApiError.
+export async function fetchRequesterDashboard(): Promise<RequesterDashboard> {
+  const res = await request('/api/requester/dashboard')
+  return res.json()
+}
+
+export async function fetchStaffDashboard(): Promise<StaffDashboard> {
+  const res = await request('/api/staff/dashboard')
+  return res.json()
+}
+
+// GET /api/admin/dashboard (docs/lab-04/api-spec.md §5.3).
+export async function fetchAdminDashboard(): Promise<{ activeUsers: Record<Role, number> }> {
+  const res = await request('/api/admin/dashboard')
+  return res.json()
+}

@@ -98,6 +98,7 @@ test('E2E-05 a Ticket goes from creation to Closed across the Requester and IT S
 
   // IT Staff: find it in the queue, claim it, set the IT Priority, start work.
   const staff = await signInAs(staffPage, 'IT_STAFF')
+  await openTicketQueue(staffPage)
   await openFromQueue(staffPage, ticketNumber)
   await expect(staffPage.getByText(requesterComment)).toBeVisible()
   await expect(statusBadges(staffPage)).toHaveText('New')
@@ -206,6 +207,7 @@ test('E2E-05 a Ticket goes from creation to Closed across the Requester and IT S
 test.describe('E2E-06 Ticket Queue over seed data', () => {
   test.beforeEach(async ({ page }) => {
     await signInAs(page, 'IT_STAFF')
+    await openTicketQueue(page)
     await page.getByLabel('Status').selectOption({ label: 'All statuses' })
     await searchQueue(page, SEED_TICKET_FRAGMENT)
     await expect(caption(page, 1, 10, SEED_TICKET_COUNT)).toBeVisible()

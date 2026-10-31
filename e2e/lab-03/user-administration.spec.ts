@@ -76,6 +76,7 @@ test('E2E-09 an Administrator finds, creates, and edits users, and the new user 
   const renamed = `E2E Renamed ${tag}`
 
   await signInAs(page, 'ADMINISTRATOR')
+  await page.goto('/admin/users')
   await expect(page.getByRole('columnheader')).toHaveText(['Name', 'Email', 'Role', 'Status', 'Actions'])
 
   // Search by name and by email, in another letter case.
@@ -148,7 +149,7 @@ test('E2E-09 an Administrator finds, creates, and edits users, and the new user 
     email: created.email,
     password: 'Chosen-Passw0rd!',
     role: 'IT_STAFF',
-    landingPath: '/staff/queue',
+    landingPath: '/staff/dashboard',
   }
   const newUserContext = await browser.newContext()
   const newUserPage = await newUserContext.newPage()
@@ -161,9 +162,10 @@ test('E2E-09 an Administrator finds, creates, and edits users, and the new user 
   await newUserPage.getByLabel('New password', { exact: true }).fill(newUser.password)
   await newUserPage.getByLabel('Confirm new password', { exact: true }).fill(newUser.password)
   await newUserPage.getByRole('button', { name: 'Continue' }).click()
-  await expect(newUserPage).toHaveURL(/\/staff\/queue$/)
-  await expect(newUserPage.getByRole('heading', { level: 1, name: 'Ticket Queue' })).toBeVisible()
+  await expect(newUserPage).toHaveURL(/\/staff\/dashboard$/)
+  await expect(newUserPage.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible()
   await expect(newUserPage.getByRole('navigation', { name: 'Primary' }).getByRole('button')).toHaveText([
+    'Dashboard',
     'Ticket Queue',
   ])
 
@@ -181,9 +183,10 @@ test('E2E-10 a new initial password signs the user out and forces a change', asy
   const userContext = await browser.newContext()
   const userPage = await userContext.newPage()
   await signInAsUser(userPage, user)
-  await expect(userPage.getByRole('heading', { level: 1, name: 'Ticket Queue' })).toBeVisible()
+  await expect(userPage.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible()
 
   await signInAs(page, 'ADMINISTRATOR')
+  await page.goto('/admin/users')
   const panel = await openEditPanel(page, user)
   await panel.getByRole('button', { name: 'Set New Initial Password' }).click()
   const confirmation = page.getByRole('dialog', { name: 'Set new initial password?' })
@@ -194,7 +197,7 @@ test('E2E-10 a new initial password signs the user out and forces a change', asy
   const temporaryPassword = await takeTemporaryPassword(page, user.name)
 
   // The user's next request is refused and Login says why.
-  await userPage.getByLabel('Status').selectOption({ label: 'All statuses' })
+  await userPage.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Ticket Queue' }).click()
   await expect(userPage.getByRole('heading', { name: 'Sign in to your account' })).toBeVisible()
   await expect(
     userPage.getByRole('alert').filter({ hasText: 'Your session has ended. Please sign in again.' }),
@@ -216,6 +219,7 @@ test.describe('E2E-11 refused changes and deactivating a Ticket Owner', () => {
   test('an Administrator cannot deactivate their own account', async ({ page }) => {
     const administrator = createDisposableUser('ADMINISTRATOR')
     await signInAsUser(page, administrator)
+    await page.goto('/admin/users')
 
     const panel = await openEditPanel(page, administrator)
     await expect(panel.getByRole('switch', { name: 'Active' })).toBeDisabled()
@@ -241,6 +245,7 @@ test.describe('E2E-11 refused changes and deactivating a Ticket Owner', () => {
   test('the last active Administrator cannot be given another role', async ({ page }) => {
     const administrator = createDisposableUser('ADMINISTRATOR')
     await signInAsUser(page, administrator)
+    await page.goto('/admin/users')
 
     // Make this account the only active Administrator, for the length of
     // this test only: every other one is put back afterwards.
@@ -296,6 +301,7 @@ test.describe('E2E-11 refused changes and deactivating a Ticket Owner', () => {
     await ownerApi.dispose()
 
     await signInAs(page, 'ADMINISTRATOR')
+    await page.goto('/admin/users')
     const panel = await openEditPanel(page, owner)
     await panel.getByRole('switch', { name: 'Active' }).uncheck()
     await panel.getByRole('button', { name: 'Save Changes' }).click()
@@ -335,7 +341,7 @@ test('E2E-12 IT Staff get the Forbidden page for User Management and 403 from it
 
   await page.goto('/admin/users')
   await expect(page.getByRole('heading', { level: 1, name: /have access to this page/ })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Go to Ticket Queue' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Go to Dashboard' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name: 'Users' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Create User' })).toHaveCount(0)
   expect(adminAnswersWithData).toEqual([])

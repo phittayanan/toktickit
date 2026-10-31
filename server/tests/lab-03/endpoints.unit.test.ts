@@ -27,7 +27,7 @@ describe('endpoint table', () => {
   it('gives every /api/staff endpoint to IT Staff and Administrator only', () => {
     const staff = ENDPOINTS.filter((e) => e.path.startsWith('/api/staff/'))
 
-    expect(staff).toHaveLength(10)
+    expect(staff).toHaveLength(11)
     for (const endpoint of staff) {
       expect(endpoint.roles, label(endpoint)).toEqual(['IT_STAFF', 'ADMINISTRATOR'])
     }
@@ -36,7 +36,7 @@ describe('endpoint table', () => {
   it('gives every /api/admin endpoint to Administrator only', () => {
     const admin = ENDPOINTS.filter((e) => e.path.startsWith('/api/admin/'))
 
-    expect(admin).toHaveLength(4)
+    expect(admin).toHaveLength(5)
     for (const endpoint of admin) {
       expect(endpoint.roles, label(endpoint)).toEqual(['ADMINISTRATOR'])
     }

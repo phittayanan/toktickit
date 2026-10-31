@@ -5,7 +5,7 @@ import App from './App'
 import UserManagement from './UserManagement'
 import * as api from './api'
 import type { AdminUser } from './api'
-import { ADMINISTRATOR, IT_STAFF, openPath, REQUESTER, signedInAs } from './test/session'
+import { ADMINISTRATOR, IT_STAFF, openPath, REQUESTER, signedInAs, emptyDashboards } from './test/session'
 
 function adminUser(overrides: Partial<AdminUser> = {}): AdminUser {
   return {
@@ -1021,12 +1021,14 @@ describe('User Management refusals', () => {
 })
 
 describe('User Management at /admin/users', () => {
-  it('is the screen an Administrator lands on', async () => {
+  it('is reached from the navigation of an Administrator', async () => {
     const fetchAdminUsers = listReturns()
     signedInAs(ADMINISTRATOR)
+    emptyDashboards()
     openPath('/')
 
     render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'User Management' }))
 
     expect(await screen.findByRole('heading', { name: 'Users' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/admin/users')

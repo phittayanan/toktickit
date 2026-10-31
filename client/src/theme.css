@@ -1186,3 +1186,95 @@ html,
 body {
   overflow-x: hidden;
 }
+
+/* ---- Dashboards (docs/lab-04/ui-spec.md §2.3, §5 to §7) ---- */
+
+.tk-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  padding: 16px;
+  color: var(--tk-text);
+  text-decoration: none;
+}
+a.tk-metric:hover {
+  border-color: var(--tk-secondary-green);
+  background: var(--tk-pale-green);
+}
+.tk-metric__label {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.tk-metric__value {
+  color: var(--tk-primary-green);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.tk-metric__caption {
+  color: var(--tk-neutral-text);
+  font-size: 0.875rem;
+}
+
+.tk-dashboard-card:focus {
+  outline: 2px solid var(--tk-primary-green);
+  outline-offset: 2px;
+}
+
+.tk-link-table {
+  --bs-table-bg: transparent;
+}
+.tk-link-table__row {
+  position: relative;
+}
+.tk-link-table__row:hover > * {
+  --bs-table-bg-state: var(--tk-pale-green);
+}
+.tk-link-table th,
+.tk-link-table td {
+  padding: 8px 4px;
+  font-weight: 400;
+  vertical-align: middle;
+}
+.tk-link-table a {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.tk-dashboard-row {
+  border-top: 1px solid var(--tk-surface-border);
+}
+.tk-dashboard-row:first-child {
+  border-top: 0;
+}
+.tk-dashboard-row__link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 44px;
+  padding: 8px 4px;
+  color: var(--tk-text);
+  text-decoration: none;
+}
+.tk-dashboard-row__link:hover {
+  background: var(--tk-pale-green);
+}
+.tk-dashboard-row__number {
+  color: var(--tk-secondary-green);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tk-dashboard-row__text {
+  flex: 1 1 200px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767.98px) {
+  .tk-link-table th,
+  .tk-link-table td {
+    height: 44px;
+  }
+}

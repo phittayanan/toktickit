@@ -13,6 +13,11 @@ const STATUS_LABELS: Record<TicketStatus, string> = {
   CANCELLED: 'Cancelled',
 }
 
+// Every status except Closed and Cancelled.
+export const UNFINISHED_STATUSES = (Object.keys(STATUS_LABELS) as TicketStatus[]).filter(
+  (status) => status !== 'CLOSED' && status !== 'CANCELLED',
+)
+
 export function statusLabel(status: string): string {
   return (STATUS_LABELS as Record<string, string>)[status] ?? status
 }

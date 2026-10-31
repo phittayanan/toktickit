@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import App from './App'
 import * as api from './api'
-import { ADMINISTRATOR, IT_STAFF, openPath, REQUESTER, signedOut } from './test/session'
+import { ADMINISTRATOR, IT_STAFF, openPath, REQUESTER, signedOut, emptyDashboards } from './test/session'
 
 beforeEach(() => {
+  emptyDashboards()
   signedOut()
   vi.spyOn(api, 'fetchCategories').mockResolvedValue([{ id: 1, name: 'Hardware' }])
   vi.spyOn(api, 'fetchTickets').mockResolvedValue({
@@ -41,9 +42,9 @@ function submit() {
 describe('Login', () => {
   // UI-01 (AC-01): valid submit for each role
   it.each([
-    { user: REQUESTER, landing: '/tickets' },
-    { user: IT_STAFF, landing: '/staff/queue' },
-    { user: ADMINISTRATOR, landing: '/admin/users' },
+    { user: REQUESTER, landing: '/dashboard' },
+    { user: IT_STAFF, landing: '/staff/dashboard' },
+    { user: ADMINISTRATOR, landing: '/staff/dashboard' },
   ])('signs in $user.role with one login call and opens $landing', async ({ user, landing }) => {
     const login = vi.spyOn(api, 'login').mockResolvedValue(user)
     await openLogin()
@@ -231,7 +232,7 @@ describe('Login', () => {
     expect(login).toHaveBeenCalledTimes(1)
 
     answer(REQUESTER)
-    await waitFor(() => expect(window.location.pathname).toBe('/tickets'))
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
   })
 
   // UI-03 (AC-52): network failure -> safe failure alert, values kept
