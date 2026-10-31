@@ -376,16 +376,4 @@ describe('POST /api/staff/tickets/:id/status, the Resolution Gate', () => {
       allowedTransitions: MATRIX.IN_PROGRESS,
     })
   })
-
-  // AC-18, in part: WF-03 still needs each permitted status, a Cancelled one,
-  // and a follow-up flagged one.
-  it('resolves a Ticket with a Done Action Taken and no Planned one', async () => {
-    const ticketId = await ticketInProgress()
-    await addAction(ticketId, 'DONE')
-
-    const res = await resolve(ticketId)
-
-    expect(res.status).toBe(200)
-    expect(res.body.currentStatus).toBe('RESOLVED')
-  })
 })

@@ -773,6 +773,9 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
   // own counts.
   const [commentCount, setCommentCount] = useState<number | null>(null)
   const [noteCount, setNoteCount] = useState<number | null>(null)
+  // Counts the Conflict reloads, for the Actions Taken card to follow
+  // (ui-spec.md §9): its optional `reloadSignal` prop re-runs the card's load.
+  const [, setReloadSignal] = useState(0)
 
   useEffect(() => {
     // Without them the Owner select offers only "Unassigned" and the
@@ -809,6 +812,7 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
   // After a Conflict: the latest Ticket, in place, so the controls and
   // composers keep what was chosen and typed (ui-spec.md §2.3).
   const reloadTicket = () => {
+    setReloadSignal((count) => count + 1)
     fetchStaffTicket(ticketId)
       .then((ticket) => setDetail((prev) => (prev.status === 'loaded' ? { status: 'loaded', ticket } : prev)))
       .catch(() => {

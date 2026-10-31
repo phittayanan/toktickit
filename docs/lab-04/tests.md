@@ -131,7 +131,7 @@ The Ticket Change module has its own tests from #74,
 | UI-10 | UI | AC-44, AC-45 | Card loading, empty, 403, 404, and failure | Skeleton; role-specific empty text; alert; typed data kept; Retry | `client/src/lab-04/ActionsTaken.test.tsx` | Planned |
 | UI-11 | UI | AC-25 | Status select with the gate unmet by each condition | "Resolved (not available)" disabled; reason states Done and Planned counts; link reaches the card | `client/src/lab-04/TicketWorkflow.test.tsx` | Pass |
 | UI-12 | UI | AC-25 | Status select with the gate met; other transitions; after a save | Resolved opens the Lab 3 dialog; only allowed options; summary status refreshes and the reason clears | `client/src/lab-04/TicketWorkflow.test.tsx` | Pass |
-| UI-13 | UI | AC-16, AC-17 | A stale screen answered `DONE_ACTION_REQUIRED` or `PLANNED_ACTION_REMAINS` | Conflict notice; Ticket and card reload | `client/src/lab-04/TicketWorkflow.test.tsx` | Pass |
+| UI-13 | UI | AC-16, AC-17 | A stale screen answered `DONE_ACTION_REQUIRED` or `PLANNED_ACTION_REMAINS` | Conflict notice; Ticket and card reload | `client/src/lab-04/TicketWorkflow.test.tsx` | Planned (see §7) |
 | UI-14 | UI | AC-27, AC-34 | Requester Dashboard: cards and lists | Counts and rows from the API; links to filtered My Tickets and Ticket Detail | `client/src/lab-04/RequesterDashboard.test.tsx` | Planned |
 | UI-15 | UI | AC-35, AC-38 | Requester Dashboard: loading, empty, failure | Skeleton; `0` and empty text; safe failure with Retry | `client/src/lab-04/RequesterDashboard.test.tsx` | Planned |
 | UI-16 | UI | AC-30, AC-31, AC-32, AC-34 | IT Staff Dashboard: cards, link tables, lists | Each link's target is as `ui-spec.md` §6.1; My Planned moves focus to its list | `client/src/lab-04/StaffDashboard.test.tsx` | Planned |
@@ -247,5 +247,10 @@ To be recorded from the final run on `main`.
 
 ## 7. Known Limitations or Deferred Tests
 
-None planned. Any test deferred during the sprint is recorded here with its
-reason.
+Any test deferred during the sprint is recorded here with its reason.
+
+- **UI-13**: the Conflict notice and the Ticket reload pass, but the card reload
+  cannot be shown until the Actions Taken card of #79 and the status controls
+  of #80 are in one branch. Whichever PR merges second passes the `reloadSignal`
+  kept in `StaffTicketDetail` to the card's `reloadSignal` prop, asserts the
+  card reload in the named test, and turns UI-13 Pass.
