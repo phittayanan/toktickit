@@ -318,6 +318,13 @@ reload shows the gate is met. The backend enforces the rule regardless.
 | Gate refused (`DONE_ACTION_REQUIRED`, `PLANNED_ACTION_REMAINS`) | A stale screen sent the request: Conflict notice in the Operations card, and the Ticket and card reload |
 | Other states | As L3 UI §9.2; success refreshes the Ticket summary status |
 
+Any `409` from the Resolved dialog closes it and keeps the typed Resolution
+Summary (BR-35). The summary fills the dialog's text field the next time it is
+shown, so it survives the reload showing the gate unmet or the Ticket without
+an owner. Cancel discards it only from the dialog that shows it. A reload that
+makes Resolved unavailable also closes the dialog, and it does not reopen by
+itself when the gate is met again.
+
 ## 10. Drill-down additions
 
 - **My Tickets** (`/tickets`) reads `currentStatus` from the URL when it opens.

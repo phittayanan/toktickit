@@ -47,5 +47,8 @@ to the Actions Taken and Ticket status screens.
       covered by UI-06, UI-10, and E2E-12, without a screenshot)
 - [ ] Focus: every control shows a visible focus indicator, and dialogs keep
       focus inside. Open until the keyboard pass of E2E-11 (#82).
-- [ ] Resolved (not available) and its reason are clear. Open until the
-      Ticket status control of #80.
+- [x] Resolved (not available) and its reason are clear: the option is greyed
+      and disabled, and the reason gives the Done and Planned counts and the
+      link to the card, on a Ticket with one of each. A native select's popup
+      is not in a page screenshot, so `resolved-not-available-*.png` show the
+      select's options as a list.

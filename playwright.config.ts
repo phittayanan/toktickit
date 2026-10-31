@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test'
 
 // Playwright config for the Lab 2 E2E and visual-QA suites
 // (docs/lab-02/tests.md) and the Lab 3 E2E, visual, and responsive suites
-// (docs/lab-03/tests.md).
+// (docs/lab-03/tests.md), and the Lab 4 suites (docs/lab-04/tests.md).
 // Assumes the client (5173) and server (4000) are already running — this
 // repo has no single "start everything" script yet, so we don't try to
 // spawn them here.

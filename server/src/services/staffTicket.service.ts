@@ -33,6 +33,20 @@ export class OwnerRequiredError extends Error {
   }
 }
 
+// Lab 4 BR-19: the Resolution Gate, no Done Action Taken.
+export class DoneActionRequiredError extends Error {
+  constructor() {
+    super('A ticket needs at least one Done action before it can be resolved.')
+  }
+}
+
+// Lab 4 BR-19: the Resolution Gate, a Planned Action Taken is left.
+export class PlannedActionRemainsError extends Error {
+  constructor() {
+    super('Finish or cancel every Planned action before resolving this ticket.')
+  }
+}
+
 // The largest id a row can have. A larger one names no user, and is never
 // sent to the database, which would refuse it.
 const MAX_ID = 2_147_483_647
@@ -56,6 +70,7 @@ const STAFF_TICKET = {
   resolvedAt: true,
   requesterResolvedAt: true,
   _count: { select: { publicComments: true, internalNotes: true } },
+  actionsTaken: { select: { status: true } },
   attachments: {
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     select: {
@@ -76,8 +91,10 @@ const STAFF_TICKET = {
 type StaffTicketRow = Prisma.TicketGetPayload<{ select: typeof STAFF_TICKET }>
 
 // The `StaffTicket` shape. `allowedTransitions` are the BR-28 targets from
-// the current status, none for a finished Ticket.
-function toStaffTicket({ _count, attachments, createdAt, updatedAt, ...ticket }: StaffTicketRow) {
+// the current status, none for a finished Ticket, whatever the Resolution
+// Gate says; `actionTakenCounts` is what the client shows the gate's state by
+// (Lab 4 api-spec.md §3.2).
+function toStaffTicket({ _count, actionsTaken, attachments, createdAt, updatedAt, ...ticket }: StaffTicketRow) {
   const { owner, ownerChangedAt, resolutionSummary, resolvedAt, requesterResolvedAt, ...fields } = ticket
 
   return {
@@ -90,6 +107,10 @@ function toStaffTicket({ _count, attachments, createdAt, updatedAt, ...ticket }:
     requesterResolvedAt,
     publicCommentCount: _count.publicComments,
     internalNoteCount: _count.internalNotes,
+    actionTakenCounts: {
+      planned: actionsTaken.filter((action) => action.status === 'PLANNED').length,
+      done: actionsTaken.filter((action) => action.status === 'DONE').length,
+    },
     attachments,
     createdAt,
     updatedAt,
@@ -174,10 +195,10 @@ export async function changeItPriority(ticketId: number, itPriority: Priority) {
 }
 
 // POST /api/staff/tickets/:id/status (BR-28 to BR-30, BR-33), checked in
-// the order of api-spec.md §1.5.
+// the order of Lab 4 api-spec.md §3.1.
 export async function changeStatus(ticketId: number, input: StatusInput) {
   await changeTicket(ticketId, {
-    rule: async (ticket, { time, write }) => {
+    rule: async (ticket, { tx, time, write }) => {
       if (ticket.currentStatus !== input.expectedStatus) {
         throw new StatusChangedError()
       }
@@ -186,6 +207,16 @@ export async function changeStatus(ticketId: number, input: StatusInput) {
       }
       if (input.status === 'RESOLVED' && ticket.ownerId === null) {
         throw new OwnerRequiredError()
+      }
+      // Lab 4 BR-21: read under the Ticket lock that Action Taken writes also
+      // take, so a Planned one and this move are serialised.
+      if (input.status === 'RESOLVED') {
+        if ((await tx.actionTaken.count({ where: { ticketId, status: 'DONE' } })) === 0) {
+          throw new DoneActionRequiredError()
+        }
+        if ((await tx.actionTaken.count({ where: { ticketId, status: 'PLANNED' } })) > 0) {
+          throw new PlannedActionRemainsError()
+        }
       }
 
       await write({
