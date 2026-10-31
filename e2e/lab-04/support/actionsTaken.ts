@@ -14,6 +14,7 @@ export interface ArrangedAction {
   followUpRequired: boolean
   followUpNote: string | null
   attachmentNotes: string | null
+  createdAt: string
 }
 
 // Adds an Action Taken through the API, for a flow that starts from one. It
@@ -84,6 +85,33 @@ export function card(page: Page) {
 
 export function rowOf(page: Page, description: string) {
   return card(page).getByRole('row', { name: description })
+}
+
+// The description of each row, top to bottom.
+export function rowDescriptions(page: Page) {
+  return card(page).locator('[data-disclosure]')
+}
+
+export function detailsOf(page: Page, description: string) {
+  return card(page).getByRole('region', { name: `Details of ${description}` })
+}
+
+// Opens the row, and reads every field in it as the screen labels them.
+export async function openedFields(page: Page, description: string): Promise<Record<string, string>> {
+  await card(page).getByRole('button', { name: description }).click()
+  const entries = await detailsOf(page, description)
+    .locator('dl > div')
+    .evaluateAll((fields) => fields.map((field) => [field.children[0].textContent, field.children[1].textContent]))
+
+  return Object.fromEntries(entries)
+}
+
+// An instant as the browser's own locale and time zone show it.
+export function shownTime(page: Page, iso: string): Promise<string> {
+  return page.evaluate(
+    (value) => new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }),
+    iso,
+  )
 }
 
 export async function openStaffTicket(page: Page, ticket: ArrangedTicket) {
