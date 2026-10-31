@@ -218,8 +218,7 @@ The Ticket Change module has its own tests from #74,
 ## 4. Responsive and Visual Checklist
 
 The checklist is `ui-spec.md` §13 and is the acceptance bar for the VIS rows.
-Its completed form is recorded in `docs/lab-04/visual-checklist-results.md`
-when the screens exist.
+Its completed form is recorded in `docs/lab-04/visual-checklist-results.md`.
 
 ## 5. Test Commands
 

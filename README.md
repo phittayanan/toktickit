@@ -11,6 +11,7 @@ incrementally across CPE 334 Individual Sprints (Labs 1–4).
 | Lab 1 | The stack end to end (React UI → Express REST API → Prisma ORM → PostgreSQL), with a health check and the request Categories loaded from the database. | `docs/lab-01/` |
 | Lab 2 | The Requester side: Create Ticket with Attachments, My Tickets (search, filter, sort, pagination), and Requester Ticket Detail. | `docs/lab-02/` |
 | Lab 3 | Login with email and password, three roles (Requester, IT Staff, Administrator) enforced by the backend, Public Comments and Internal Notes, the IT Staff Ticket Queue and Staff Ticket Detail, and Administrator User Management. | `docs/lab-03/` |
+| Lab 4 | Actions Taken on each Ticket, the Resolution Gate on moves to Resolved, and Requester, IT Staff, and Administrator Dashboards with drill-down. | `docs/lab-04/` |
 
 ## Tech Stack
 
@@ -28,7 +29,7 @@ toktickit/
 ├── client/                 # React + TypeScript + Vite frontend
 │   └── src/                 # Screens, with component tests beside them or in lab-04/
 ├── server/
-│   ├── prisma/              # Prisma schema, migrations, and seed
+│   ├── prisma/              # Prisma schema, migrations, rollback, and seed
 │   ├── src/                 # Express + TypeScript source
 │   └── tests/               # Vitest + Supertest suites: lab-01 to lab-04
 ├── e2e/                    # Playwright suites: lab-02, lab-03, lab-04
@@ -225,8 +226,8 @@ password.
 
 - `main`: the stable branch. A lab's work reaches it through a release
   pull request from that lab's staging branch.
-- `labN-staging` (`lab1-staging`, `lab2-staging`, `lab3-staging`): the
-  integration branch of lab N.
+- `labN-staging` (`lab1-staging` to `lab4-staging`): the integration branch
+  of lab N.
 - `feature/<issue number>-<short name>`: one branch per GitHub Issue. Its
   pull request targets the staging branch of the lab the Issue belongs
   to, never `main`.
