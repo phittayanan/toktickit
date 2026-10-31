@@ -143,7 +143,8 @@ describe('RequesterTicketDetail', () => {
   })
 
   // Public Comments are on this screen from Lab 3 (docs/lab-03/ui-spec.md
-  // §7.3); Internal Notes, Actions Taken, and a status control still are not.
+  // §7.3) and the read-only Actions Taken card from Lab 4
+  // (docs/lab-04/ui-spec.md §8.6); Internal Notes and a status control are not.
   it('does not render any status-change, notes, or actions UI', async () => {
     vi.spyOn(api, 'fetchTicketById').mockResolvedValue(TICKET)
 
