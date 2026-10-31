@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { createTicketFor, type ArrangedTicket } from '../lab-03/support/api'
+import { apiSessionFor, createTicketFor, startWorkOn, type ArrangedTicket } from '../lab-03/support/api'
 import { BREAKPOINTS } from '../lab-03/support/screenshots'
 import { signInAsUser } from '../lab-03/support/signIn'
 import { E2E_USERS } from '../lab-03/support/users'
@@ -14,8 +14,7 @@ import {
 } from './support/actionsTaken'
 
 // VIS-03 (docs/lab-04/tests.md): the Actions Taken card, staff and Requester,
-// at the three widths, plus the form and the conflict. "Resolved not
-// available" comes with the Ticket status control.
+// at the three widths, plus the form, the conflict, and Resolved not available.
 function screenshot(page: Page, name: string) {
   return page.screenshot({
     path: `artifacts/lab-04/screenshots/actions-taken/${name}.png`,
@@ -30,6 +29,7 @@ test.describe('visual: Actions Taken card', () => {
   const STAFF = E2E_USERS.IT_STAFF
   let ticket: ArrangedTicket
   let planned: ArrangedAction
+  let gateUnmet: ArrangedTicket
 
   test.beforeAll(async () => {
     ticket = await createTicketFor(E2E_USERS.REQUESTER, 'Printer in room 301 keeps jamming')
@@ -42,6 +42,13 @@ test.describe('visual: Actions Taken card', () => {
       attachmentNotes: 'See roller-photo.png.',
     })
     planned = await addActionFor(STAFF, ticket, { description: 'Order a spare roller.' })
+
+    const api = await apiSessionFor(STAFF)
+    const me = await api.get('/api/auth/me').then((res) => res.json())
+    await api.dispose()
+    gateUnmet = await createTicketFor(E2E_USERS.REQUESTER, 'Laptop in room 214 will not charge')
+    await startWorkOn({ ...STAFF, id: me.id }, gateUnmet)
+    await addActionFor(STAFF, gateUnmet, { description: 'Order a replacement charger.' })
   })
 
   for (const [name, size] of Object.entries(BREAKPOINTS)) {
@@ -71,6 +78,21 @@ test.describe('visual: Actions Taken card', () => {
       await form.getByRole('button', { name: 'Save' }).click()
       await expect(form.getByText('Description is required.')).toBeVisible()
       await screenshot(page, `form-${name}`)
+    })
+
+    test(`Resolved not available at ${name}`, async ({ page }) => {
+      await page.setViewportSize(size)
+      await signInAsUser(page, STAFF)
+      await openStaffTicket(page, gateUnmet)
+      const select = page.getByLabel('Current Status')
+      await expect(select.getByRole('option', { name: 'Resolved (not available)' })).toBeDisabled()
+      await expect(page.getByText('Done: 1. Planned: 1.')).toBeVisible()
+      // A native select's popup is not in a page screenshot, so its options
+      // are shown as a list.
+      await select.evaluate((element: HTMLSelectElement) => {
+        element.size = element.options.length
+      })
+      await screenshot(page, `resolved-not-available-${name}`)
     })
   }
 

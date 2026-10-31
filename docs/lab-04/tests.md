@@ -143,7 +143,7 @@ The Ticket Change module has its own tests from #74,
 | UI-22 | UI | AC-11 | Edit a field after a failed or lost response, then Save | The request carries a new `clientRequestId` | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
 | VIS-01 | UI style | AC-46, AC-48 | Screenshots of the Requester Dashboard at the three widths, plus empty | Match the `ui-spec.md` §13 checklist | `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
 | VIS-02 | UI style | AC-46, AC-48 | Screenshots of the IT Staff and Administrator dashboards at the three widths, plus empty | Same checklist | `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
-| VIS-03 | UI style | AC-46, AC-48 | Screenshots of the Actions Taken card, staff and Requester, at the three widths, plus form, conflict, and Resolved not available | Same checklist | `e2e/lab-04/visual-actions-taken.spec.ts` | Planned: only the Resolved not available screenshot remains (#80) |
+| VIS-03 | UI style | AC-46, AC-48 | Screenshots of the Actions Taken card, staff and Requester, at the three widths, plus form, conflict, and Resolved not available | Same checklist | `e2e/lab-04/visual-actions-taken.spec.ts` | Pass |
 | VIS-04 | Responsive | AC-46 | Every Lab 4 screen at the three widths: page width against viewport; Actions Taken table or cards | No horizontal scroll; table on desktop and tablet, cards on mobile; one column on mobile dashboards | `e2e/lab-04/responsive.spec.ts`, `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
 | E2E-01 | E2E | AC-01, AC-07, AC-12, AC-13 | IT Staff adds Planned actions to a Ticket and assigns one to a colleague, who adds their own and marks the assigned one Done; staff cancel another; staff and the Requester open all of them | Actions by different staff on one Ticket; newest created first after a reload too; each row opens to every field for both; each step visible to the right role; read-only for the Requester | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-02 | E2E | AC-05, AC-06 | Inactive user is not offered; other IT Staff sees no row buttons and is refused by direct request | Not listed; no buttons; 403 | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
@@ -249,5 +249,4 @@ To be recorded from the final run on `main`.
 
 Any test deferred during the sprint is recorded here with its reason.
 
-- VIS-03: the Resolved not available screenshot waits for the Ticket status
-  control of #80. Every other VIS-03 screenshot is captured.
+None.

@@ -318,4 +318,17 @@ describe('the Ticket status control', () => {
 
     expect(await dialog.findByLabelText(/Resolution Summary/)).toHaveValue('Replaced the battery.')
   })
+
+  it('does not reopen the Resolved dialog by itself after a Claim that shows the gate unmet', async () => {
+    const fetchStaffTicket = await openDetail(ticket({ ...gateMet, owner: null, ownerChangedAt: null }))
+    vi.spyOn(api, 'updateTicketOwner').mockResolvedValue(ticket({ actionTakenCounts: { planned: 1, done: 1 } }))
+
+    fireEvent.click((await reopenDialog()).getByRole('button', { name: 'Claim' }))
+    await operations().findByText(/Resolved needs/)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await meetGateAgain(fetchStaffTicket)
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 })

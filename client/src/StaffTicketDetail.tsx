@@ -295,6 +295,10 @@ function Operations({
     ticket.owner && !owners.some((owner) => owner.id === ticket.owner!.id) ? [ticket.owner, ...owners] : owners
   const ownerName = (value: string) => ownerOptions.find((owner) => String(owner.id) === value)?.name ?? ''
 
+  // The Resolved dialog goes with its status: it does not come back by itself
+  // when the gate is met again.
+  if (confirming === 'resolve' && selectedStatus !== 'RESOLVED') setConfirming(null)
+
   // Sends one control's change. True when it was saved.
   const save = async (
     control: Control,
