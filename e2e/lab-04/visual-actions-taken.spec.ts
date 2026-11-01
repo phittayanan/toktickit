@@ -9,14 +9,16 @@ import {
   editActionElsewhere,
   openRequesterTicket,
   openStaffTicket,
-  rowOf,
-  type ArrangedAction,
 } from './support/actionsTaken'
 
 // VIS-03 (docs/lab-04/tests.md): the Actions Taken card, staff and Requester,
 // at the three widths, plus the form, the conflict, and Resolved not available.
-function screenshot(page: Page, name: string) {
-  return page.screenshot({
+async function screenshot(page: Page, name: string) {
+  const pageWidth = await page.evaluate(() =>
+    Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
+  )
+  expect(pageWidth, 'no horizontal page scroll').toBeLessThanOrEqual(page.viewportSize()!.width)
+  await page.screenshot({
     path: `artifacts/lab-04/screenshots/actions-taken/${name}.png`,
     fullPage: true,
     animations: 'disabled',
@@ -28,7 +30,7 @@ test.describe('visual: Actions Taken card', () => {
 
   const STAFF = E2E_USERS.IT_STAFF
   let ticket: ArrangedTicket
-  let planned: ArrangedAction
+  let oneOfEach: ArrangedTicket
   let gateUnmet: ArrangedTicket
 
   test.beforeAll(async () => {
@@ -41,7 +43,9 @@ test.describe('visual: Actions Taken card', () => {
       followUpNote: 'Check the tray again next week.',
       attachmentNotes: 'See roller-photo.png.',
     })
-    planned = await addActionFor(STAFF, ticket, { description: 'Order a spare roller.' })
+    await addActionFor(STAFF, ticket, { description: 'Order a spare roller.' })
+    oneOfEach = await createTicketFor(E2E_USERS.REQUESTER, 'Monitor in room 118 keeps flickering')
+    await addActionFor(STAFF, oneOfEach, { description: 'Order a spare cable.' })
 
     const api = await apiSessionFor(STAFF)
     const me = await api.get('/api/auth/me').then((res) => res.json())
@@ -94,17 +98,28 @@ test.describe('visual: Actions Taken card', () => {
       })
       await screenshot(page, `resolved-not-available-${name}`)
     })
-  }
 
-  test('conflict', async ({ page }) => {
-    await page.setViewportSize(BREAKPOINTS.desktop)
-    await signInAsUser(page, STAFF)
-    await openStaffTicket(page, ticket)
-    await rowOf(page, 'Order a spare roller.').getByRole('button', { name: 'Edit', exact: true }).click()
-    await editActionElsewhere(STAFF, ticket, planned, 'Order two spare rollers.')
-    const form = page.getByRole('form', { name: 'Edit action' })
-    await form.getByRole('button', { name: 'Save' }).click()
-    await expect(form.getByRole('button', { name: 'Reload' })).toBeVisible()
-    await screenshot(page, 'conflict')
-  })
+    test(`Cancel action confirmation at ${name}`, async ({ page }) => {
+      await page.setViewportSize(size)
+      await signInAsUser(page, STAFF)
+      await openStaffTicket(page, oneOfEach)
+      await card(page).getByRole('button', { name: 'Cancel action' }).click()
+      await expect(page.getByRole('dialog', { name: 'Cancel action' })).toBeVisible()
+      await screenshot(page, `cancel-confirmation-${name}`)
+    })
+
+    test(`conflict at ${name}`, async ({ page }) => {
+      const conflicted = await createTicketFor(E2E_USERS.REQUESTER, `Scanner in room 118 at ${name}`)
+      const stale = await addActionFor(STAFF, conflicted, { description: 'Order a spare roller.' })
+      await page.setViewportSize(size)
+      await signInAsUser(page, STAFF)
+      await openStaffTicket(page, conflicted)
+      await card(page).getByRole('button', { name: 'Edit', exact: true }).click()
+      await editActionElsewhere(STAFF, conflicted, stale, 'Order two spare rollers.')
+      const form = page.getByRole('form', { name: 'Edit action' })
+      await form.getByRole('button', { name: 'Save' }).click()
+      await expect(form.getByRole('button', { name: 'Reload' })).toBeVisible()
+      await screenshot(page, name === 'desktop' ? 'conflict' : `conflict-${name}`)
+    })
+  }
 })

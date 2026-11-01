@@ -11,6 +11,7 @@ incrementally across CPE 334 Individual Sprints (Labs 1–4).
 | Lab 1 | The stack end to end (React UI → Express REST API → Prisma ORM → PostgreSQL), with a health check and the request Categories loaded from the database. | `docs/lab-01/` |
 | Lab 2 | The Requester side: Create Ticket with Attachments, My Tickets (search, filter, sort, pagination), and Requester Ticket Detail. | `docs/lab-02/` |
 | Lab 3 | Login with email and password, three roles (Requester, IT Staff, Administrator) enforced by the backend, Public Comments and Internal Notes, the IT Staff Ticket Queue and Staff Ticket Detail, and Administrator User Management. | `docs/lab-03/` |
+| Lab 4 | Actions Taken on each Ticket, the Resolution Gate on moves to Resolved, and Requester, IT Staff, and Administrator Dashboards with drill-down. | `docs/lab-04/` |
 
 ## Tech Stack
 
@@ -28,7 +29,7 @@ toktickit/
 ├── client/                 # React + TypeScript + Vite frontend
 │   └── src/                 # Screens, with component tests beside them or in lab-04/
 ├── server/
-│   ├── prisma/              # Prisma schema, migrations, and seed
+│   ├── prisma/              # Prisma schema, migrations, rollback, and seed
 │   ├── src/                 # Express + TypeScript source
 │   └── tests/               # Vitest + Supertest suites: lab-01 to lab-04
 ├── e2e/                    # Playwright suites: lab-02, lab-03, lab-04
@@ -70,6 +71,15 @@ npm run dev            # API on http://localhost:4000
 `postgresql://USER:PASSWORD@localhost:5432/toktickit_dev?schema=public`.
 `npx prisma migrate deploy` applies the same migrations without creating
 new ones; CI and the test databases below use it.
+
+To undo the Lab 4 migration, take a `pg_dump` first, because rollback drops
+the Action Taken rows, then run this from `server/`:
+
+```bash
+npx prisma db execute --file prisma/rollback/lab4_actions_taken.down.sql
+```
+
+`npx prisma migrate deploy` then applies the migration again.
 
 ### Seed accounts (local development)
 
@@ -194,12 +204,30 @@ suites and the type checks on every pull request and on every push to
 `main` and to a `labN-staging` branch, and uploads the Playwright report
 when a Playwright run fails.
 
+## Demonstration
+
+With the seed loaded, the server and the client running, sign in at
+http://localhost:5173 as a seed account. The first sign-in asks for a new
+password.
+
+1. **Requester** (`somchai.jaidee@kmutt.ac.th`): the Dashboard opens first.
+   Follow a card to the matching My Tickets view, create a Ticket with an
+   Attachment, and post a Public Comment.
+2. **IT Staff** (`wichai.phromma@kmutt.ac.th`): the Dashboard opens first.
+   Open the new Ticket from the Ticket Queue, claim it, and move it to In
+   Progress. Its status control lists Resolved (not available), with the
+   reason. Add an Action Taken as Done, resolve the Ticket, and close it.
+3. **Requester** again: Ticket Detail shows the Action Taken, read-only, and
+   the Resolution Summary.
+4. **Administrator** (`apinya.thongchai@kmutt.ac.th`): the Dashboard adds the
+   Active accounts counts. Follow one to User Management.
+
 ## Git Workflow
 
 - `main`: the stable branch. A lab's work reaches it through a release
   pull request from that lab's staging branch.
-- `labN-staging` (`lab1-staging`, `lab2-staging`, `lab3-staging`): the
-  integration branch of lab N.
+- `labN-staging` (`lab1-staging` to `lab4-staging`): the integration branch
+  of lab N.
 - `feature/<issue number>-<short name>`: one branch per GitHub Issue. Its
   pull request targets the staging branch of the lab the Issue belongs
   to, never `main`.

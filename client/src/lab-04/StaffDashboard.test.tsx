@@ -82,8 +82,14 @@ describe('IT Staff Dashboard', () => {
 
     fireEvent.click(await screen.findByRole('link', { name: 'My Planned Actions Taken: 7' }))
 
-    expect(screen.getByRole('region', { name: 'My Planned Actions Taken' })).toHaveFocus()
+    const list = screen.getByRole('region', { name: 'My Planned Actions Taken' })
+    expect(list).toHaveFocus()
     expect(window.location.pathname).toBe('/staff/dashboard')
+    // The card's link target exists, for a link opened in a new tab too.
+    expect(screen.getByRole('link', { name: 'My Planned Actions Taken: 7' })).toHaveAttribute(
+      'href',
+      `/staff/dashboard#${list.id}`,
+    )
   })
 
   it('links every status and IT Priority row, zeros included', async () => {

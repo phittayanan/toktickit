@@ -456,3 +456,27 @@ describe('dashboards on an empty database', () => {
     }
   })
 })
+
+describe('a database failure', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  // DASH-15 (AC-45, BR-34)
+  it.each([
+    { name: 'Requester', path: '/api/requester/dashboard', who: () => requester, fails: () => prisma.ticket },
+    { name: 'IT Staff', path: '/api/staff/dashboard', who: () => staff, fails: () => prisma.ticket },
+    { name: 'Administrator', path: '/api/admin/dashboard', who: () => administrator, fails: () => prisma.user },
+  ])('answers the $name dashboard with the generic body', async ({ path, who, fails }) => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const failure = new Error('connect ECONNREFUSED postgres://secret@db:5432/toktickit')
+    const model = fails()
+    if (model === prisma.user) vi.spyOn(prisma.user, 'groupBy').mockRejectedValueOnce(failure as never)
+    else vi.spyOn(prisma.ticket, 'count').mockRejectedValueOnce(failure)
+
+    const res = await request(app).get(path).set('Cookie', who().cookie)
+
+    expect(res.status).toBe(500)
+    expect(res.body).toEqual({ error: 'Something went wrong. Please try again.', code: 'INTERNAL_ERROR' })
+  })
+})

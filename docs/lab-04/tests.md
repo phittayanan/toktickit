@@ -110,15 +110,15 @@ The Ticket Change module has its own tests from #74,
 | DASH-12 | API | AC-35 | Staff user with no data in an empty database | 200; counts 0; lists empty | `server/tests/lab-04/staff-dashboard.api.test.ts` | Pass |
 | DASH-13 | Authorization | AC-36 | Every dashboard endpoint with no session and each wrong role | 401 and 403, no data | `server/tests/lab-03/authorization.api.test.ts` | Pass |
 | DASH-14 | Authorization | AC-37 | Staff dashboard response keys | Only documented fields; no description, comment, or note | `server/tests/lab-04/staff-dashboard.api.test.ts` | Pass |
-| DASH-15 | API | AC-45 | Each dashboard with the database call forced to throw | 500 with the generic body | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
+| DASH-15 | API | AC-45 | Each dashboard with the database call forced to throw | 500 with the generic body | `server/tests/lab-04/staff-dashboard.api.test.ts` | Pass |
 | PERF-01 | Performance smoke | AC-50 | Each dashboard endpoint over 1000 generated Tickets | Answers within one second | `server/tests/lab-04/dashboard-performance.test.ts` | Pass |
 | MIG-01 | Migration | AC-39 | Apply the Lab 3 schema with fixture rows, then the Lab 4 migration | Row counts and every earlier row unchanged; `ActionTaken` is empty | `server/tests/lab-04/migration.test.ts` | Pass |
 | MIG-02 | Migration | AC-40 | Run the rollback on the migrated database, then `migrate deploy` | `ActionTaken`, its enum, and the migration's `_prisma_migrations` row are gone; earlier rows unchanged; the Lab 3 schema is restored; `migrate deploy` then re-applies the migration and recreates `ActionTaken` | `server/tests/lab-04/migration.test.ts` | Pass |
 | MIG-03 | Migration | AC-41 | Run the seed twice and compare every table | Second run changes no row | `server/tests/lab-04/seed.test.ts` | Pass |
 | MIG-04 | Migration | AC-41 | Inspect the seeded database | §7.5 data exists: zero, one, and several Actions Taken; every Action status; gate-passing and gate-blocked Tickets; non-zero and zero metrics | `server/tests/lab-04/seed.test.ts` | Pass |
-| REG-01 | Regression | AC-42 | Lab 1, Lab 2, and Lab 3 server suites | All pass, changed only as §1 states | `server/tests/lab-01/*.test.ts` `server/tests/lab-02/*.test.ts` `server/tests/lab-03/*.test.ts` | Planned |
-| REG-02 | Regression | AC-42 | Lab 2 and Lab 3 client suites | All pass, changed only as §1 states | `client/src/*.test.tsx` | Planned |
-| REG-03 | Regression | AC-42 | Lab 2 and Lab 3 E2E flows | All pass, changed only as §1 states | `e2e/lab-02/*.spec.ts` `e2e/lab-03/*.spec.ts` | Planned |
+| REG-01 | Regression | AC-42 | Lab 1, Lab 2, and Lab 3 server suites | All pass, changed only as §1 states | `server/tests/lab-01/*.test.ts` `server/tests/lab-02/*.test.ts` `server/tests/lab-03/*.test.ts` | Pass |
+| REG-02 | Regression | AC-42 | Lab 2 and Lab 3 client suites | All pass, changed only as §1 states | `client/src/*.test.tsx` | Pass |
+| REG-03 | Regression | AC-42 | Lab 2 and Lab 3 E2E flows | All pass, changed only as §1 states | `e2e/lab-02/*.spec.ts` `e2e/lab-03/*.spec.ts` | Pass |
 | UI-01 | UI | AC-12 | Actions Taken card, staff: rows, count, badges, open a row | Date, description, status and Follow-up badges; view shows every field | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
 | UI-02 | UI | AC-01, AC-03, AC-04 | Create form: defaults, validation, a Date/Time that is not a date, submit | Date is now, Performed by is the user, Status is Planned; unchecking Follow-up required clears the note; field messages and no call, with the form editable and typed data kept; one call; list reloads | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
 | UI-03 | UI | AC-06, AC-07 | Row buttons with `canEdit` true and false, on Planned, Done, and Cancelled rows | Edit, Mark Done, Cancel action only on `canEdit` Planned rows; none otherwise | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
@@ -143,7 +143,7 @@ The Ticket Change module has its own tests from #74,
 | UI-22 | UI | AC-11 | Edit a field after a failed or lost response, then Save | The request carries a new `clientRequestId` | `client/src/lab-04/ActionsTaken.test.tsx` | Pass |
 | VIS-01 | UI style | AC-46, AC-48 | Screenshots of the Requester Dashboard at the three widths, plus empty | Match the `ui-spec.md` §13 checklist | `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
 | VIS-02 | UI style | AC-46, AC-48 | Screenshots of the IT Staff and Administrator dashboards at the three widths, plus empty | Same checklist | `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
-| VIS-03 | UI style | AC-46, AC-48 | Screenshots of the Actions Taken card, staff and Requester, at the three widths, plus form, conflict, and Resolved not available | Same checklist | `e2e/lab-04/visual-actions-taken.spec.ts` | Pass |
+| VIS-03 | UI style | AC-46, AC-48 | Screenshots of the Actions Taken card, staff and Requester, at the three widths, plus form, Cancel action confirmation, conflict, and Resolved not available | Same checklist | `e2e/lab-04/visual-actions-taken.spec.ts` | Pass |
 | VIS-04 | Responsive | AC-46 | Every Lab 4 screen at the three widths: page width against viewport; Actions Taken table or cards | No horizontal scroll; table on desktop and tablet, cards on mobile; one column on mobile dashboards | `e2e/lab-04/responsive.spec.ts`, `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
 | E2E-01 | E2E | AC-01, AC-07, AC-12, AC-13 | IT Staff adds Planned actions to a Ticket and assigns one to a colleague, who adds their own and marks the assigned one Done; staff cancel another; staff and the Requester open all of them | Actions by different staff on one Ticket; newest created first after a reload too; each row opens to every field for both; each step visible to the right role; read-only for the Requester | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-02 | E2E | AC-05, AC-06 | Inactive user is not offered; other IT Staff sees no row buttons and is refused by direct request | Not listed; no buttons; 403 | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
@@ -155,10 +155,10 @@ The Ticket Change module has its own tests from #74,
 | E2E-08 | E2E | AC-30, AC-31, AC-34, AC-43 | IT Staff signs in, lands on the Dashboard, and drills into each metric | Ticket counts equal the rows listed; My Planned Actions Taken lists at most five | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-09 | E2E | AC-33, AC-43 | Administrator signs in and opens each Active accounts card | Filtered User Management; every Lab 3 entry remains | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-10 | E2E | AC-36, AC-38 | Staff opens `/dashboard`; Requester opens `/staff/dashboard`; each calls the other's API | Forbidden page; 403 | `e2e/lab-04/dashboards.spec.ts` | Pass |
-| E2E-11 | E2E | AC-47 | Keyboard-only pass over every Lab 4 screen, the form, and the confirmation | Every control reachable with visible focus and an accessible name; focus returns on close | `e2e/lab-04/accessibility.spec.ts` | Planned |
+| E2E-11 | E2E | AC-47 | Keyboard-only pass over every Lab 4 screen, the form, and the confirmation | Every control reachable with visible focus and an accessible name; focus returns on close | `e2e/lab-04/accessibility.spec.ts` | Pass |
 | E2E-12 | E2E | AC-45 | Dashboards and the Actions Taken form with the API forced to fail | Safe message; typed data kept; no internal detail on screen | `e2e/lab-04/safe-failure.spec.ts`, `e2e/lab-04/visual-dashboards.spec.ts` | Pass |
-| E2E-13 | E2E | AC-49 | Visit every screen of every role, following each link, with a console listener | No console error, no broken link, no placeholder text | `e2e/lab-04/final-regression.spec.ts` | Planned |
-| E2E-14 | E2E | AC-42 | One full journey: login, create a Ticket, Attachment, comment, note, Action Taken, resolve, close, plus user administration | Every earlier function still works alongside Lab 4 | `e2e/lab-04/final-regression.spec.ts` | Planned |
+| E2E-13 | E2E | AC-49 | Visit every screen of every role, following each link, with a console listener | No console error, no broken link, no placeholder text | `e2e/lab-04/final-regression.spec.ts` | Pass |
+| E2E-14 | E2E | AC-42 | One full journey: login, create a Ticket, Attachment, comment, note, Action Taken, resolve, close, plus user administration | Every earlier function still works alongside Lab 4 | `e2e/lab-04/final-regression.spec.ts` | Pass |
 
 ## 3. Acceptance-Criterion Traceability
 
@@ -218,8 +218,7 @@ The Ticket Change module has its own tests from #74,
 ## 4. Responsive and Visual Checklist
 
 The checklist is `ui-spec.md` §13 and is the acceptance bar for the VIS rows.
-Its completed form is recorded in `docs/lab-04/visual-checklist-results.md`
-when the screens exist.
+Its completed form is recorded in `docs/lab-04/visual-checklist-results.md`.
 
 ## 5. Test Commands
 
@@ -243,7 +242,22 @@ npx playwright test e2e/lab-02
 
 ## 6. Final Results
 
-To be recorded from the final run on `main`.
+Recorded on 2026-11-01 for the final code of Sprint 4: `lab4-staging` at
+`3789e1f` (Issues #74 to #81 merged) plus the pull request of Issue #82.
+
+| Suite | Result |
+|---|---|
+| Server (`npm test`) | 1059 of 1059 |
+| Client (`npm test`) | 461 of 461, three runs on a throttled CPU with an API running |
+| Playwright `e2e/lab-02` | 12 of 12 |
+| Playwright `e2e/lab-03` | 166 of 166 |
+| Playwright `e2e/lab-04` | 79 of 79 |
+
+The Playwright counts are from one local run of all three suites against a
+production client build and a seeded `_e2e` database. Type checks and lint pass.
+
+E2E-13 allows one console line: the browser's own record of the `401` that
+`GET /api/auth/me` answers by contract when there is no session.
 
 ## 7. Known Limitations or Deferred Tests
 
