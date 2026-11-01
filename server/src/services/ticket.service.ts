@@ -1,9 +1,10 @@
 import { Prisma } from '../../generated/prisma/client'
 import prisma from '../prisma'
-import { now } from '../clock'
-import { isFinished } from './statusTransitions.service'
+import { changeTicket, TicketNotFoundError } from './ticketChange.service'
 import { nextTicketNumber } from './ticketNumber.service'
 import type { CreateTicketInput, ListTicketsQuery } from '../schemas/ticket.schema'
+
+export { TicketFinishedError, TicketNotFoundError } from './ticketChange.service'
 
 // A field-specific validation failure that couldn't be caught by the zod
 // schema alone — e.g. checking categoryId/relatedSystemId are active rows
@@ -14,21 +15,6 @@ export class TicketValidationError extends Error {
   constructor(field: string, message: string) {
     super(message)
     this.field = field
-  }
-}
-
-// Missing or not-owned Ticket — indistinguishable 404 per ADR-0004/BR-21.
-// Shared by every route that looks a Ticket up by id (detail, attachments).
-export class TicketNotFoundError extends Error {
-  constructor() {
-    super('Ticket not found')
-  }
-}
-
-// BR-31: a change was asked of a Closed or Cancelled Ticket.
-export class TicketFinishedError extends Error {
-  constructor() {
-    super('This ticket is closed or cancelled and can no longer be changed.')
   }
 }
 
@@ -96,7 +82,7 @@ export async function listTickets(query: ListTicketsQuery, requesterId: number) 
     ...(query.categoryId !== undefined && { categoryId: query.categoryId }),
     ...(query.requestedPriority !== undefined && { requestedPriority: query.requestedPriority }),
     ...(query.itPriority !== undefined && { itPriority: query.itPriority }),
-    ...(query.currentStatus !== undefined && { currentStatus: query.currentStatus }),
+    ...(query.currentStatus !== undefined && { currentStatus: { in: query.currentStatus } }),
     ...(query.search !== undefined && {
       OR: [
         { ticketNumber: { contains: query.search, mode: 'insensitive' } },
@@ -162,36 +148,31 @@ export async function getTicketById(ticketId: number, requesterId: number) {
 
 // PUT and DELETE /api/tickets/:id/resolution-indication (BR-33): sets or
 // withdraws the Requester's "Problem Appears Resolved" flag on their own
-// Ticket. The status is never touched. The Ticket row is locked while it is
-// checked and written, so a Ticket that staff finish or resolve at the same
-// moment is refused rather than flagged.
+// Ticket. The status is never touched. The rule runs as a Ticket Change, so
+// a Ticket that staff finish or resolve at the same moment is refused rather
+// than flagged. A Ticket's Requester never changes, so whose it is can be
+// checked ahead of that.
 export async function setResolutionIndication(ticketId: number, requesterId: number, indicated: boolean) {
-  return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = ${ticketId} FOR UPDATE`
+  const own = await prisma.ticket.findUnique({ where: { id: ticketId }, select: { requesterId: true } })
+  if (!own || own.requesterId !== requesterId) {
+    throw new TicketNotFoundError()
+  }
 
-    const ticket = await tx.ticket.findUnique({ where: { id: ticketId } })
-    if (!ticket || ticket.requesterId !== requesterId) {
-      throw new TicketNotFoundError()
-    }
-    if (isFinished(ticket.currentStatus)) {
-      throw new TicketFinishedError()
-    }
-    if (indicated && ticket.currentStatus === 'RESOLVED') {
-      throw new IndicationNotAvailableError()
-    }
+  return changeTicket(ticketId, {
+    rule: async (ticket, { time, write }) => {
+      if (indicated && ticket.currentStatus === 'RESOLVED') {
+        throw new IndicationNotAvailableError()
+      }
 
-    // Repeating either request changes nothing: an indication keeps its
-    // original time (api-spec.md §4.2).
-    if (indicated === (ticket.requesterResolvedAt !== null)) {
-      return { requesterResolvedAt: ticket.requesterResolvedAt }
-    }
+      // Repeating either request changes nothing: an indication keeps its
+      // original time (api-spec.md §4.2).
+      if (indicated === (ticket.requesterResolvedAt !== null)) {
+        return { requesterResolvedAt: ticket.requesterResolvedAt }
+      }
 
-    const time = now()
-    const updated = await tx.ticket.update({
-      where: { id: ticketId },
-      data: { requesterResolvedAt: indicated ? time : null, updatedAt: time },
-    })
+      const updated = await write({ requesterResolvedAt: indicated ? time : null })
 
-    return { requesterResolvedAt: updated.requesterResolvedAt }
+      return { requesterResolvedAt: updated.requesterResolvedAt }
+    },
   })
 }

@@ -1,10 +1,25 @@
-import type { Priority, TicketStatus } from '../generated/prisma/client'
+import type { ActionTakenStatus, Priority, TicketStatus } from '../generated/prisma/client'
 
 // A Public Comment or an Internal Note of a seed Ticket.
 interface SeedEntry {
   author: string
   body: string
   at: string
+}
+
+// An Action Taken of a seed Ticket. It starts at version 1, so it is as the
+// API would have created it.
+interface SeedActionTaken {
+  status: ActionTakenStatus
+  description: string
+  result?: string
+  assignee: string
+  createdBy: string
+  actionAt: string
+  followUpRequired?: boolean
+  followUpNote?: string
+  attachmentNotes?: string
+  createdAt: string
 }
 
 export interface SeedTicket {
@@ -27,6 +42,7 @@ export interface SeedTicket {
   updatedAt: string
   comments?: SeedEntry[]
   notes?: SeedEntry[]
+  actionsTaken?: SeedActionTaken[]
 }
 
 const SOMCHAI = 'somchai.jaidee@kmutt.ac.th'
@@ -44,7 +60,16 @@ function at(day: number, time: string): string {
   return `2026-09-${String(day).padStart(2, '0')}T${time}:00+07:00`
 }
 
-// specification.md §7.4. A Ticket's position here is its Ticket Number:
+// A time relative to this seed run. The Lab 4 Tickets use it, so that they
+// fall in the recent window of the dashboards (specification.md §7.5).
+const SEED_RUN = Date.now()
+const HOUR = 60 * 60 * 1000
+
+function hoursAgo(hours: number): string {
+  return new Date(SEED_RUN - hours * HOUR).toISOString()
+}
+
+// Lab 3 specification.md §7.4. A Ticket's position here is its Ticket Number:
 // the first is TKT-2026-900001. Add new Tickets at the end, so that the
 // numbers of the existing ones never move.
 //
@@ -418,5 +443,207 @@ export const SEED_TICKETS: SeedTicket[] = [
     createdAt: at(4, '09:35'),
     updatedAt: at(6, '11:00'),
     comments: [{ author: PLOY, body: 'My exchange has been postponed, so please cancel this request.', at: at(6, '10:20') }],
+  },
+
+  // Lab 4 (specification.md §7.5): the Tickets with Actions Taken, dated by
+  // the seed run. The ones above have none, and show legacy behaviour.
+
+  // Passes the Resolution Gate: a Done action, and nothing Planned.
+  {
+    requester: SOMCHAI,
+    category: 'Hardware',
+    relatedSystem: 'Printing',
+    summary: 'Laptop battery drains within an hour',
+    description: 'My laptop battery falls from full to empty in about an hour, even with the screen dimmed.',
+    requestedPriority: 'HIGH',
+    status: 'IN_PROGRESS',
+    owner: WICHAI,
+    ownerChangedAt: hoursAgo(100),
+    createdAt: hoursAgo(110),
+    updatedAt: hoursAgo(30),
+    actionsTaken: [
+      {
+        status: 'CANCELLED',
+        description: 'Recalibrate the battery overnight.',
+        assignee: SIRIPORN,
+        createdBy: WICHAI,
+        actionAt: hoursAgo(90),
+        createdAt: hoursAgo(96),
+      },
+      {
+        status: 'DONE',
+        description: 'Replaced the laptop battery.',
+        result: 'Charge now holds for seven hours.',
+        assignee: WICHAI,
+        createdBy: WICHAI,
+        actionAt: hoursAgo(32),
+        followUpRequired: true,
+        followUpNote: 'Check the charge again next week.',
+        attachmentNotes: 'See the battery report on the asset sheet.',
+        createdAt: hoursAgo(30),
+      },
+    ],
+  },
+
+  // Blocked by the gate: a Planned action remains.
+  {
+    requester: SOMCHAI,
+    category: 'Network',
+    relatedSystem: 'Wi-Fi',
+    summary: 'Wi-Fi keeps dropping in the engineering lobby',
+    description: 'The connection drops every few minutes in the second-floor lobby of the engineering building.',
+    requestedPriority: 'MEDIUM',
+    status: 'IN_PROGRESS',
+    owner: WICHAI,
+    ownerChangedAt: hoursAgo(70),
+    createdAt: hoursAgo(75),
+    updatedAt: hoursAgo(20),
+    actionsTaken: [
+      {
+        status: 'DONE',
+        description: 'Restarted the access point on the second floor.',
+        result: 'The connection held for an hour, then dropped again.',
+        assignee: WICHAI,
+        createdBy: WICHAI,
+        actionAt: hoursAgo(48),
+        createdAt: hoursAgo(47),
+      },
+      {
+        status: 'PLANNED',
+        description: 'Replace the access point on the second floor.',
+        assignee: SIRIPORN,
+        createdBy: WICHAI,
+        actionAt: hoursAgo(-24),
+        createdAt: hoursAgo(20),
+      },
+    ],
+  },
+
+  // Blocked by the gate: no Done action.
+  {
+    requester: NALINEE,
+    category: 'Software',
+    relatedSystem: 'Student Portal',
+    summary: 'Grades page shows an error',
+    description: 'Opening the grades page in the student portal shows "Something went wrong" since this morning.',
+    requestedPriority: 'LOW',
+    status: 'IN_PROGRESS',
+    owner: SIRIPORN,
+    ownerChangedAt: hoursAgo(60),
+    createdAt: hoursAgo(62),
+    updatedAt: hoursAgo(40),
+    actionsTaken: [
+      {
+        status: 'CANCELLED',
+        description: 'Clear the portal cache.',
+        assignee: SIRIPORN,
+        createdBy: SIRIPORN,
+        actionAt: hoursAgo(41),
+        createdAt: hoursAgo(44),
+      },
+    ],
+  },
+
+  // Waits on the Requester, with one Planned action in the future.
+  {
+    requester: SOMCHAI,
+    category: 'Account and Access',
+    relatedSystem: 'Email',
+    summary: 'Need access to the department shared mailbox',
+    description: 'I have joined the registrar team and need access to its shared mailbox.',
+    requestedPriority: 'MEDIUM',
+    status: 'WAITING_FOR_REQUESTER',
+    owner: WICHAI,
+    ownerChangedAt: hoursAgo(50),
+    createdAt: hoursAgo(54),
+    updatedAt: hoursAgo(10),
+    comments: [{ author: WICHAI, body: 'Please ask your head of department to confirm the access.', at: hoursAgo(10) }],
+    actionsTaken: [
+      {
+        status: 'PLANNED',
+        description: 'Grant access once the head of department confirms.',
+        assignee: WICHAI,
+        createdBy: WICHAI,
+        actionAt: hoursAgo(-48),
+        createdAt: hoursAgo(11),
+      },
+    ],
+  },
+
+  // Recently Resolved and Closed, through the gate.
+  {
+    requester: SOMCHAI,
+    category: 'Software',
+    relatedSystem: 'VPN',
+    summary: 'VPN client asks for an update it cannot install',
+    description: 'The VPN client asks me to update, and the installer stops with an error halfway through.',
+    requestedPriority: 'MEDIUM',
+    status: 'RESOLVED',
+    owner: SIRIPORN,
+    ownerChangedAt: hoursAgo(80),
+    resolutionSummary: 'Removed the old client and installed the current version, which connects normally.',
+    resolvedAt: hoursAgo(26),
+    createdAt: hoursAgo(84),
+    updatedAt: hoursAgo(26),
+    actionsTaken: [
+      {
+        status: 'DONE',
+        description: 'Removed the old client and installed the current version.',
+        result: 'The client connects and the update prompt is gone.',
+        assignee: SIRIPORN,
+        createdBy: SIRIPORN,
+        actionAt: hoursAgo(28),
+        createdAt: hoursAgo(27),
+      },
+    ],
+  },
+  {
+    requester: SOMCHAI,
+    category: 'Hardware',
+    relatedSystem: 'Printing',
+    summary: 'Office printer leaves streaks on every page',
+    description: 'Everything printed on the office printer has a grey streak down the left of the page.',
+    requestedPriority: 'LOW',
+    status: 'CLOSED',
+    owner: WICHAI,
+    ownerChangedAt: hoursAgo(120),
+    resolutionSummary: 'Replaced the toner cartridge and cleaned the drum. Test pages print clean.',
+    resolvedAt: hoursAgo(66),
+    createdAt: hoursAgo(124),
+    updatedAt: hoursAgo(46),
+    actionsTaken: [
+      {
+        status: 'DONE',
+        description: 'Replaced the toner cartridge and cleaned the drum.',
+        result: 'Test pages print clean.',
+        assignee: THANAKORN,
+        createdBy: WICHAI,
+        actionAt: hoursAgo(68),
+        createdAt: hoursAgo(67),
+      },
+    ],
+  },
+
+  // New and unassigned: an Action Taken needs no Ticket Owner (BR-02).
+  {
+    requester: NALINEE,
+    category: 'Network',
+    relatedSystem: 'Wi-Fi',
+    summary: 'Guest Wi-Fi for a visiting lecturer',
+    description: 'A visiting lecturer arrives next week and needs guest Wi-Fi access for three days.',
+    requestedPriority: 'LOW',
+    status: 'NEW',
+    createdAt: hoursAgo(9),
+    updatedAt: hoursAgo(8),
+    actionsTaken: [
+      {
+        status: 'PLANNED',
+        description: 'Prepare a guest account before the visit.',
+        assignee: SIRIPORN,
+        createdBy: SIRIPORN,
+        actionAt: hoursAgo(-72),
+        createdAt: hoursAgo(8),
+      },
+    ],
   },
 ]

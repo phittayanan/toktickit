@@ -18,6 +18,7 @@ test.describe('visual: User Management', () => {
 
   async function openUsers(page: Page) {
     await signInAsUser(page, E2E_USERS.ADMINISTRATOR)
+    await page.goto('/admin/users')
     await expect(page.getByRole('heading', { level: 1, name: 'Users' })).toBeVisible()
     await expect(
       page.getByRole('button', { name: `Edit ${E2E_USERS.IT_STAFF.name}` }).locator('visible=true'),
@@ -127,6 +128,7 @@ test.describe('visual: User Management', () => {
     await page.setViewportSize(BREAKPOINTS.desktop)
     const release = await holdRequests(page, USERS_REQUEST)
     await signInAsUser(page, E2E_USERS.ADMINISTRATOR)
+    await page.goto('/admin/users')
     await expect(page.getByText('Loading users…')).toBeVisible()
     await expect(page.locator('.tk-users__skeleton-row .placeholder').first()).toHaveCSS(
       'background-color',
@@ -140,6 +142,7 @@ test.describe('visual: User Management', () => {
     await page.setViewportSize(BREAKPOINTS.desktop)
     await page.route(USERS_REQUEST, (route) => route.abort())
     await signInAsUser(page, E2E_USERS.ADMINISTRATOR)
+    await page.goto('/admin/users')
     await expect(page.getByRole('alert')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible()
     await takeScreenshot(page, 'user-management', 'desktop-failure')

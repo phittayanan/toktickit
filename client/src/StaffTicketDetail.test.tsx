@@ -32,6 +32,7 @@ function ticket(overrides: Partial<StaffTicket> = {}): StaffTicket {
     requesterResolvedAt: null,
     publicCommentCount: 0,
     internalNoteCount: 0,
+    actionTakenCounts: { planned: 0, done: 1 },
     attachments: [],
     createdAt: '2026-10-01T02:15:00.000Z',
     updatedAt: '2026-10-02T03:15:00.000Z',
@@ -53,6 +54,7 @@ beforeEach(() => {
   vi.spyOn(api, 'fetchEligibleOwners').mockResolvedValue(ELIGIBLE_OWNERS)
   vi.spyOn(api, 'fetchPublicComments').mockResolvedValue([])
   vi.spyOn(api, 'fetchInternalNotes').mockResolvedValue([])
+  vi.spyOn(api, 'fetchActionsTaken').mockResolvedValue([])
 })
 
 afterEach(() => {

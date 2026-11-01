@@ -2,12 +2,18 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 import { sendError, sendValidationError } from '../apiError'
 import { parseJsonBody } from '../middleware/parseJsonBody'
 import type { SessionRequest } from '../middleware/requireSession'
+import { adminDashboard } from '../services/dashboard.service'
 import { createUserSchema, listUsersQuerySchema, updateUserSchema } from '../schemas/userAdmin.schema'
 import { createUser, findUserId, listUsers, setInitialPassword, updateUser } from '../services/userAdmin.service'
 
 // User Management (api-spec.md §7). Mounted under /api/admin, where the
 // session, password-change, and Administrator checks have already run.
 const router = Router()
+
+// Lab 4 api-spec.md §5.3.
+router.get('/dashboard', async (_req, res) => {
+  res.status(200).json(await adminDashboard())
+})
 
 router.get('/users', async (req, res) => {
   const parsed = listUsersQuerySchema.safeParse(req.query)

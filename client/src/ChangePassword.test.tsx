@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from './App'
 import * as api from './api'
-import { IT_STAFF, openPath, REQUESTER, signedInAs } from './test/session'
+import { IT_STAFF, openPath, REQUESTER, signedInAs, emptyDashboards } from './test/session'
 
 const MUST_CHANGE = { ...REQUESTER, mustChangePassword: true }
 const CURRENT = 'TokTickIT-Lab3!'
 const VALID_NEW = 'Bright-Kettle-42'
 
 beforeEach(() => {
+  emptyDashboards()
   vi.spyOn(api, 'fetchCategories').mockResolvedValue([{ id: 1, name: 'Hardware' }])
   vi.spyOn(api, 'fetchRelatedSystems').mockResolvedValue([{ id: 1, name: 'Wi-Fi' }])
   vi.spyOn(api, 'fetchTickets').mockResolvedValue({
@@ -288,8 +289,8 @@ describe('Change Password, mandatory mode', () => {
 
   // UI-05 (AC-09): success -> landing screen with the notice
   it.each([
-    { user: REQUESTER, landing: '/tickets' },
-    { user: IT_STAFF, landing: '/staff/queue' },
+    { user: REQUESTER, landing: '/dashboard' },
+    { user: IT_STAFF, landing: '/staff/dashboard' },
   ])('opens the $user.role landing screen with "Password changed." after a valid change', async ({ user, landing }) => {
     const changePassword = vi.spyOn(api, 'changePassword').mockResolvedValue(user)
     signedInAs({ ...user, mustChangePassword: true })
@@ -380,7 +381,7 @@ describe('Change Password, voluntary mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    await waitFor(() => expect(window.location.pathname).toBe('/staff/queue'))
+    await waitFor(() => expect(window.location.pathname).toBe('/staff/dashboard'))
   })
 
   // Chosen again from the user menu while already open.
@@ -426,7 +427,7 @@ describe('Change Password, voluntary mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    await waitFor(() => expect(window.location.pathname).toBe('/staff/queue'))
+    await waitFor(() => expect(window.location.pathname).toBe('/staff/dashboard'))
   })
 })
 

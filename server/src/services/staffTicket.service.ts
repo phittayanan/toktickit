@@ -1,9 +1,9 @@
 import type { Prisma, Priority } from '../../generated/prisma/client'
 import prisma from '../prisma'
-import { now } from '../clock'
 import type { OwnerInput, StatusInput } from '../schemas/staffTicket.schema'
-import { allowedTransitions, canTransition, isFinished } from './statusTransitions.service'
-import { TicketFinishedError, TicketNotFoundError, TicketValidationError } from './ticket.service'
+import { allowedTransitions, canTransition } from './statusTransitions.service'
+import { TicketNotFoundError, TicketValidationError } from './ticket.service'
+import { changeTicket } from './ticketChange.service'
 
 // BR-23: the Ticket's owner is no longer the one the client last saw.
 export class OwnerChangedError extends Error {
@@ -33,6 +33,20 @@ export class OwnerRequiredError extends Error {
   }
 }
 
+// Lab 4 BR-19: the Resolution Gate, no Done Action Taken.
+export class DoneActionRequiredError extends Error {
+  constructor() {
+    super('A ticket needs at least one Done action before it can be resolved.')
+  }
+}
+
+// Lab 4 BR-19: the Resolution Gate, a Planned Action Taken is left.
+export class PlannedActionRemainsError extends Error {
+  constructor() {
+    super('Finish or cancel every Planned action before resolving this ticket.')
+  }
+}
+
 // The largest id a row can have. A larger one names no user, and is never
 // sent to the database, which would refuse it.
 const MAX_ID = 2_147_483_647
@@ -56,6 +70,7 @@ const STAFF_TICKET = {
   resolvedAt: true,
   requesterResolvedAt: true,
   _count: { select: { publicComments: true, internalNotes: true } },
+  actionsTaken: { select: { status: true } },
   attachments: {
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     select: {
@@ -76,8 +91,10 @@ const STAFF_TICKET = {
 type StaffTicketRow = Prisma.TicketGetPayload<{ select: typeof STAFF_TICKET }>
 
 // The `StaffTicket` shape. `allowedTransitions` are the BR-28 targets from
-// the current status, none for a finished Ticket.
-function toStaffTicket({ _count, attachments, createdAt, updatedAt, ...ticket }: StaffTicketRow) {
+// the current status, none for a finished Ticket, whatever the Resolution
+// Gate says; `actionTakenCounts` is what the client shows the gate's state by
+// (Lab 4 api-spec.md §3.2).
+function toStaffTicket({ _count, actionsTaken, attachments, createdAt, updatedAt, ...ticket }: StaffTicketRow) {
   const { owner, ownerChangedAt, resolutionSummary, resolvedAt, requesterResolvedAt, ...fields } = ticket
 
   return {
@@ -90,6 +107,10 @@ function toStaffTicket({ _count, attachments, createdAt, updatedAt, ...ticket }:
     requesterResolvedAt,
     publicCommentCount: _count.publicComments,
     internalNoteCount: _count.internalNotes,
+    actionTakenCounts: {
+      planned: actionsTaken.filter((action) => action.status === 'PLANNED').length,
+      done: actionsTaken.filter((action) => action.status === 'DONE').length,
+    },
     attachments,
     createdAt,
     updatedAt,
@@ -112,70 +133,48 @@ export async function getStaffTicket(ticketId: number) {
   return toStaffTicket(ticket)
 }
 
-// The Ticket to be changed, with its row locked until the transaction
-// ends, so that what is checked is still true when it is written. A
-// finished Ticket takes no change (BR-31), which api-spec.md §1.5 reports
-// ahead of every other conflict.
-async function lockUnfinishedTicket(tx: Prisma.TransactionClient, ticketId: number) {
-  await tx.$queryRaw`SELECT id FROM "Ticket" WHERE id = ${ticketId} FOR UPDATE`
-
-  const ticket = await tx.ticket.findUnique({ where: { id: ticketId } })
-  if (!ticket) {
-    throw new TicketNotFoundError()
-  }
-  if (isFinished(ticket.currentStatus)) {
-    throw new TicketFinishedError()
-  }
-
-  return ticket
-}
-
 // PUT /api/staff/tickets/:id/owner (BR-21 to BR-24): claim, assign,
 // reassign, or unassign, checked in the order of api-spec.md §1.5. The
-// rows are locked while they are checked and written: the user to be made
-// owner first, so that a deactivation or role change made at the same
-// moment (BR-25) is judged wholly before or wholly after this, then the
-// Ticket.
+// user to be made owner is locked ahead of the Ticket, so that a
+// deactivation or role change made at the same moment (BR-25) is judged
+// wholly before or wholly after this.
 export async function changeOwner(ticketId: number, input: OwnerInput) {
   const { ownerId, expectedOwnerId } = input
 
-  await prisma.$transaction(async (tx) => {
-    // BR-21: only an active IT Staff or Administrator user can be made
-    // owner. An unknown, inactive, or Requester id is one answer.
-    if (ownerId !== null) {
-      const eligible =
-        ownerId >= 1 && ownerId <= MAX_ID
-          ? await tx.$queryRaw<{ id: number }[]>`
-              SELECT "id" FROM "User"
-              WHERE "id" = ${ownerId} AND "isActive" AND "role" IN ('IT_STAFF', 'ADMINISTRATOR')
-              FOR SHARE`
-          : []
-      if (eligible.length === 0) {
-        throw new TicketValidationError('ownerId', 'Owner must be an active IT Staff or Administrator user.')
+  await changeTicket(ticketId, {
+    lockUsers: async (tx) => {
+      // BR-21: only an active IT Staff or Administrator user can be made
+      // owner. An unknown, inactive, or Requester id is one answer.
+      if (ownerId !== null) {
+        const eligible =
+          ownerId >= 1 && ownerId <= MAX_ID
+            ? await tx.$queryRaw<{ id: number }[]>`
+                SELECT "id" FROM "User"
+                WHERE "id" = ${ownerId} AND "isActive" AND "role" IN ('IT_STAFF', 'ADMINISTRATOR')
+                FOR SHARE`
+            : []
+        if (eligible.length === 0) {
+          throw new TicketValidationError('ownerId', 'Owner must be an active IT Staff or Administrator user.')
+        }
       }
-    }
+    },
+    rule: async (ticket, { time, write }) => {
+      if (ticket.ownerId !== expectedOwnerId) {
+        throw new OwnerChangedError()
+      }
 
-    const ticket = await lockUnfinishedTicket(tx, ticketId)
-    if (ticket.ownerId !== expectedOwnerId) {
-      throw new OwnerChangedError()
-    }
+      // api-spec.md §5.4: setting the owner it already has changes nothing.
+      if (ownerId === ticket.ownerId) {
+        return
+      }
 
-    // api-spec.md §5.4: setting the owner it already has changes nothing.
-    if (ownerId === ticket.ownerId) {
-      return
-    }
-
-    const time = now()
-    await tx.ticket.update({
-      where: { id: ticketId },
-      data: {
+      await write({
         ownerId,
         ownerChangedAt: time,
         // BR-24: giving an owner to a New Ticket opens it.
         ...(ticket.currentStatus === 'NEW' && ownerId !== null && { currentStatus: 'OPEN' as const }),
-        updatedAt: time,
-      },
-    })
+      })
+    },
   })
 
   return getStaffTicket(ticketId)
@@ -184,36 +183,43 @@ export async function changeOwner(ticketId: number, input: OwnerInput) {
 // PUT /api/staff/tickets/:id/it-priority (BR-26): the Requested Priority
 // is never changed.
 export async function changeItPriority(ticketId: number, itPriority: Priority) {
-  await prisma.$transaction(async (tx) => {
-    const ticket = await lockUnfinishedTicket(tx, ticketId)
-
-    if (itPriority !== ticket.itPriority) {
-      await tx.ticket.update({ where: { id: ticketId }, data: { itPriority, updatedAt: now() } })
-    }
+  await changeTicket(ticketId, {
+    rule: async (ticket, { write }) => {
+      if (itPriority !== ticket.itPriority) {
+        await write({ itPriority })
+      }
+    },
   })
 
   return getStaffTicket(ticketId)
 }
 
 // POST /api/staff/tickets/:id/status (BR-28 to BR-30, BR-33), checked in
-// the order of api-spec.md §1.5.
+// the order of Lab 4 api-spec.md §3.1.
 export async function changeStatus(ticketId: number, input: StatusInput) {
-  await prisma.$transaction(async (tx) => {
-    const ticket = await lockUnfinishedTicket(tx, ticketId)
-    if (ticket.currentStatus !== input.expectedStatus) {
-      throw new StatusChangedError()
-    }
-    if (!canTransition(ticket.currentStatus, input.status)) {
-      throw new InvalidTransitionError()
-    }
-    if (input.status === 'RESOLVED' && ticket.ownerId === null) {
-      throw new OwnerRequiredError()
-    }
+  await changeTicket(ticketId, {
+    rule: async (ticket, { tx, time, write }) => {
+      if (ticket.currentStatus !== input.expectedStatus) {
+        throw new StatusChangedError()
+      }
+      if (!canTransition(ticket.currentStatus, input.status)) {
+        throw new InvalidTransitionError()
+      }
+      if (input.status === 'RESOLVED' && ticket.ownerId === null) {
+        throw new OwnerRequiredError()
+      }
+      // Lab 4 BR-21: read under the Ticket lock that Action Taken writes also
+      // take, so a Planned one and this move are serialised.
+      if (input.status === 'RESOLVED') {
+        if ((await tx.actionTaken.count({ where: { ticketId, status: 'DONE' } })) === 0) {
+          throw new DoneActionRequiredError()
+        }
+        if ((await tx.actionTaken.count({ where: { ticketId, status: 'PLANNED' } })) > 0) {
+          throw new PlannedActionRemainsError()
+        }
+      }
 
-    const time = now()
-    await tx.ticket.update({
-      where: { id: ticketId },
-      data: {
+      await write({
         currentStatus: input.status,
         // Resolving stores the summary and its time, and clears the
         // Requester's "Problem Appears Resolved" flag (BR-33). Any other
@@ -223,9 +229,8 @@ export async function changeStatus(ticketId: number, input: StatusInput) {
           resolvedAt: time,
           requesterResolvedAt: null,
         }),
-        updatedAt: time,
-      },
-    })
+      })
+    },
   })
 
   return getStaffTicket(ticketId)

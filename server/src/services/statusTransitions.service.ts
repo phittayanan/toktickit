@@ -1,3 +1,5 @@
+import type { Prisma } from '../../generated/prisma/client'
+
 // BR-27: the Current Status values, as they appear on the wire.
 export const TICKET_STATUSES = [
   'NEW',
@@ -35,6 +37,11 @@ export function canTransition(from: TicketStatus, to: TicketStatus): boolean {
 
 // BR-31: a Closed or Cancelled Ticket is finished, and read-only for
 // everyone.
+const FINISHED: readonly TicketStatus[] = ['CLOSED', 'CANCELLED']
+
 export function isFinished(status: TicketStatus): boolean {
-  return status === 'CLOSED' || status === 'CANCELLED'
+  return FINISHED.includes(status)
 }
+
+// The same rule as a filter on Tickets: every Ticket that is not finished.
+export const UNFINISHED = { currentStatus: { notIn: [...FINISHED] } } satisfies Prisma.TicketWhereInput

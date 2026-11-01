@@ -1,14 +1,14 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
-import { apiSessionFor, apiUrl, createTicketFor } from './support/api'
+import { addDoneAction, apiSessionFor, apiUrl, createTicketFor } from './support/api'
 import { openTicketQueue, searchQueue } from './support/queue'
 import { signInAs, signInAsUser } from './support/signIn'
 import { E2E_SECOND_REQUESTER, E2E_USERS } from './support/users'
 
-// The seed Tickets are TKT-2026-900001 to TKT-2026-900024 (specification.md
-// §7.4). Nothing an E2E run creates is numbered from 900000, so this
+// The seed Tickets are TKT-2026-900001 to TKT-2026-900031 (specification.md
+// §7.4, Lab 4 §7.5). Nothing an E2E run creates is numbered from 900000, so this
 // fragment narrows the queue to the seed data alone.
 const SEED_TICKET_FRAGMENT = 'TKT-2026-9000'
-const SEED_TICKET_COUNT = 24
+const SEED_TICKET_COUNT = 31
 
 // The Ticket Queue table (ui-spec.md §8.1), in column order.
 const COLUMN = { ticketNumber: 0, summary: 1, category: 2, itPriority: 3, status: 4, owner: 5 } as const
@@ -98,6 +98,7 @@ test('E2E-05 a Ticket goes from creation to Closed across the Requester and IT S
 
   // IT Staff: find it in the queue, claim it, set the IT Priority, start work.
   const staff = await signInAs(staffPage, 'IT_STAFF')
+  await openTicketQueue(staffPage)
   await openFromQueue(staffPage, ticketNumber)
   await expect(staffPage.getByText(requesterComment)).toBeVisible()
   await expect(statusBadges(staffPage)).toHaveText('New')
@@ -151,7 +152,9 @@ test('E2E-05 a Ticket goes from creation to Closed across the Requester and IT S
   // AC-21: the indication is a flag, not a status change.
   await expect(requesterPage.getByText('In Progress', { exact: true })).toBeVisible()
 
-  // IT Staff: sees the flag, resolves with a summary, then closes.
+  // IT Staff: sees the flag, resolves with a summary, then closes. Lab 4
+  // BR-19: resolving needs a Done Action Taken.
+  await addDoneAction(staff, Number(new URL(staffPage.url()).pathname.split('/').pop()))
   await staffPage.reload()
   await expect(statusBadges(staffPage)).toContainText('Requester: appears resolved')
 
@@ -206,6 +209,7 @@ test('E2E-05 a Ticket goes from creation to Closed across the Requester and IT S
 test.describe('E2E-06 Ticket Queue over seed data', () => {
   test.beforeEach(async ({ page }) => {
     await signInAs(page, 'IT_STAFF')
+    await openTicketQueue(page)
     await page.getByLabel('Status').selectOption({ label: 'All statuses' })
     await searchQueue(page, SEED_TICKET_FRAGMENT)
     await expect(caption(page, 1, 10, SEED_TICKET_COUNT)).toBeVisible()
@@ -281,7 +285,7 @@ test.describe('E2E-06 Ticket Queue over seed data', () => {
       Array.from({ length: Math.abs(to - from) + 1 }, (_, index) => seedNumber(from < to ? from + index : from - index))
 
     await page.getByLabel('Sort by').selectOption({ label: 'Ticket No.' })
-    await expect(cells(page, COLUMN.ticketNumber)).toHaveText(seedNumbers(24, 15))
+    await expect(cells(page, COLUMN.ticketNumber)).toHaveText(seedNumbers(31, 22))
 
     await page.getByRole('button', { name: 'Descending' }).click()
     await expect(page.getByRole('button', { name: 'Ascending' })).toBeVisible()
@@ -293,8 +297,8 @@ test.describe('E2E-06 Ticket Queue over seed data', () => {
     await expect(cells(page, COLUMN.ticketNumber)).toHaveText(seedNumbers(11, 20))
 
     await pagination.getByRole('button', { name: 'Next' }).click()
-    await expect(caption(page, 21, 24, SEED_TICKET_COUNT)).toBeVisible()
-    await expect(cells(page, COLUMN.ticketNumber)).toHaveText(seedNumbers(21, 24))
+    await expect(caption(page, 21, 30, SEED_TICKET_COUNT)).toBeVisible()
+    await expect(cells(page, COLUMN.ticketNumber)).toHaveText(seedNumbers(21, 30))
 
     await pagination.getByRole('button', { name: 'Previous' }).click()
     await expect(caption(page, 11, 20, SEED_TICKET_COUNT)).toBeVisible()

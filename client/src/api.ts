@@ -220,6 +220,7 @@ export interface StaffTicket {
   requesterResolvedAt: string | null
   publicCommentCount: number
   internalNoteCount: number
+  actionTakenCounts: { planned: number; done: number }
   attachments: Omit<TicketAttachment, 'ticketId'>[]
   createdAt: string
   updatedAt: string
@@ -231,6 +232,38 @@ export interface StatusChange {
   status: TicketStatus
   expectedStatus: TicketStatus
   resolutionSummary?: string
+}
+
+export type ActionTakenStatus = 'PLANNED' | 'DONE' | 'CANCELLED'
+
+// docs/lab-04/api-spec.md §1.5. `canEdit` is feedback for the screen: the
+// backend still enforces the rule.
+export interface ActionTaken {
+  id: number
+  actionAt: string
+  description: string
+  result: string | null
+  status: ActionTakenStatus
+  assignee: { id: number; name: string }
+  followUpRequired: boolean
+  followUpNote: string | null
+  attachmentNotes: string | null
+  createdBy: { id: number; name: string }
+  createdAt: string
+  version: number
+  canEdit: boolean
+}
+
+// What a create and an edit of an Action Taken both send.
+export interface ActionTakenFields {
+  actionAt: string
+  description: string
+  result: string | null
+  status: ActionTakenStatus
+  assigneeId: number
+  followUpRequired: boolean
+  followUpNote: string | null
+  attachmentNotes: string | null
 }
 
 // A User who can be made Ticket Owner (docs/lab-03/api-spec.md §5.3).
@@ -564,6 +597,39 @@ export async function updateTicketStatus(id: number, change: StatusChange): Prom
   return res.json()
 }
 
+// GET /api/tickets/:id/actions-taken: every Action Taken of the Ticket,
+// newest created first, for its Requester and for staff. Refusals are
+// ApiErrors: 403, 404.
+export async function fetchActionsTaken(ticketId: number): Promise<ActionTaken[]> {
+  const res = await request(`/api/tickets/${ticketId}/actions-taken`)
+  return res.json()
+}
+
+// POST /api/staff/tickets/:id/actions-taken. A repeat of `clientRequestId`
+// answers with the Action Taken it created (BR-14). Refusals are ApiErrors:
+// 400 naming the field, 404, 409 TICKET_FINISHED.
+export async function createActionTaken(
+  ticketId: number,
+  input: ActionTakenFields & { clientRequestId: string },
+): Promise<ActionTaken> {
+  const res = await sendJson(`/api/staff/tickets/${ticketId}/actions-taken`, 'POST', input)
+  return res.json()
+}
+
+// PUT /api/staff/tickets/:id/actions-taken/:actionTakenId, which is also how
+// an action is marked Done or cancelled. `expectedVersion` is the version the
+// client loaded. Refusals are ApiErrors: 400 naming the field, 403
+// ACTION_TAKEN_EDIT_FORBIDDEN, 404, 409 TICKET_FINISHED, ACTION_TAKEN_CHANGED,
+// or ACTION_TAKEN_FINAL.
+export async function updateActionTaken(
+  ticketId: number,
+  actionTakenId: number,
+  input: ActionTakenFields & { expectedVersion: number },
+): Promise<ActionTaken> {
+  const res = await sendJson(`/api/staff/tickets/${ticketId}/actions-taken/${actionTakenId}`, 'PUT', input)
+  return res.json()
+}
+
 // GET /api/staff/tickets/:id/notes: the Ticket's Internal Notes, newest
 // first.
 export async function fetchInternalNotes(ticketId: number): Promise<Entry[]> {
@@ -632,5 +698,55 @@ export async function setResolutionIndication(ticketId: number): Promise<Resolut
 
 export async function withdrawResolutionIndication(ticketId: number): Promise<ResolutionIndication> {
   const res = await request(`/api/tickets/${ticketId}/resolution-indication`, { method: 'DELETE' })
+  return res.json()
+}
+
+export interface RequesterDashboardTicket {
+  id: number
+  ticketNumber: string
+  summary: string
+  currentStatus: TicketStatus
+}
+
+// GET /api/requester/dashboard (docs/lab-04/api-spec.md §5.1).
+export interface RequesterDashboard {
+  openCount: number
+  waitingForRequesterCount: number
+  recentlyUpdated: (RequesterDashboardTicket & { updatedAt: string })[]
+  recentlyResolved: (RequesterDashboardTicket & { resolvedAt: string })[]
+}
+
+export interface StaffDashboardTicket extends RequesterDashboardTicket {
+  itPriority: Priority
+  owner: { id: number; name: string } | null
+  updatedAt: string
+}
+
+// GET /api/staff/dashboard (docs/lab-04/api-spec.md §5.2).
+export interface StaffDashboard {
+  unassignedCount: number
+  ownedByMeCount: number
+  myPlannedActionsTakenCount: number
+  byStatus: Record<string, number>
+  byItPriority: Record<Priority, number>
+  myPlannedActionsTaken: { id: number; ticketId: number; ticketNumber: string; description: string; actionAt: string }[]
+  urgent: StaffDashboardTicket[]
+  recentlyUpdated: StaffDashboardTicket[]
+}
+
+// A refusal is an ApiError.
+export async function fetchRequesterDashboard(): Promise<RequesterDashboard> {
+  const res = await request('/api/requester/dashboard')
+  return res.json()
+}
+
+export async function fetchStaffDashboard(): Promise<StaffDashboard> {
+  const res = await request('/api/staff/dashboard')
+  return res.json()
+}
+
+// GET /api/admin/dashboard (docs/lab-04/api-spec.md §5.3).
+export async function fetchAdminDashboard(): Promise<{ activeUsers: Record<Role, number> }> {
+  const res = await request('/api/admin/dashboard')
   return res.json()
 }

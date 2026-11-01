@@ -14,6 +14,7 @@ import {
   type TicketStatus,
   type UserIdentity,
 } from './api'
+import ActionsTaken from './ActionsTaken'
 import { AccountBadge, AppearsResolvedBadge, PriorityBadge, StatusBadge } from './badges'
 import EntryThread from './EntryThread'
 import { statusLabel } from './statusLabels'
@@ -31,6 +32,10 @@ const QUEUE = { label: 'Ticket Queue', path: '/staff/queue' }
 
 // A Closed or Cancelled Ticket is finished, and read-only (BR-31).
 const FINISHED_AS: Partial<Record<TicketStatus, 'closed' | 'cancelled'>> = { CLOSED: 'closed', CANCELLED: 'cancelled' }
+
+// The Actions Taken card, where the status control sends a user who cannot
+// resolve yet (Lab 4 ui-spec.md §9).
+const ACTIONS_TAKEN_ID = 'actions-taken'
 
 const PRIORITIES: Priority[] = ['LOW', 'MEDIUM', 'HIGH']
 const PRIORITY_LABELS: Record<Priority, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' }
@@ -131,17 +136,19 @@ type ResolveOutcome = { kind: 'closed' } | { kind: 'invalid'; message: string } 
 function ResolveDialog({
   ticket,
   claiming,
+  initialSummary,
   onClaim,
   onResolve,
   onCancel,
 }: {
   ticket: StaffTicket
   claiming: boolean
+  initialSummary: string
   onClaim: () => void
   onResolve: (resolutionSummary: string) => Promise<ResolveOutcome>
   onCancel: () => void
 }) {
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialSummary)
   const [fieldError, setFieldError] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -265,17 +272,32 @@ function Operations({
   const [feedback, setFeedback] = useState<Partial<Record<Control, Feedback>>>({})
   // The dialog that is open: a confirmation, or the Resolved dialog.
   const [confirming, setConfirming] = useState<'owner' | 'status' | 'resolve' | null>(null)
+  // What a Conflict took out of the Resolved dialog, for when it opens again.
+  const [refusedSummary, setRefusedSummary] = useState('')
 
   // Each select follows the Ticket until the user picks something else.
   const currentOwner = ticket.owner ? String(ticket.owner.id) : ''
   const selectedOwner = ownerChoice ?? currentOwner
   const selectedPriority = priorityChoice ?? ticket.itPriority
+  // Lab 4 ui-spec.md §9: the Resolution Gate, shown from the counts. The
+  // backend enforces it regardless.
+  const { done, planned } = ticket.actionTakenCounts
+  const resolvedUnavailable = ticket.allowedTransitions.includes('RESOLVED') && (done === 0 || planned > 0)
   // A status the Ticket can no longer be moved to is not a choice.
-  const selectedStatus = statusChoice !== '' && ticket.allowedTransitions.includes(statusChoice) ? statusChoice : ''
+  const selectedStatus =
+    statusChoice !== '' &&
+    ticket.allowedTransitions.includes(statusChoice) &&
+    !(statusChoice === 'RESOLVED' && resolvedUnavailable)
+      ? statusChoice
+      : ''
   // The current owner is listed even when they are no longer eligible.
   const ownerOptions =
     ticket.owner && !owners.some((owner) => owner.id === ticket.owner!.id) ? [ticket.owner, ...owners] : owners
   const ownerName = (value: string) => ownerOptions.find((owner) => String(owner.id) === value)?.name ?? ''
+
+  // The Resolved dialog goes with its status: it does not come back by itself
+  // when the gate is met again.
+  if (confirming === 'resolve' && selectedStatus !== 'RESOLVED') setConfirming(null)
 
   // Sends one control's change. True when it was saved.
   const save = async (
@@ -382,6 +404,7 @@ function Operations({
       const updated = await updateTicketStatus(ticket.id, statusRequest(resolutionSummary))
       onSaved(updated)
       setStatusChoice('')
+      setRefusedSummary('')
       setFeedback((prev) => ({ ...prev, status: { kind: 'success', message: statusSaved(updated) } }))
     } catch (err) {
       if (err instanceof ApiError && err.status === 400 && err.field === 'resolutionSummary') {
@@ -390,6 +413,7 @@ function Operations({
       if (!(err instanceof ApiError && err.status === 409)) {
         return { kind: 'failure' }
       }
+      setRefusedSummary(resolutionSummary)
       setFeedback((prev) => ({ ...prev, status: { kind: 'conflict' } }))
       onConflict()
     }
@@ -519,15 +543,36 @@ function Operations({
                 className="form-select"
                 value={selectedStatus}
                 disabled={saving.status !== undefined}
+                aria-describedby={resolvedUnavailable ? 'ticket-status-reason' : undefined}
                 onChange={(event) => setStatusChoice(event.target.value as TicketStatus | '')}
               >
                 <option value="">Choose a new status…</option>
-                {ticket.allowedTransitions.map((status) => (
-                  <option key={status} value={status}>
-                    {statusLabel(status)}
-                  </option>
-                ))}
+                {ticket.allowedTransitions.map((status) => {
+                  const unavailable = status === 'RESOLVED' && resolvedUnavailable
+
+                  return (
+                    <option key={status} value={status} disabled={unavailable}>
+                      {unavailable ? 'Resolved (not available)' : statusLabel(status)}
+                    </option>
+                  )
+                })}
               </select>
+              {resolvedUnavailable && (
+                <p className="form-text mb-0">
+                  <span id="ticket-status-reason">
+                    Resolved needs at least one Done action and no Planned actions. Done: {done}. Planned: {planned}.
+                  </span>{' '}
+                  <a
+                    href={`#${ACTIONS_TAKEN_ID}`}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      document.getElementById(ACTIONS_TAKEN_ID)?.focus()
+                    }}
+                  >
+                    Go to Actions Taken
+                  </a>
+                </p>
+              )}
               <button
                 type="button"
                 className="btn btn-outline-primary"
@@ -581,12 +626,16 @@ function Operations({
         <ResolveDialog
           ticket={ticket}
           claiming={saving.owner === 'claim'}
+          initialSummary={refusedSummary}
           onClaim={async () => {
             // A claim that did not go through is explained in the card.
             if (!(await claim())) setConfirming(null)
           }}
           onResolve={resolve}
-          onCancel={() => setConfirming(null)}
+          onCancel={() => {
+            if (ticket.owner) setRefusedSummary('')
+            setConfirming(null)
+          }}
         />
       )}
     </section>
@@ -727,8 +776,8 @@ function Tabs({ labels, children }: { labels: Record<TabKey, ReactNode>; childre
 
 // IT Staff Ticket Detail (docs/lab-03/ui-spec.md §9), for IT Staff and
 // Administrators alike: the Ticket's information read-only, the Operations
-// card, the Resolution Summary, and the Public Comments, Internal Notes,
-// and Attachments tabs. Mount it with the Ticket id as its `key`.
+// card, the Actions Taken card, the Resolution Summary, and the Public
+// Comments, Internal Notes, and Attachments tabs. Mount it with the Ticket id as its `key`.
 function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIdentity }) {
   const navigate = useNavigate()
   const queuePath = queuePathFrom(useLocation().state)
@@ -739,6 +788,9 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
   // own counts.
   const [commentCount, setCommentCount] = useState<number | null>(null)
   const [noteCount, setNoteCount] = useState<number | null>(null)
+  // Counts the Conflict reloads, for the Actions Taken card to follow
+  // (Lab 4 ui-spec.md §9): its `reloadSignal` prop re-runs the card's load.
+  const [reloadSignal, setReloadSignal] = useState(0)
 
   useEffect(() => {
     // Without them the Owner select offers only "Unassigned" and the
@@ -772,14 +824,20 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
     setAttempt((count) => count + 1)
   }
 
-  // After a Conflict: the latest Ticket, in place, so the controls and
-  // composers keep what was chosen and typed (ui-spec.md §2.3).
-  const reloadTicket = () => {
+  // The latest Ticket, in place, so the controls and composers keep what was
+  // chosen and typed (ui-spec.md §2.3).
+  const refreshTicket = () => {
     fetchStaffTicket(ticketId)
       .then((ticket) => setDetail((prev) => (prev.status === 'loaded' ? { status: 'loaded', ticket } : prev)))
       .catch(() => {
         // The Ticket shown stays as it was; the notice has been given.
       })
+  }
+
+  // After a Conflict: the latest Ticket and Actions Taken card.
+  const reloadTicket = () => {
+    setReloadSignal((count) => count + 1)
+    refreshTicket()
   }
 
   if (detail.status === 'not-found') return <StaffTicketNotFound user={user} />
@@ -889,6 +947,15 @@ function StaffTicketDetail({ ticketId, user }: { ticketId: number; user: UserIde
                 onConflict={reloadTicket}
               />
             </div>
+          </div>
+
+          <div className="mb-3">
+            <ActionsTaken
+              ticketId={ticket.id}
+              finishedAs={finishedAs}
+              staff={{ user, owners, onChanged: refreshTicket }}
+              reloadSignal={reloadSignal}
+            />
           </div>
 
           {ticket.resolutionSummary !== null && (

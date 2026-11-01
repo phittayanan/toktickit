@@ -5,6 +5,7 @@ import type { SessionRequest } from '../middleware/requireSession'
 import { internalNoteSchema } from '../schemas/comment.schema'
 import { staffQueueQuerySchema } from '../schemas/staffQueue.schema'
 import { itPrioritySchema, ownerSchema, statusSchema } from '../schemas/staffTicket.schema'
+import { staffDashboard } from '../services/dashboard.service'
 import { listEligibleOwners } from '../services/eligibleOwners.service'
 import { createInternalNote, listInternalNotes } from '../services/internalNote.service'
 import { listQueue } from '../services/staffQueue.service'
@@ -12,10 +13,12 @@ import {
   changeItPriority,
   changeOwner,
   changeStatus,
+  DoneActionRequiredError,
   getStaffTicket,
   InvalidTransitionError,
   OwnerChangedError,
   OwnerRequiredError,
+  PlannedActionRemainsError,
   StatusChangedError,
   ticketExists,
 } from '../services/staffTicket.service'
@@ -34,6 +37,11 @@ router.get('/tickets', async (req: SessionRequest, res) => {
   }
 
   res.status(200).json(await listQueue(parsed.data, req.user!.id))
+})
+
+// Lab 4 api-spec.md §5.2.
+router.get('/dashboard', async (req: SessionRequest, res) => {
+  res.status(200).json(await staffDashboard(req.user!.id))
 })
 
 router.get('/eligible-owners', async (_req, res) => {
@@ -92,6 +100,10 @@ function sendOperationError(res: Response, err: unknown): boolean {
     sendError(res, 409, 'INVALID_TRANSITION', err.message)
   } else if (err instanceof OwnerRequiredError) {
     sendError(res, 409, 'OWNER_REQUIRED', err.message)
+  } else if (err instanceof DoneActionRequiredError) {
+    sendError(res, 409, 'DONE_ACTION_REQUIRED', err.message)
+  } else if (err instanceof PlannedActionRemainsError) {
+    sendError(res, 409, 'PLANNED_ACTION_REMAINS', err.message)
   } else {
     return false
   }

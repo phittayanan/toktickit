@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { expect, request, type APIRequestContext } from '@playwright/test'
@@ -82,8 +83,27 @@ export async function attachFileTo(
   }
 }
 
+// Records a Done Action Taken, which a move to Resolved needs (Lab 4 BR-19).
+export async function addDoneAction(staff: E2EUser, ticketId: number) {
+  const api = await apiSessionFor(staff)
+  try {
+    const added = await api.post(`/api/staff/tickets/${ticketId}/actions-taken`, {
+      data: {
+        clientRequestId: randomUUID(),
+        status: 'DONE',
+        description: 'Arranged by the E2E suite.',
+        result: 'The problem no longer occurs.',
+      },
+    })
+    expect(added.status(), 'arranging a Done Action Taken').toBe(201)
+  } finally {
+    await api.dispose()
+  }
+}
+
 // Makes the staff user the Ticket Owner of a New Ticket and moves it to In
-// Progress, the state from which every status dialog can be opened.
+// Progress, with a Done Action Taken: the state from which every status
+// dialog can be opened.
 export async function startWorkOn(staff: E2EUser & { id: number }, ticket: ArrangedTicket) {
   const api = await apiSessionFor(staff)
   try {
@@ -95,6 +115,7 @@ export async function startWorkOn(staff: E2EUser & { id: number }, ticket: Arran
       data: { status: 'IN_PROGRESS', expectedStatus: 'OPEN' },
     })
     expect(started.status(), 'arranging the In Progress status').toBe(200)
+    await addDoneAction(staff, ticket.id)
   } finally {
     await api.dispose()
   }

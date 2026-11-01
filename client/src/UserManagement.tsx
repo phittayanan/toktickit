@@ -584,16 +584,20 @@ function OneTimePasswordDialog({ name, password, onDone }: { name: string; passw
 // creates or edits one.
 function UserManagement({
   user: currentUser,
+  initialRole,
   onSelfSaved,
 }: {
   user: UserIdentity
+  // The role filter the URL opened the screen with. Anything but a role is
+  // ignored.
+  initialRole?: string
   // The signed-in Administrator saved a change to their own account that
   // leaves them signed in.
   onSelfSaved?: (user: AdminUser) => void
 }) {
   const [searchText, setSearchText] = useState('')
   const [search, setSearch] = useState('')
-  const [role, setRole] = useState<Role | ''>('')
+  const [role, setRole] = useState<Role | ''>(ROLE_OPTIONS.find((option) => option.value === initialRole)?.value ?? '')
   const [attempt, setAttempt] = useState(0)
   // What the API answered, and for which search, role filter, and attempt.
   // Until the answer for the current ones arrives, the list is loading.

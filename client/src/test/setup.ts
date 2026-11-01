@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { beforeEach } from 'vitest'
+import { beforeEach, vi } from 'vitest'
 
 // Node's own built-in `localStorage` global (present since Node 22,
 // gated behind --localstorage-file) shadows jsdom's window.localStorage
@@ -45,8 +45,11 @@ Object.defineProperty(window, 'localStorage', {
   writable: true,
 })
 
-// Each test starts at the same URL with empty storage.
+// Each test starts at the same URL with empty storage, and with no network:
+// `client/src/api.ts` is mocked call by call, and a call a test leaves unmocked
+// fails as it does with no server, whatever API is running on this machine.
 beforeEach(() => {
   window.localStorage.clear()
   window.history.replaceState({}, '', '/')
+  vi.stubGlobal('fetch', () => Promise.reject(new TypeError('Failed to fetch')))
 })

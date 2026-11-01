@@ -8,11 +8,11 @@ const INVALID_CREDENTIALS = 'Invalid email or password.'
 
 // ui-spec.md §4.1: each role's navigation entries and landing screen.
 const SHELL: Record<Role, { navigation: string[]; landingHeading: string; roleLabel: string }> = {
-  REQUESTER: { navigation: ['My Tickets', 'Create Ticket'], landingHeading: 'My Tickets', roleLabel: 'Requester' },
-  IT_STAFF: { navigation: ['Ticket Queue'], landingHeading: 'Ticket Queue', roleLabel: 'IT Staff' },
+  REQUESTER: { navigation: ['Dashboard', 'My Tickets', 'Create Ticket'], landingHeading: 'Dashboard', roleLabel: 'Requester' },
+  IT_STAFF: { navigation: ['Dashboard', 'Ticket Queue'], landingHeading: 'Dashboard', roleLabel: 'IT Staff' },
   ADMINISTRATOR: {
-    navigation: ['Ticket Queue', 'User Management'],
-    landingHeading: 'Users',
+    navigation: ['Dashboard', 'Ticket Queue', 'User Management'],
+    landingHeading: 'Dashboard',
     roleLabel: 'Administrator',
   },
 }
@@ -87,7 +87,7 @@ test('E2E-02 an initial password must be changed before the application opens', 
   await page.getByLabel('Confirm new password', { exact: true }).fill(newPassword)
   await page.getByRole('button', { name: 'Continue' }).click()
 
-  await expect(page).toHaveURL(/\/tickets$/)
+  await expect(page).toHaveURL(/\/dashboard$/)
   await expect(page.getByRole('status').filter({ hasText: 'Password changed.' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Primary' }).getByRole('button')).toHaveText(
     SHELL.REQUESTER.navigation,
@@ -98,8 +98,8 @@ test('E2E-02 an initial password must be changed before the application opens', 
   await expect(page.getByRole('alert').filter({ hasText: INVALID_CREDENTIALS })).toBeVisible()
 
   await submitLogin(page, user.email, newPassword)
-  await expect(page).toHaveURL(/\/tickets$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'My Tickets' })).toBeVisible()
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible()
 })
 
 // E2E-03 (AC-05, AC-06, AC-07): the three refusals of Login.

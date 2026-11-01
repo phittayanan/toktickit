@@ -48,8 +48,12 @@ export const listTicketsQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
   requestedPriority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
   itPriority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
-  // api-spec.md §4.1: all eight statuses.
-  currentStatus: z.enum(TICKET_STATUSES).optional(),
+  // Lab 4 api-spec.md §4: one or more of the eight statuses, comma-separated.
+  currentStatus: z
+    .string()
+    .transform((value) => value.split(','))
+    .pipe(z.array(z.enum(TICKET_STATUSES)))
+    .optional(),
   sortBy: withDefault(z.enum(SORT_FIELDS), 'updatedAt'),
   sortDir: withDefault(z.enum(SORT_DIRS), 'desc'),
 })

@@ -3,11 +3,12 @@ import { attachFileTo, createTicketFor, type ArrangedTicket } from '../../lab-03
 import { signInAs } from '../../lab-03/support/signIn'
 import { E2E_USERS } from '../../lab-03/support/users'
 
-// Signs in as the Requester the Lab 3 global setup creates, so visual specs
-// land on an authenticated screen. Lab 3 retired the Development Requester
+// Signs in as the Requester the Lab 3 global setup creates and opens My
+// Tickets, where the visual specs start. Lab 3 retired the Development Requester
 // Selector and its localStorage entry (docs/lab-03/specification.md BR-48).
 export async function signInAsRequester(page: Page) {
   await signInAs(page, 'REQUESTER')
+  await page.goto('/tickets')
 }
 
 // A Ticket of that Requester with one active and one removed Attachment,
